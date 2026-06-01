@@ -391,20 +391,41 @@
     navigateToGift(code);
   }
 
-  function navigateToGift(code) {
-    // Extract gift ID — could be a full URL or just the ID
-    let giftId = code;
-    try {
-      const url = new URL(code);
-      giftId = url.searchParams.get('id') || url.pathname.split('/').pop();
-    } catch(e) {}
+ async function navigateToGift(code) {
+  // 1. Extract the gift ID from the QR code string
+  let giftId = code;
+  try {
+    const url = new URL(code);
+    giftId = url.searchParams.get('id') || url.pathname.split('/').pop();
+  } catch(e) {}
 
-    if (scanMode === 'send') {
-      window.location.href = `upload.html?id=${encodeURIComponent(giftId)}`;
-    } else {
-      window.location.href = `watch.html?id=${encodeURIComponent(giftId)}`;
+  if (!giftId) return alert('Please enter or scan a valid gift code.');
+
+  // Configuration: Uses your backend API base URL
+  const API_BASE = window.GIFT_API_BASE || 'https://your-backend-api.onrender.com';
+
+  try {
+    // 2. Check the backend database to see if this gift ID already has a video
+    const res = await fetch(`${API_BASE}/api/gift/${encodeURIComponent(giftId)}`);
+    
+    if (res.ok) {
+      const giftData = await res.json();
+      
+      // 3. If a video URL exists, send them straight to watch it!
+      if (giftData && giftData.videoUrl) {
+        window.location.href = `watch.html?id=${encodeURIComponent(giftId)}`;
+        return;
+      }
     }
+    
+    // 4. If the database returns an error or videoUrl is empty, send them to upload!
+    window.location.href = `upload.html?id=${encodeURIComponent(giftId)}`;
+
+  } catch(e) {
+    // Fallback: If your server is down or checking fails, default to the upload screen
+    window.location.href = `upload.html?id=${encodeURIComponent(giftId)}`;
   }
+}
 
   // Close on overlay click
   document.getElementById('scanModal').addEventListener('click', function(e) {
