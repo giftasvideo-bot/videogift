@@ -1,0 +1,415 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>VideoGift — Scan Your Gift</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,700;1,400&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+  <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+  <style>
+    :root {
+      --ink: #0d0d0d;
+      --paper: #faf7f2;
+      --gold: #c9933a;
+      --gold-light: #e8b86d;
+      --cream: #f0ead8;
+      --muted: #7a7060;
+      --ribbon: #8b2635;
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      background: var(--paper);
+      color: var(--ink);
+      font-family: 'DM Sans', sans-serif;
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    /* Texture overlay */
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='300'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='300' height='300' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    .page { position: relative; z-index: 1; }
+
+    /* ── Header ── */
+    header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 24px 40px;
+      border-bottom: 1px solid var(--cream);
+    }
+
+    .logo {
+      font-family: 'Playfair Display', serif;
+      font-size: 1.5rem;
+      letter-spacing: -0.02em;
+    }
+    .logo span { color: var(--gold); font-style: italic; }
+
+    .ribbon-badge {
+      background: var(--ribbon);
+      color: #fff;
+      font-size: 0.7rem;
+      font-weight: 500;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      padding: 4px 12px;
+      border-radius: 2px;
+    }
+
+    /* ── Hero ── */
+    .hero {
+      text-align: center;
+      padding: 72px 24px 40px;
+    }
+
+    .hero-eyebrow {
+      font-size: 0.72rem;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: var(--gold);
+      margin-bottom: 16px;
+    }
+
+    .hero h1 {
+      font-family: 'Playfair Display', serif;
+      font-size: clamp(2.4rem, 6vw, 4rem);
+      line-height: 1.1;
+      margin-bottom: 20px;
+    }
+
+    .hero h1 em {
+      font-style: italic;
+      color: var(--gold);
+    }
+
+    .hero p {
+      color: var(--muted);
+      font-size: 1.05rem;
+      font-weight: 300;
+      max-width: 420px;
+      margin: 0 auto 48px;
+      line-height: 1.7;
+    }
+
+    /* ── Cards ── */
+    .cards {
+      display: flex;
+      gap: 16px;
+      justify-content: center;
+      flex-wrap: wrap;
+      padding: 0 24px 64px;
+    }
+
+    .card {
+      background: #fff;
+      border: 1px solid var(--cream);
+      border-radius: 12px;
+      padding: 32px 28px;
+      width: 260px;
+      cursor: pointer;
+      transition: transform 0.2s, box-shadow 0.2s, border-color 0.2s;
+      text-align: left;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .card::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 3px;
+      background: var(--gold);
+      transform: scaleX(0);
+      transform-origin: left;
+      transition: transform 0.3s;
+    }
+
+    .card:hover { transform: translateY(-4px); box-shadow: 0 16px 40px rgba(0,0,0,0.08); border-color: var(--gold-light); }
+    .card:hover::before { transform: scaleX(1); }
+
+    .card-icon {
+      font-size: 2.2rem;
+      margin-bottom: 16px;
+      display: block;
+    }
+
+    .card h2 {
+      font-family: 'Playfair Display', serif;
+      font-size: 1.25rem;
+      margin-bottom: 8px;
+    }
+
+    .card p {
+      font-size: 0.88rem;
+      color: var(--muted);
+      line-height: 1.6;
+    }
+
+    .card .cta {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      margin-top: 20px;
+      font-size: 0.82rem;
+      font-weight: 500;
+      color: var(--gold);
+      text-decoration: none;
+    }
+
+    .card .cta::after { content: '→'; transition: transform 0.2s; }
+    .card:hover .cta::after { transform: translateX(4px); }
+
+    /* ── Scanner Modal ── */
+    .modal-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(13,13,13,0.7);
+      backdrop-filter: blur(4px);
+      z-index: 100;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .modal-overlay.active { display: flex; }
+
+    .modal {
+      background: var(--paper);
+      border-radius: 16px;
+      padding: 40px;
+      width: min(480px, 92vw);
+      position: relative;
+      animation: slideUp 0.3s ease;
+    }
+
+    @keyframes slideUp {
+      from { opacity: 0; transform: translateY(20px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    .modal-close {
+      position: absolute;
+      top: 16px; right: 20px;
+      background: none;
+      border: none;
+      font-size: 1.5rem;
+      cursor: pointer;
+      color: var(--muted);
+      line-height: 1;
+    }
+
+    .modal h2 {
+      font-family: 'Playfair Display', serif;
+      font-size: 1.5rem;
+      margin-bottom: 6px;
+    }
+
+    .modal-subtitle {
+      font-size: 0.85rem;
+      color: var(--muted);
+      margin-bottom: 24px;
+    }
+
+    #qr-reader {
+      border-radius: 10px;
+      overflow: hidden;
+    }
+
+    #qr-reader video { border-radius: 10px; }
+
+    .manual-input {
+      margin-top: 20px;
+      display: flex;
+      gap: 8px;
+    }
+
+    .manual-input input {
+      flex: 1;
+      padding: 10px 14px;
+      border: 1px solid var(--cream);
+      border-radius: 8px;
+      font-family: 'DM Sans', sans-serif;
+      font-size: 0.9rem;
+      background: #fff;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+
+    .manual-input input:focus { border-color: var(--gold); }
+
+    .btn {
+      padding: 10px 20px;
+      background: var(--gold);
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      font-family: 'DM Sans', sans-serif;
+      font-size: 0.9rem;
+      font-weight: 500;
+      cursor: pointer;
+      transition: background 0.2s, transform 0.1s;
+    }
+
+    .btn:hover { background: var(--gold-light); }
+    .btn:active { transform: scale(0.97); }
+
+    /* ── Divider ── */
+    .divider {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin: 16px 0;
+      color: var(--muted);
+      font-size: 0.8rem;
+    }
+    .divider::before, .divider::after {
+      content: '';
+      flex: 1;
+      height: 1px;
+      background: var(--cream);
+    }
+
+    /* ── Footer ── */
+    footer {
+      text-align: center;
+      padding: 32px;
+      font-size: 0.78rem;
+      color: var(--muted);
+      border-top: 1px solid var(--cream);
+    }
+
+    @media (max-width: 600px) {
+      header { padding: 16px 20px; }
+      .hero { padding: 48px 20px 32px; }
+      .card { width: 100%; max-width: 340px; }
+      .modal { padding: 28px 20px; }
+    }
+  </style>
+</head>
+<body>
+<div class="page">
+  <header>
+    <div class="logo">Video<span>Gift</span></div>
+    <span class="ribbon-badge">✦ Gifting, reimagined</span>
+  </header>
+
+  <section class="hero">
+    <p class="hero-eyebrow">Personal video gifts via QR card</p>
+    <h1>Your message,<br><em>delivered with heart</em></h1>
+    <p>Scan the QR code on your gift card to send a personal video — or to watch one waiting just for you.</p>
+  </section>
+
+  <div class="cards">
+    <div class="card" onclick="openModal('send')">
+      <span class="card-icon">🎬</span>
+      <h2>Send a Gift</h2>
+      <p>Scan the QR on your card and record or upload a personal video message for someone special.</p>
+      <span class="cta">Start recording</span>
+    </div>
+    <div class="card" onclick="openModal('receive')">
+      <span class="card-icon">🎁</span>
+      <h2>Watch Your Gift</h2>
+      <p>Received a card with a QR code? Scan it to watch your personal video gift.</p>
+      <span class="cta">Open my gift</span>
+    </div>
+  </div>
+</div>
+
+<!-- Scanner Modal -->
+<div class="modal-overlay" id="scanModal">
+  <div class="modal">
+    <button class="modal-close" onclick="closeModal()">×</button>
+    <h2 id="modal-title">Scan QR Code</h2>
+    <p class="modal-subtitle" id="modal-subtitle">Point your camera at the QR code on the card.</p>
+    <div id="qr-reader" style="width:100%;"></div>
+    <div class="divider">or enter code manually</div>
+    <div class="manual-input">
+      <input type="text" id="manual-code" placeholder="e.g. GIFT-A1B2C3" />
+      <button class="btn" onclick="goWithCode()">Go</button>
+    </div>
+  </div>
+</div>
+
+<footer>© 2025 VideoGift · Built with ❤️ · <a href="admin.html" style="color:var(--gold);text-decoration:none;">Admin</a></footer>
+
+<script>
+  let qrScanner = null;
+  let scanMode = 'send';
+
+  function openModal(mode) {
+    scanMode = mode;
+    document.getElementById('modal-title').textContent = mode === 'send' ? 'Scan to Send Gift' : 'Scan to Watch Gift';
+    document.getElementById('modal-subtitle').textContent = mode === 'send'
+      ? 'Scan the QR code on your card to upload a video.'
+      : 'Scan the QR code on your card to watch your gift.';
+    document.getElementById('scanModal').classList.add('active');
+    startScanner();
+  }
+
+  function closeModal() {
+    document.getElementById('scanModal').classList.remove('active');
+    if (qrScanner) {
+      qrScanner.stop().catch(() => {});
+      qrScanner = null;
+    }
+  }
+
+  function startScanner() {
+    qrScanner = new Html5Qrcode("qr-reader");
+    qrScanner.start(
+      { facingMode: "environment" },
+      { fps: 10, qrbox: { width: 220, height: 220 } },
+      (decodedText) => {
+        qrScanner.stop().then(() => {
+          qrScanner = null;
+          closeModal();
+          navigateToGift(decodedText);
+        });
+      },
+      () => {}
+    ).catch(err => {
+      document.getElementById('qr-reader').innerHTML =
+        '<p style="text-align:center;color:var(--muted);padding:20px;font-size:0.85rem;">Camera not available. Please enter the code manually.</p>';
+    });
+  }
+
+  function goWithCode() {
+    const code = document.getElementById('manual-code').value.trim();
+    if (!code) return alert('Please enter a gift code.');
+    closeModal();
+    navigateToGift(code);
+  }
+
+  function navigateToGift(code) {
+    // Extract gift ID — could be a full URL or just the ID
+    let giftId = code;
+    try {
+      const url = new URL(code);
+      giftId = url.searchParams.get('id') || url.pathname.split('/').pop();
+    } catch(e) {}
+
+    if (scanMode === 'send') {
+      window.location.href = `upload.html?id=${encodeURIComponent(giftId)}`;
+    } else {
+      window.location.href = `watch.html?id=${encodeURIComponent(giftId)}`;
+    }
+  }
+
+  // Close on overlay click
+  document.getElementById('scanModal').addEventListener('click', function(e) {
+    if (e.target === this) closeModal();
+  });
+</script>
+</body>
+</html>

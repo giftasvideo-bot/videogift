@@ -1,0 +1,361 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>VideoGift — Send Your Gift</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,700;1,400&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --ink: #0d0d0d;
+      --paper: #faf7f2;
+      --gold: #c9933a;
+      --gold-light: #e8b86d;
+      --cream: #f0ead8;
+      --muted: #7a7060;
+      --ribbon: #8b2635;
+      --green: #2d6a4f;
+    }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      background: var(--paper);
+      color: var(--ink);
+      font-family: 'DM Sans', sans-serif;
+      min-height: 100vh;
+    }
+    body::before {
+      content: '';
+      position: fixed; inset: 0;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='300'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='300' height='300' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");
+      pointer-events: none; z-index: 0;
+    }
+    .page { position: relative; z-index: 1; max-width: 560px; margin: 0 auto; padding: 40px 24px 64px; }
+
+    header { display: flex; align-items: center; gap: 12px; margin-bottom: 48px; }
+    .back-btn {
+      background: none; border: 1px solid var(--cream); border-radius: 8px;
+      padding: 8px 14px; cursor: pointer; font-family: 'DM Sans', sans-serif;
+      font-size: 0.82rem; color: var(--muted); transition: all 0.2s;
+    }
+    .back-btn:hover { border-color: var(--gold); color: var(--gold); }
+    .logo { font-family: 'Playfair Display', serif; font-size: 1.3rem; }
+    .logo span { color: var(--gold); font-style: italic; }
+
+    .gift-id-badge {
+      display: inline-flex; align-items: center; gap: 8px;
+      background: #fff; border: 1px solid var(--cream); border-radius: 24px;
+      padding: 6px 16px; font-size: 0.8rem; color: var(--muted);
+      margin-bottom: 32px;
+    }
+    .gift-id-badge .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--gold); }
+
+    h1 {
+      font-family: 'Playfair Display', serif;
+      font-size: clamp(1.8rem, 5vw, 2.6rem);
+      line-height: 1.15; margin-bottom: 12px;
+    }
+    h1 em { font-style: italic; color: var(--gold); }
+
+    .subtitle { color: var(--muted); font-size: 0.95rem; line-height: 1.7; margin-bottom: 40px; }
+
+    /* Upload Zone */
+    .upload-zone {
+      border: 2px dashed var(--cream);
+      border-radius: 16px;
+      padding: 48px 24px;
+      text-align: center;
+      cursor: pointer;
+      transition: all 0.25s;
+      background: #fff;
+      position: relative;
+    }
+    .upload-zone:hover, .upload-zone.drag-over {
+      border-color: var(--gold);
+      background: #fffcf5;
+    }
+    .upload-zone input[type="file"] {
+      position: absolute; inset: 0; opacity: 0; cursor: pointer; z-index: 2;
+    }
+    .upload-icon { font-size: 3rem; margin-bottom: 12px; display: block; }
+    .upload-zone h3 { font-family: 'Playfair Display', serif; font-size: 1.2rem; margin-bottom: 8px; }
+    .upload-zone p { color: var(--muted); font-size: 0.85rem; }
+    .upload-zone .formats { font-size: 0.75rem; color: var(--muted); margin-top: 8px; }
+
+    /* Record option */
+    .or-divider {
+      display: flex; align-items: center; gap: 12px;
+      margin: 24px 0; color: var(--muted); font-size: 0.8rem;
+    }
+    .or-divider::before, .or-divider::after {
+      content: ''; flex: 1; height: 1px; background: var(--cream);
+    }
+
+    .record-btn {
+      width: 100%; padding: 14px;
+      background: none; border: 1px solid var(--cream);
+      border-radius: 12px; cursor: pointer;
+      font-family: 'DM Sans', sans-serif; font-size: 0.95rem;
+      color: var(--ink); transition: all 0.2s;
+      display: flex; align-items: center; justify-content: center; gap: 10px;
+    }
+    .record-btn:hover { border-color: var(--ribbon); color: var(--ribbon); background: #fff5f5; }
+
+    /* Preview */
+    #preview-section { display: none; margin-top: 24px; }
+    #preview-section video {
+      width: 100%; border-radius: 12px;
+      background: #000; max-height: 300px; object-fit: contain;
+    }
+
+    /* Message */
+    .msg-section { margin-top: 28px; }
+    .msg-section label {
+      display: block; font-size: 0.82rem; font-weight: 500;
+      margin-bottom: 8px; color: var(--muted);
+      text-transform: uppercase; letter-spacing: 0.08em;
+    }
+    .msg-section textarea {
+      width: 100%; padding: 14px 16px;
+      border: 1px solid var(--cream); border-radius: 10px;
+      font-family: 'DM Sans', sans-serif; font-size: 0.95rem;
+      resize: vertical; min-height: 90px;
+      background: #fff; outline: none;
+      transition: border-color 0.2s; color: var(--ink);
+    }
+    .msg-section textarea:focus { border-color: var(--gold); }
+
+    /* Submit */
+    .submit-btn {
+      margin-top: 28px; width: 100%;
+      padding: 16px; background: var(--gold);
+      color: #fff; border: none; border-radius: 12px;
+      font-family: 'DM Sans', sans-serif; font-size: 1rem; font-weight: 500;
+      cursor: pointer; transition: all 0.2s;
+      display: flex; align-items: center; justify-content: center; gap: 10px;
+    }
+    .submit-btn:hover { background: var(--gold-light); }
+    .submit-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+    /* Progress */
+    #progress-bar-wrap {
+      display: none; margin-top: 16px;
+      background: var(--cream); border-radius: 8px; overflow: hidden; height: 6px;
+    }
+    #progress-bar {
+      height: 100%; background: var(--gold);
+      width: 0; transition: width 0.3s;
+    }
+    #progress-label { font-size: 0.8rem; color: var(--muted); margin-top: 6px; }
+
+    /* Success */
+    #success-state {
+      display: none; text-align: center; padding: 40px 20px;
+      animation: fadeIn 0.5s ease;
+    }
+    @keyframes fadeIn { from { opacity:0; transform:translateY(10px); } to { opacity:1; transform:translateY(0); } }
+    .success-icon { font-size: 4rem; margin-bottom: 16px; display: block; }
+    #success-state h2 { font-family: 'Playfair Display', serif; font-size: 1.6rem; margin-bottom: 8px; }
+    #success-state p { color: var(--muted); font-size: 0.9rem; line-height: 1.7; }
+
+    /* Recorder */
+    #recorder-section { display: none; margin-top: 24px; }
+    #live-preview { width: 100%; border-radius: 12px; background: #111; }
+    .recorder-controls { display: flex; gap: 10px; margin-top: 12px; }
+    .rec-btn {
+      flex: 1; padding: 12px; border: none; border-radius: 10px;
+      font-family: 'DM Sans', sans-serif; font-size: 0.9rem;
+      cursor: pointer; transition: all 0.2s;
+    }
+    .rec-btn.start { background: var(--ribbon); color: #fff; }
+    .rec-btn.stop  { background: var(--ink); color: #fff; }
+    .rec-btn.cancel { background: var(--cream); color: var(--muted); }
+
+    @media (max-width: 480px) { .page { padding: 24px 16px 48px; } }
+  </style>
+</head>
+<body>
+<div class="page">
+  <header>
+    <button class="back-btn" onclick="history.back()">← Back</button>
+    <div class="logo">Video<span>Gift</span></div>
+  </header>
+
+  <div id="main-form">
+    <div class="gift-id-badge">
+      <span class="dot"></span>
+      <span>Gift ID: <strong id="gift-id-display">Loading…</strong></span>
+    </div>
+
+    <h1>Record your <em>gift message</em></h1>
+    <p class="subtitle">Upload or record a video for the lucky recipient. It'll be waiting when they scan their card.</p>
+
+    <!-- Upload Zone -->
+    <div class="upload-zone" id="upload-zone">
+      <input type="file" id="file-input" accept="video/*" onchange="handleFile(this)"/>
+      <span class="upload-icon">🎥</span>
+      <h3>Drop your video here</h3>
+      <p>Or click to browse files</p>
+      <p class="formats">MP4, MOV, AVI · Max 500MB</p>
+    </div>
+
+    <!-- Record option -->
+    <div class="or-divider">or</div>
+    <button class="record-btn" onclick="startRecorder()">🔴 Record directly from camera</button>
+
+    <!-- Live Recorder -->
+    <div id="recorder-section">
+      <video id="live-preview" autoplay muted playsinline></video>
+      <div class="recorder-controls">
+        <button class="rec-btn start" id="rec-start-btn" onclick="startRecording()">⏺ Start</button>
+        <button class="rec-btn stop" id="rec-stop-btn" onclick="stopRecording()" style="display:none">⏹ Stop</button>
+        <button class="rec-btn cancel" onclick="cancelRecorder()">Cancel</button>
+      </div>
+    </div>
+
+    <!-- Video preview -->
+    <div id="preview-section">
+      <video id="video-preview" controls></video>
+      <p style="font-size:0.82rem;color:var(--muted);margin-top:8px;">✓ Video selected — looks good?</p>
+    </div>
+
+    <!-- Message -->
+    <div class="msg-section">
+      <label>Personal message (optional)</label>
+      <textarea id="gift-message" placeholder="Write a short note to go with your video…"></textarea>
+    </div>
+
+    <!-- Progress -->
+    <div id="progress-bar-wrap"><div id="progress-bar"></div></div>
+    <p id="progress-label"></p>
+
+    <!-- Submit -->
+    <button class="submit-btn" id="submit-btn" onclick="uploadGift()">
+      <span>🎁</span> Send My Gift
+    </button>
+  </div>
+
+  <!-- Success -->
+  <div id="success-state">
+    <span class="success-icon">🎉</span>
+    <h2>Your gift is ready!</h2>
+    <p>The video has been saved. When your recipient scans the QR code on their card, they'll see your message.</p>
+    <button class="submit-btn" style="margin-top:24px;" onclick="window.location.href='index.html'">
+      Back to Home
+    </button>
+  </div>
+</div>
+
+<script>
+  // ── Config ──────────────────────────────────────────────
+  const API_BASE = window.GIFT_API_BASE || 'https://your-api.onrender.com'; // replaced at deploy
+  // ────────────────────────────────────────────────────────
+
+  const params = new URLSearchParams(location.search);
+  const giftId = params.get('id') || '';
+  document.getElementById('gift-id-display').textContent = giftId || '(No ID)';
+
+  let selectedFile = null;
+  let mediaStream = null;
+  let mediaRecorder = null;
+  let recordedChunks = [];
+
+  // Drag-and-drop
+  const zone = document.getElementById('upload-zone');
+  zone.addEventListener('dragover', e => { e.preventDefault(); zone.classList.add('drag-over'); });
+  zone.addEventListener('dragleave', () => zone.classList.remove('drag-over'));
+  zone.addEventListener('drop', e => {
+    e.preventDefault(); zone.classList.remove('drag-over');
+    const file = e.dataTransfer.files[0];
+    if (file && file.type.startsWith('video/')) setFile(file);
+  });
+
+  function handleFile(input) {
+    if (input.files[0]) setFile(input.files[0]);
+  }
+
+  function setFile(file) {
+    selectedFile = file;
+    const url = URL.createObjectURL(file);
+    document.getElementById('video-preview').src = url;
+    document.getElementById('preview-section').style.display = 'block';
+  }
+
+  // ── Recorder ──
+  async function startRecorder() {
+    document.getElementById('recorder-section').style.display = 'block';
+    try {
+      mediaStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+      document.getElementById('live-preview').srcObject = mediaStream;
+    } catch(e) { alert('Camera access denied.'); cancelRecorder(); }
+  }
+
+  function startRecording() {
+    recordedChunks = [];
+    mediaRecorder = new MediaRecorder(mediaStream);
+    mediaRecorder.ondataavailable = e => { if (e.data.size > 0) recordedChunks.push(e.data); };
+    mediaRecorder.onstop = () => {
+      const blob = new Blob(recordedChunks, { type: 'video/webm' });
+      setFile(new File([blob], 'recorded-gift.webm', { type: 'video/webm' }));
+      cancelRecorder();
+    };
+    mediaRecorder.start();
+    document.getElementById('rec-start-btn').style.display = 'none';
+    document.getElementById('rec-stop-btn').style.display = 'block';
+  }
+
+  function stopRecording() { mediaRecorder.stop(); }
+
+  function cancelRecorder() {
+    if (mediaStream) { mediaStream.getTracks().forEach(t => t.stop()); mediaStream = null; }
+    document.getElementById('recorder-section').style.display = 'none';
+    document.getElementById('rec-start-btn').style.display = 'block';
+    document.getElementById('rec-stop-btn').style.display = 'none';
+  }
+
+  // ── Upload ──
+  async function uploadGift() {
+    if (!selectedFile) { alert('Please select or record a video first.'); return; }
+    if (!giftId) { alert('No gift ID found. Please scan again.'); return; }
+
+    const btn = document.getElementById('submit-btn');
+    btn.disabled = true;
+
+    document.getElementById('progress-bar-wrap').style.display = 'block';
+    document.getElementById('progress-label').textContent = 'Uploading…';
+
+    const formData = new FormData();
+    formData.append('video', selectedFile);
+    formData.append('giftId', giftId);
+    formData.append('message', document.getElementById('gift-message').value);
+
+    try {
+      const xhr = new XMLHttpRequest();
+      xhr.upload.onprogress = e => {
+        if (e.lengthComputable) {
+          const pct = Math.round((e.loaded / e.total) * 100);
+          document.getElementById('progress-bar').style.width = pct + '%';
+          document.getElementById('progress-label').textContent = `Uploading… ${pct}%`;
+        }
+      };
+      xhr.onload = () => {
+        if (xhr.status === 200) {
+          document.getElementById('main-form').style.display = 'none';
+          document.getElementById('success-state').style.display = 'block';
+        } else {
+          const err = JSON.parse(xhr.responseText);
+          alert('Upload failed: ' + (err.error || 'Unknown error'));
+          btn.disabled = false;
+        }
+      };
+      xhr.onerror = () => { alert('Network error. Please try again.'); btn.disabled = false; };
+      xhr.open('POST', `${API_BASE}/api/upload`);
+      xhr.send(formData);
+    } catch(e) {
+      alert('Error: ' + e.message);
+      btn.disabled = false;
+    }
+  }
+</script>
+</body>
+</html>
