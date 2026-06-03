@@ -143,7 +143,8 @@ app.post('/api/upload', upload.single('video'), async (req, res) => {
 
     const publicVideoUrl = urlData.publicUrl;
 
-    // 4. Use .update() instead of .insert() to update the pre-existing row ID matching the admin pre-generation
+    // 4. Use .update() to update the pre-existing row ID matching the admin pre-generation
+    // STANDARDIZED: Set status to exactly 'uploaded' to match admin layout polls
     const { error: dbError } = await supabase
       .from('gifts')
       .update({
@@ -167,7 +168,7 @@ app.post('/api/upload', upload.single('video'), async (req, res) => {
   }
 });
 
-// ── ROUTE 6: FIXED ADMIN CARD ROW DELETION (Smarter Dynamic Fallback) ──
+// ── ROUTE 6: ADMIN CARD ROW DELETION (Smarter Dynamic Fallback) ──
 app.delete('/api/gift/:id?', async (req, res) => {
   // Gracefully handles URL path parameter, URL query string parameter (?id=X), or JSON body payload
   const giftId = req.params.id || req.query.id || req.body.id;

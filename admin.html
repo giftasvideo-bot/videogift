@@ -1,324 +1,256 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8"/>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>VideoGift — Admin Panel</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Forever 27 | Admin Dashboard</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,700;1,400&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,700;1,400&family=DM+Sans:wght@300;400;500;700&display=swap" rel="stylesheet">
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
   <style>
     :root {
-      --ink: #0d0d0d; --paper: #faf7f2; --gold: #c9933a;
-      --gold-light: #e8b86d; --cream: #f0ead8; --muted: #7a7060;
+      --ink: #0d0d0d;
+      --paper: #faf7f2;
+      --gold: #c9933a;
+      --gold-light: #e8b86d;
+      --cream: #f0ead8;
+      --muted: #7a7060;
+      --success-bg: #e8f5e9;
+      --success-text: #2e7d32;
+      --pending-bg: #fff3e0;
+      --pending-text: #ef6c00;
     }
-    * { margin:0; padding:0; box-sizing:border-box; }
-    body { background:var(--paper); color:var(--ink); font-family:'DM Sans',sans-serif; }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      background-color: var(--paper);
+      color: var(--ink);
+      font-family: 'DM Sans', sans-serif;
+      padding: 40px 20px;
+      min-height: 100vh;
+    }
+
     body::before {
-      content:''; position:fixed; inset:0;
-      background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='300'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='300' height='300' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");
-      pointer-events:none; z-index:0;
-    }
-    .page { position:relative; z-index:1; max-width:860px; margin:0 auto; padding:40px 24px 80px; }
-
-    header { display:flex; justify-content:space-between; align-items:center; margin-bottom:48px; }
-    .logo { font-family:'Playfair Display',serif; font-size:1.3rem; }
-    .logo span { color:var(--gold); font-style:italic; }
-    .admin-badge {
-      background:var(--ink); color:#fff; font-size:0.7rem;
-      padding:4px 12px; border-radius:2px; letter-spacing:0.1em; text-transform:uppercase;
+      content: ''; position: fixed; inset: 0;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='300'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='300' height='300' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");
+      pointer-events: none; z-index: 0;
     }
 
-    h1 { font-family:'Playfair Display',serif; font-size:2rem; margin-bottom:8px; }
-    .subtitle { color:var(--muted); font-size:0.9rem; margin-bottom:40px; }
+    .dashboard { position: relative; z-index: 1; max-width: 1000px; margin: 0 auto; }
+    
+    .header { text-align: center; margin-bottom: 40px; }
+    .logo { font-family: 'Playfair Display', serif; font-size: 2rem; margin-bottom: 8px; }
+    .logo span { color: var(--gold); font-style: italic; }
+    h1 { font-family: 'Playfair Display', serif; font-size: 1.8rem; margin-bottom: 24px; }
 
-    .panel {
-      background:#fff; border:1px solid var(--cream); border-radius:14px;
-      padding:32px; margin-bottom:24px;
+    .card-section {
+      background: #ffffff; border: 1px solid var(--cream);
+      border-radius: 12px; padding: 30px; margin-bottom: 30px;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.01);
     }
-    .panel h2 { font-family:'Playfair Display',serif; font-size:1.2rem; margin-bottom:20px; }
 
-    .input-row { display:flex; gap:10px; flex-wrap:wrap; }
-    .input-row input {
-      flex:1; min-width:180px; padding:10px 14px;
-      border:1px solid var(--cream); border-radius:8px;
-      font-family:'DM Sans',sans-serif; font-size:0.9rem;
-      background:var(--paper); outline:none; transition:border-color 0.2s;
+    h2 { font-family: 'Playfair Display', serif; font-size: 1.3rem; margin-bottom: 16px; display: flex; align-items: center; gap: 10px; }
+    
+    .form-group { display: flex; gap: 12px; margin-bottom: 16px; flex-wrap: wrap; }
+    input[type="text"], input[type="number"] {
+      padding: 12px 16px; border: 1px solid var(--cream);
+      border-radius: 6px; background: var(--paper); font-size: 0.95rem; outline: none;
     }
-    .input-row input:focus { border-color:var(--gold); }
+    input[type="text"] { flex: 1; min-width: 200px; }
+    input[type="number"] { width: 100px; }
 
     .btn {
-      padding:10px 22px; background:var(--gold); color:#fff;
-      border:none; border-radius:8px; font-family:'DM Sans',sans-serif;
-      font-size:0.9rem; font-weight:500; cursor:pointer; transition:all 0.2s;
-      white-space:nowrap;
+      padding: 12px 24px; background: var(--gold); color: #ffffff;
+      border: none; border-radius: 6px; font-weight: 500; cursor: pointer;
+      transition: background 0.2s; font-family: 'DM Sans', sans-serif;
     }
-    .btn:hover { background:var(--gold-light); }
-    .btn.secondary {
-      background:none; border:1px solid var(--cream); color:var(--muted);
-    }
-    .btn.secondary:hover { border-color:var(--gold); color:var(--gold); background:none; }
+    .btn:hover { background: var(--gold-light); }
+    .btn-secondary { background: var(--cream); color: var(--ink); margin-left: auto; }
+    .btn-secondary:hover { background: #e5dec9; }
+    .btn-danger { background: #ffebee; color: #c62828; padding: 6px 12px; font-size: 0.85rem; }
+    .btn-danger:hover { background: #ffcdd2; }
 
-    /* QR Grid */
-    #qr-grid {
-      display:grid; grid-template-columns:repeat(auto-fill,minmax(180px,1fr));
-      gap:16px; margin-top:24px;
+    /* Grid Management Table Layout */
+    .table-wrapper { overflow-x: auto; margin-top: 20px; }
+    table { width: 100%; border-collapse: collapse; text-align: left; font-size: 0.9rem; }
+    th, td { padding: 14px 16px; border-bottom: 1px solid var(--paper); vertical-align: middle; }
+    th { background: var(--paper); font-weight: 500; color: var(--muted); letter-spacing: 0.05em; text-transform: uppercase; font-size: 0.75rem; }
+    
+    .status-badge {
+      display: inline-block; padding: 4px 10px; border-radius: 4px;
+      font-size: 0.8rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.03em;
     }
+    .status-pending { background: var(--pending-bg); color: var(--pending-text); }
+    .status-uploaded { background: var(--success-bg); color: var(--success-text); }
 
-    .qr-card {
-      background:var(--paper); border:1px solid var(--cream); border-radius:12px;
-      padding:20px 16px; text-align:center;
-      transition:box-shadow 0.2s; cursor:pointer;
-    }
-    .qr-card:hover { box-shadow:0 8px 24px rgba(0,0,0,0.07); }
-    .qr-card canvas { max-width:140px !important; margin: 0 auto; }
-    .qr-id { font-size:0.72rem; color:var(--muted); margin-top:10px; word-break:break-all; font-family: monospace; font-weight: bold; }
-    .qr-status {
-      display:inline-block; font-size:0.68rem; padding:2px 8px;
-      border-radius:10px; margin-top:6px; font-weight:500;
-      text-transform: uppercase;
-    }
-    .qr-status.idle, .qr-status.pending { background:#fff3e0; color:#e65100; }
-    .qr-status.sealed, .qr-status.uploaded { background:#e8f5e9; color:#2e7d32; }
-    .qr-status.viewed { background:#e3f2fd; color:#1565c0; }
+    .qr-preview { width: 60px; height: 60px; background: #eee; display: flex; align-items: center; justify-content: center; border-radius: 4px; overflow: hidden; }
 
-
-    .qr-actions { display:flex; gap:6px; justify-content:center; margin-top:10px; flex-wrap:wrap; }
-    .qr-actions button {
-      padding:5px 10px; font-size:0.72rem; border-radius:6px;
-      border:1px solid var(--cream); background:none; cursor:pointer;
-      font-family:'DM Sans',sans-serif; color:var(--muted); transition:all 0.2s;
-    }
-    .qr-actions button:hover { border-color:var(--gold); color:var(--gold); }
-
-    /* Stats */
-    .stats-row { display:flex; gap:16px; flex-wrap:wrap; }
-    .stat {
-      flex:1; min-width:120px; background:var(--paper);
-      border:1px solid var(--cream); border-radius:10px; padding:20px;
-      text-align:center;
-    }
-    .stat .num {
-      font-family:'Playfair Display',serif; font-size:2.2rem; color:var(--gold);
-    }
-    .stat .label { font-size:0.78rem; color:var(--muted); margin-top:4px; }
-
-    /* API URL setting */
-    .api-setting { display:flex; gap:10px; align-items:center; flex-wrap:wrap; }
-    .api-setting input { flex:1; min-width:260px; }
-    .saved-note { font-size:0.78rem; color:var(--gold); display:none; }
-
-    @media(max-width:500px){
-      .panel { padding:20px 16px; }
-      h1 { font-size:1.5rem; }
+    /* Print View Area Setup Styles */
+    #print-area { display: none; }
+    @media print {
+      body * { display: none !important; }
+      #print-area { display: grid !important; grid-template-columns: repeat(3, 1fr); gap: 20px; padding: 20px; }
+      #print-area * { display: block !important; }
+      .print-card { border: 1px dashed #ccc; padding: 15px; text-align: center; background: white; page-break-inside: avoid; }
+      .print-card div { margin-top: 8px; font-family: monospace; font-size: 11px; font-weight: bold; }
     }
   </style>
 </head>
 <body>
-<div class="page">
-  <header>
-    <div class="logo">Video<span>Gift</span></div>
-    <span class="admin-badge">Admin Panel</span>
-  </header>
 
-  <h1>Admin Dashboard</h1>
-  <p class="subtitle">Generate QR codes for gift cards and track gift status.</p>
+<div class="dashboard">
+  <div class="header">
+    <div class="logo">Forever<span>27</span></div>
+    <h1>System Operations Control</h1>
+  </div>
 
-  <div class="panel">
-    <h2>Overview</h2>
-    <div class="stats-row">
-      <div class="stat"><div class="num" id="stat-total">0</div><div class="label">Total Cards</div></div>
-      <div class="stat"><div class="num" id="stat-uploaded">0</div><div class="label">Videos Sent</div></div>
-      <div class="stat"><div class="num" id="stat-viewed">0</div><div class="label">Gifts Opened</div></div>
+  <div class="card-section">
+    <h2>⚙️ Backend Server Routing Configuration</h2>
+    <div class="form-group">
+      <input type="text" id="api-url-input" value="https://videogift-backend-3.onrender.com" placeholder="Paste live Render backend service deployment link URL">
+      <button class="btn" onclick="saveApiUrl()">Lock Config Link</button>
     </div>
   </div>
 
-  <div class="panel">
-    <h2>⚙️ API Configuration</h2>
-    <p style="font-size:0.85rem;color:var(--muted);margin-bottom:14px;">Set your backend API URL (e.g. from Render.com)</p>
-    <div class="api-setting">
-      <input type="url" id="api-url-input" placeholder="https://your-api.onrender.com"/>
-      <button class="btn" onclick="saveApiUrl()">Save</button>
-      <span class="saved-note" id="saved-note">✓ Saved!</span>
+  <div class="card-section">
+    <h2>🎟️ Generate Unique QR Gift Tokens</h2>
+    <div class="form-group">
+      <input type="number" id="batch-count" value="1" min="1" max="100">
+      <input type="text" id="id-prefix" placeholder="Prefix Identifier String (e.g. CARD, GIFT, WED)">
+      <button class="btn" onclick="generateBatchCodes()">Generate & Sync Rows</button>
     </div>
   </div>
 
-  <div class="panel">
-    <h2>🎴 Generate Gift QR Codes</h2>
-    <p style="font-size:0.85rem;color:var(--muted);margin-bottom:16px;">Create QR codes to print on physical gift cards.</p>
-    <div class="input-row">
-      <input type="number" id="gen-count" placeholder="How many? (e.g. 10)" min="1" max="100" value="1"/>
-      <input type="text" id="gen-prefix" placeholder="Prefix (e.g. XMAS25)" />
-      <button class="btn" id="generate-btn" onclick="generateQRCodes()">Generate</button>
-      <button class="btn secondary" onclick="printAll()">🖨 Print All</button>
+  <div class="card-section">
+    <div style="display: flex; align-items: center; margin-bottom: 16px;">
+      <h2>📋 Current Tracked Batch Registry</h2>
+      <button class="btn btn-secondary" onclick="window.print()">🖨️ Print Batch Sheets</button>
     </div>
-    <div id="qr-grid"></div>
+    
+    <div class="table-wrapper">
+      <table>
+        <thead>
+          <tr>
+            <th>Token ID string</th>
+            <th>QR layout</th>
+            <th>System Status Indicator</th>
+            <th>Actions Matrix</th>
+          </tr>
+        </thead>
+        <tbody id="registry-table-body">
+          </tbody>
+      </table>
+    </div>
   </div>
 </div>
 
-<script>
-  // Point this to your live production frontend root directory folder containing watch.html
-  const SITE_BASE = window.location.origin + window.location.pathname.replace('admin.html', '');
-  let cards = JSON.parse(localStorage.getItem('vg_cards') || '[]');
+<div id="print-area"></div>
 
-  // ── API URL Initializer ──
-  const storedApi = localStorage.getItem('vg_api_base') || 'https://videogift-backend-3.onrender.com';
-  document.getElementById('api-url-input').value = storedApi;
-  window.GIFT_API_BASE = storedApi;
+<script>
+  let BACKEND_API_BASE = localStorage.getItem('videogift_api_url') || 'https://videogift-backend-3.onrender.com';
+  document.getElementById('api-url-input').value = BACKEND_API_BASE;
+
+  let localRegistry = JSON.parse(localStorage.getItem('forever27_cards_manifest')) || [];
 
   function saveApiUrl() {
-    const url = document.getElementById('api-url-input').value.trim();
-    localStorage.setItem('vg_api_base', url);
-    window.GIFT_API_BASE = url;
-    const note = document.getElementById('saved-note');
-    note.style.display = 'inline';
-    setTimeout(() => note.style.display = 'none', 2000);
-    syncStatuses();
+    const url = document.getElementById('api-url-input').value.trim().replace(/\/$/, "");
+    BACKEND_API_BASE = url;
+    localStorage.setItem('videogift_api_url', url);
+    alert('✅ Base Server Domain Target Configuration verified and saved.');
+    syncStatusesWithDatabase();
   }
 
-  // ── Stats Calculation ──
-  function updateStats() {
-    document.getElementById('stat-total').textContent = cards.length;
-    document.getElementById('stat-uploaded').textContent = cards.filter(c=>c.status==='sealed'||c.status==='uploaded'||c.status==='viewed').length;
-    document.getElementById('stat-viewed').textContent = cards.filter(c=>c.status==='viewed').length;
+  // 1. Unique Crypto String Generator
+  function generateRandomTokenString(length = 6) {
+    const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; // Cleaned clear ambiguous characters
+    let output = '';
+    for (let i = 0; i < length; i++) {
+      output += chars.charAt(Math.floor(Math.random() * chars.length));
+    }
+    return output;
   }
 
-  // ── ID Random Engine Generator ──
-  function generateId(prefix) {
-    const chars = 'ABCDEFGHIJKLMNPQRSTUVWXYZ123456789';
-    const rand = Array.from({length:6}, () => chars[Math.floor(Math.random()*chars.length)]).join('');
-    return prefix ? `${prefix.toUpperCase()}-${rand}` : `GIFT-${rand}`;
+  // 2. Local Stack Processor to write items safely to backend cluster endpoints
+  async function generateBatchCodes() {
+    const count = parseInt(document.getElementById('batch-count').value) || 1;
+    const prefix = document.getElementById('id-prefix').value.trim().toUpperCase();
+    const cleanPrefix = prefix ? `${prefix}-` : '';
+
+    const newCodes = [];
+    for (let i = 0; i < count; i++) {
+      const targetId = `${cleanPrefix}${generateRandomTokenString()}`;
+      if (!localRegistry.includes(targetId)) {
+        newCodes.push(targetId);
+      } else {
+        i--; // Redo loop index step if token collisions match
+      }
+    }
+
+    try {
+      const response = await fetch(`${BACKEND_API_BASE}/api/admin/batch-insert`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ cards: newCodes })
+      });
+
+      if (!response.ok) throw new Error('Database registry handshake refused pipeline processing injection.');
+
+      localRegistry = [...newCodes, ...localRegistry];
+      localStorage.setItem('forever27_cards_manifest', JSON.stringify(localRegistry));
+      
+      renderDashboardTable();
+      syncStatusesWithDatabase();
+    } catch (err) {
+      alert(`⚠️ Generation Aborted: ${err.message}`);
+    }
   }
 
-  // ── NEW WORKFLOW: SYNC LIVE LOGS WITH BACKEND DATABASE ──
-  async function generateQRCodes() {
-    const count = parseInt(document.getElementById('gen-count').value) || 1;
-    const prefix = document.getElementById('gen-prefix').value.trim();
-    const btn = document.querySelector('.input-row .btn:not(.secondary)');
+  // 3. Dynamic Realtime Sync Engine Loop to constantly pull statuses down from DB
+  async function syncStatusesWithDatabase() {
+    if (localRegistry.length === 0) return;
+
+    try {
+      const response = await fetch(`${BACKEND_API_BASE}/api/gifts/status`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ids: localRegistry })
+      });
+
+      if (!response.ok) return;
+      const data = await response.json();
+      
+      // Look through generated rows and match the exact database status strings
+      localRegistry.forEach(id => {
+        const remoteStatus = data.statuses[id] || 'pending';
+        const badge = document.getElementById(`badge-${id}`);
+        if (badge) {
+          badge.textContent = remoteStatus;
+          badge.className = `status-badge status-${remoteStatus}`;
+        }
+      });
+    } catch (err) {
+      console.warn('Realtime database background status sync dropped thread loop.', err);
+    }
+  }
+
+  // 4. Client Display Table Interface Constructor 
+  function renderDashboardTable() {
+    const tbody = document.getElementById('registry-table-body');
+    const printArea = document.getElementById('print-area');
     
-    if (!window.GIFT_API_BASE) {
-      alert('Please enter your Render API URL in the configuration box above and click Save first!');
+    tbody.innerHTML = '';
+    printArea.innerHTML = '';
+
+    if (localRegistry.length === 0) {
+      tbody.innerHTML = `<tr><td colspan="4" style="text-align:center; color:var(--muted); padding: 30px;">No registered gift cards found in local workspace profile.</td></tr>`;
       return;
     }
 
-    // Temporarily freeze the UI button to prevent rapid double-clicks while the database processes
-    btn.disabled = true;
-    btn.textContent = 'Syncing Cluster...';
+    localRegistry.forEach(id => {
+      // Create active operational paths
+      const targetUploadUrl = `${window.location.origin}${window.location.pathname.replace('admin.html', 'upload.html')}?id=${id}`;
 
-    const localBatch = [];
-    for (let i = 0; i < count; i++) {
-      const id = generateId(prefix);
-      localBatch.push({ id, status: 'pending', createdAt: new Date().toISOString() });
-    }
-
-    try {
-      // Send the array of fresh custom IDs to your backend before displaying them
-      const response = await fetch(`${window.GIFT_API_BASE}/api/admin/batch-insert`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ cards: localBatch.map(c => c.id) })
-      });
-
-      if (!response.ok) throw new Error('Database server rejected batch insertion.');
-
-      // If the backend responds with a success status, save securely to browser cache and paint UI
-      cards = [...cards, ...localBatch];
-      localStorage.setItem('vg_cards', JSON.stringify(cards));
-      
-      renderCards();
-      updateStats();
-    } catch (err) {
-      console.error(err);
-      alert('Could not synchronize with cloud database. Make sure your Render service is awake and active!');
-    } finally {
-      btn.disabled = false;
-      btn.textContent = 'Generate';
-    }
-  }
-  // ── Visual Canvas Grid Render ──
-  function renderCards() {
-    const grid = document.getElementById('qr-grid');
-    grid.innerHTML = '';
-    
-    [...cards].reverse().forEach(card => {
-      const div = document.createElement('div');
-      div.className = 'qr-card';
-      div.innerHTML = `
-        <div id="qr-${card.id}" style="display:flex; justify-content:center;"></div>
-        <div class="qr-id">${card.id}</div>
-        <span class="qr-status ${card.status}">${card.status}</span>
-        <div class="qr-actions">
-          <button onclick="downloadQR('${card.id}')">⬇ PNG</button>
-          <button onclick="copyLink('${card.id}')">🔗 Link</button>
-          <button onclick="deleteCard('${card.id}')">🗑</button>
-        </div>
-      `;
-      grid.appendChild(div);
-
-      const watchUrl = `${SITE_BASE}watch.html?id=${card.id}`;
-      new QRCode(document.getElementById(`qr-${card.id}`), {
-        text: watchUrl,
-        width: 140, height: 140,
-        colorDark: '#0d0d0d', colorLight: '#faf7f2',
-        correctLevel: QRCode.CorrectLevel.M
-      });
-    });
-  }
-
-  function downloadQR(id) {
-    const canvas = document.querySelector(`#qr-${id} canvas`);
-    if (!canvas) return alert('QR not ready yet.');
-    const a = document.createElement('a');
-    a.download = `gift-${id}.png`;
-    a.href = canvas.toDataURL('image/png');
-    a.click();
-  }
-
-  function copyLink(id) {
-    const url = `${SITE_BASE}watch.html?id=${id}`;
-    navigator.clipboard.writeText(url).then(() => alert('Link copied:\n' + url));
-  }
-
-  async function deleteCard(id) {
-    if (!confirm(`Delete card ${id} from local list and database?`)) return;
-    try {
-      await fetch(`${window.GIFT_API_BASE}/api/gift/${encodeURIComponent(id)}`, { method: 'DELETE' });
-    } catch (e) {}
-    
-    cards = cards.filter(c => c.id !== id);
-    localStorage.setItem('vg_cards', JSON.stringify(cards));
-    renderCards(); 
-    updateStats();
-  }
-
-  function printAll() {
-    window.print();
-  }
-
-  // ── Poll and Refresh Realtime Tracking Status ──
-  async function syncStatuses() {
-    if (!window.GIFT_API_BASE || cards.length === 0) return;
-    try {
-      const ids = cards.map(c => c.id);
-      const res = await fetch(`${window.GIFT_API_BASE}/api/gifts/status-check`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ids })
-      });
-      if (!res.ok) return;
-      const data = await res.json(); // returns { statuses: { ID: 'status' } }
-      
-      cards = cards.map(c => ({ ...c, status: data.statuses[c.id] || c.status }));
-      localStorage.setItem('vg_cards', JSON.stringify(cards));
-      renderCards(); 
-      updateStats();
-    } catch(e){}
-  }
-
-  // Init
-  renderCards();
-  updateStats();
-  setTimeout(syncStatuses, 1000);
-</script>
-</body>
-</html>
+      const row = document.createElement('tr');
+      row.id = `row-${id}`;
+      row.innerHTML = `
+        <td style="font-family
