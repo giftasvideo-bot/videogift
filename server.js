@@ -1,115 +1,90 @@
+require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
 const multer = require('multer');
-const { createClient } = require('@supabase/supabase-js');
-require('dotenv').config();
+const { createClient } = require('@supabase/supabase-core');
+const { SupabaseClient } = require('@supabase/supabase-js');
 
 const app = express();
-const port = process.env.PORT || 10000;
+const PORT = process.env.PORT || 10000;
 
-// Setup connection to your Supabase Database
-const supabaseUrl = process.env.SUPABASE_URL;
-const supabaseAnonKey = process.env.SUPABASE_ANON_KEY;
-const supabase = createClient(supabaseUrl, supabaseAnonKey);
-
-// Allow your GitHub frontend to safely send files to this server
+// ── MIDDLEWARE ──
 app.use(cors());
 app.use(express.json());
 
-// Configure temporary storage for uploaded videos
+// ── SUPABASE CONFIGURATION ──
+const supabaseUrl = process.env.SUPABASE_URL;
+const supabaseAnonKey = process.env.SUPABASE_ANON_KEY;
+
+if (!supabaseUrl || !supabaseAnonKey) {
+  console.error("❌ Error: SUPABASE_URL and SUPABASE_ANON_KEY must be set in Environment Variables.");
+  process.exit(1);
+}
+
+// Initialize the Supabase Client
+const supabase = new SupabaseClient(supabaseUrl, supabaseAnonKey);
+
+// Configure Multer for temporary memory buffer file storage
+const storage = multer.memoryStorage();
 const upload = multer({ 
-  storage: multer.memoryStorage(),
-  limits: { fileSize: 60 * 1024 * 1024 } // 60MB file limit
+  storage: storage,
+  limits: { fileSize: 50 * 1024 * 1024 } // 50MB Max Video Size Limit
 });
 
-// A simple test route to make sure the server is awake
-app.get('/api/gift/test', (req, res) => {
-  res.json({ status: "Server is wide awake and active!" });
+// ── ROUTE 1: BASE PLACEHOLDER INDEX ──
+app.get('/', (req, res) => {
+  res.status(200).send('🚀 VideoGift API Backend is active and cruising smoothly!');
 });
 
-// THE MAIN UPLOAD ROUTE (Matches your upload.html perfectly)
-app.post('/api/upload', upload.single('video'), async (req, res) => {
-  try {
-    const { giftId, message } = req.body;
-    const file = req.file;
-
-    if (!giftId) return res.status(400).json({ error: "Missing Gift ID" });
-    if (!file) return res.status(400).json({ error: "No video file uploaded" });
-
-    // 1. Upload video file to Supabase Storage Bucket named 'videos'
-    const fileName = `${giftId}-${Date.now()}.mp4`;
-    const { data: storageData, error: storageError } = await supabase.storage
-      .from('videos')
-      .upload(fileName, file.buffer, { contentType: file.mimetype });
-
-    if (storageError) throw storageError;
-
-    // 2. Grab the public anonymous direct video download link
-    const { data: urlData } = supabase.storage
-      .from('videos')
-      .getPublicUrl(fileName);
-
-    const videoUrl = urlData.publicUrl;
-
-    // 3. Save the video link and written message directly into your tracking table
-    const { error: dbError } = await supabase
-      .from('gifts') 
-      .update({ video_url: videoUrl, message: message, status: 'sealed' })
-      .eq('id', giftId);
-
-    if (dbError) throw dbError;
-
-    res.json({ success: true, videoUrl });
-
-  } catch (error) {
-    console.error("Server processing error:", error);
-    res.status(500).json({ error: error.message || "Internal server crash" });
-  }
-});
-
-// Live route for watch.html to read the video and message
+// ── ROUTE 2: LOOKUP GIFT ROW STATUS (Used by watch.html & upload.html) ──
 app.get('/api/gift/:id', async (req, res) => {
+  const giftId = req.params.id;
   try {
     const { data, error } = await supabase
       .from('gifts')
       .select('*')
-      .eq('id', req.params.id)
+      .eq('id', giftId)
       .single();
 
-    if (error || !data) return res.status(404).json({ error: "Gift record not found" });
-    res.json(data);
-  } catch (error) {
-    res.status(500).json({ error: error.message });
+    if (error || !data) {
+      return res.status(404).json({ error: 'Gift record ID not found in database.' });
+    }
+    res.status(200).json(data);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
   }
 });
-// 1. Endpoint for your "Generate" button: Registers new card IDs directly into Supabase
+
+// ── ROUTE 3: ADMIN BATCH GENERATION INSERT (Used by your admin.html) ──
 app.post('/api/admin/batch-insert', async (req, res) => {
-  const { cards } = req.body; 
+  const { cards } = req.body; // Array of generated string IDs
   if (!cards || !Array.isArray(cards)) {
     return res.status(400).json({ error: 'Invalid data format provided.' });
   }
 
-  // Map your array of string IDs into objects that fit your Supabase table schema
+  // Create empty placeholder rows to register IDs ahead of time
   const rows = cards.map(id => ({ 
     id: id, 
-    status: 'pending' // Matches the default status your admin.html uses
+    status: 'pending',
+    video_url: null,
+    message: null
   }));
 
   try {
     const { error } = await supabase.from('gifts').insert(rows);
     if (error) throw error;
-    res.status(200).json({ success: true, message: 'IDs safely stored in cloud database.' });
+    res.status(200).json({ success: true, message: 'IDs registered safely inside database.' });
   } catch (error) {
-    console.error('Database Sync Error:', error);
+    console.error('Database Admin Insert Error:', error);
     res.status(500).json({ error: error.message });
   }
 });
 
-// 2. Endpoint for your page's tracking system: Keeps tabs on uploaded/viewed gifts
+// ── ROUTE 4: ADMIN STATUS TRACKING SYNC (Used by your admin.html syncStatuses) ──
 app.post('/api/gifts/status', async (req, res) => {
   const { ids } = req.body;
   if (!ids || !Array.isArray(ids)) {
-    return res.status(400).json({ error: 'Invalid or missing ID array.' });
+    return res.status(400).json({ error: 'Missing or invalid ID array.' });
   }
 
   try {
@@ -120,7 +95,7 @@ app.post('/api/gifts/status', async (req, res) => {
 
     if (error) throw error;
 
-    // Structure the response exactly how your admin.html frontend parses it
+    // Build key-value map response structured for the admin script layout
     const statuses = {};
     data.forEach(row => {
       statuses[row.id] = row.status;
@@ -128,35 +103,91 @@ app.post('/api/gifts/status', async (req, res) => {
 
     res.status(200).json({ statuses });
   } catch (error) {
-    console.error('Status Check Failed:', error);
+    console.error('Status sync lookup failed:', error);
     res.status(500).json({ error: error.message });
   }
 });
-app.listen(port, () => {
-  console.log(`Server cruising smoothly on port ${port}`);
+
+// ── ROUTE 5: USER VIDEO UPLOAD AND ATTACHMENT (Used by upload.html) ──
+// CRITICAL FIX: Changed from .insert() to .update().eq('id', giftId) to prevent RLS blocks.
+app.post('/api/upload', upload.single('video'), async (req, res) => {
+  const { giftId, message } = req.body;
+  const file = req.file;
+
+  if (!giftId) {
+    return res.status(400).json({ error: 'Missing target Gift ID.' });
+  }
+  if (!file) {
+    return res.status(400).json({ error: 'No video media file attached.' });
+  }
+
+  try {
+    // 1. Generate a unique name for the file path inside your Supabase Storage bucket
+    const fileExtension = file.originalname.split('.').pop() || 'mp4';
+    const fileName = `${giftId}-${Date.now()}.${fileExtension}`;
+    const filePath = `videos/${fileName}`;
+
+    // 2. Upload file to Supabase Storage Bucket (Assumes bucket name is 'videos')
+    const { error: storageError } = await supabase.storage
+      .from('videos')
+      .upload(filePath, file.buffer, {
+        contentType: file.mimetype,
+        cacheControl: '3600',
+        upsert: true
+      });
+
+    if (storageError) throw storageError;
+
+    // 3. Construct the official Public URL link path for your video
+    const { data: urlData } = supabase.storage
+      .from('videos')
+      .getPublicUrl(filePath);
+
+    const publicVideoUrl = urlData.publicUrl;
+
+    // 4. FIX: Use .update() instead of .insert() to update the pre-existing row ID
+    const { error: dbError } = await supabase
+      .from('gifts')
+      .update({
+        video_url: publicVideoUrl,
+        message: message || '',
+        status: 'uploaded' // Changes status to unwrap-ready state
+      })
+      .eq('id', giftId); // Targets the ID pre-created by the Admin panel
+
+    if (dbError) throw dbError;
+
+    res.status(200).json({ 
+      success: true, 
+      message: 'Gift sealed and database row updated successfully!',
+      video_url: publicVideoUrl
+    });
+
+  } catch (error) {
+    console.error('Upload Process Crash Error:', error);
+    res.status(500).json({ error: error.message || 'Internal pipeline processing breakdown.' });
+  }
 });
-// Admin Endpoint: Batch insert new card unique tokens into Supabase
-app.post('/api/admin/batch-insert', async (req, res) => {
-  const { cards } = req.body; // Array of string IDs
-  if (!cards || !Array.isArray(cards)) return res.status(400).json({ error: 'Invalid data' });
 
-  const rows = cards.map(id => ({ id, status: 'idle' }));
+// ── ROUTE 6: ADMIN CARD ROW DELETION (Used by admin.html) ──
+app.delete('/api/gift/:id', async (req, res) => {
+  const giftId = req.params.id;
+  try {
+    const { error } = await supabase
+      .from('gifts')
+      .delete()
+      .eq('id', giftId);
 
-  const { error } = await supabase.from('gifts').insert(rows);
-  if (error) return res.status(500).json({ error: error.message });
-
-  res.status(200).json({ success: true });
+    if (error) throw error;
+    res.status(200).json({ success: true, message: 'Card entry wiped clean.' });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
 });
 
-// Admin Endpoint: Check multiple ID statuses at once to display on screen tracking counters
-app.post('/api/gifts/status-check', async (req, res) => {
-  const { ids } = req.body;
-  if (!ids || !Array.isArray(ids)) return res.status(400).json({ error: 'Invalid data' });
-
-  const { data, error } = await supabase.from('gifts').select('id, status').in('id', ids);
-  if (error) return res.status(500).json({ error: error.message });
-
-  const statuses = {};
-  data.forEach(row => { statuses[row.id] = row.status; });
-  res.status(200).json({ statuses });
+// ── INITIALIZE NETWORK LISTENER ENGINE ──
+app.listen(PORT, () => {
+  console.log(`=================================================`);
+  console.log(` 🚀 Server cruising smoothly on port: ${PORT}   `);
+  console.log(`=================================================`);
 });
