@@ -25,412 +25,267 @@
       color: var(--ink);
       font-family: 'DM Sans', sans-serif;
       min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+      position: relative;
       overflow-x: hidden;
     }
 
-    /* Texture overlay */
     body::before {
       content: '';
       position: fixed;
       inset: 0;
-      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='300'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='300' height='300' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");
-      pointer-events: none;
-      z-index: 0;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='80' height='80' viewBox='0 0 80 80'%3E%3Cg fill='%23c9933a' fill-opacity='0.03'%3E%3Cpath d='M11 18c3.866 0 7-3.134 7-7s-3.134-7-7-7-7 3.134-7 7 3.134 7 7 7zm48 25c3.866 0 7-3.134 7-7s-3.134-7-7-7-7 3.134-7 7 3.134 7 7 7zm-43-7c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zm63 31c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zM34 90c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zm1-61c3.16 0 5.722-2.562 5.722-5.722 0-3.16-2.562-5.722-5.722-5.722C31.84 17.556 29.28 20.117 29.28 23.278c0 3.16 2.56 5.722 5.72 5.722zm40 10c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zM24 56c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4z'/%3E%3C/g%3E%3C/svg%3E");
+      z-index: -1;
     }
 
-    .page { position: relative; z-index: 1; }
-
-    /* ── Header ── */
-    header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      padding: 24px 40px;
-      border-bottom: 1px solid var(--cream);
-    }
-
-    .logo {
-      font-family: 'Playfair Display', serif;
-      font-size: 1.5rem;
-      letter-spacing: -0.02em;
-    }
-    .logo span { color: var(--gold); font-style: italic; }
-
-    .ribbon-badge {
-      background: var(--ribbon);
-      color: #fff;
-      font-size: 0.7rem;
-      font-weight: 500;
-      letter-spacing: 0.12em;
-      text-transform: uppercase;
-      padding: 4px 12px;
-      border-radius: 2px;
-    }
-
-    /* ── Hero ── */
-    .hero {
+    .container {
+      max-width: 480px;
+      width: 100%;
       text-align: center;
-      padding: 72px 24px 40px;
+      padding: 40px 24px;
+      background: rgba(250, 247, 242, 0.8);
+      backdrop-filter: blur(10px);
+      border: 1px solid rgba(201, 147, 58, 0.15);
+      border-radius: 24px;
+      box-shadow: 0 20px 40px rgba(13, 13, 13, 0.03);
     }
 
-    .hero-eyebrow {
-      font-size: 0.72rem;
-      letter-spacing: 0.2em;
-      text-transform: uppercase;
-      color: var(--gold);
-      margin-bottom: 16px;
-    }
-
-    .hero h1 {
+    .logo-mark {
       font-family: 'Playfair Display', serif;
-      font-size: clamp(2.4rem, 6vw, 4rem);
-      line-height: 1.1;
-      margin-bottom: 20px;
-    }
-
-    .hero h1 em {
-      font-style: italic;
-      color: var(--gold);
-    }
-
-    .hero p {
-      color: var(--muted);
-      font-size: 1.05rem;
-      font-weight: 300;
-      max-width: 420px;
-      margin: 0 auto 48px;
-      line-height: 1.7;
-    }
-
-    /* ── Cards ── */
-    .cards {
-      display: flex;
-      gap: 16px;
-      justify-content: center;
-      flex-wrap: wrap;
-      padding: 0 24px 64px;
-    }
-
-    .card {
-      background: #fff;
-      border: 1px solid var(--cream);
-      border-radius: 12px;
-      padding: 32px 28px;
-      width: 260px;
-      cursor: pointer;
-      transition: transform 0.2s, box-shadow 0.2s, border-color 0.2s;
-      text-align: left;
-      position: relative;
-      overflow: hidden;
-    }
-
-    .card::before {
-      content: '';
-      position: absolute;
-      top: 0; left: 0; right: 0;
-      height: 3px;
-      background: var(--gold);
-      transform: scaleX(0);
-      transform-origin: left;
-      transition: transform 0.3s;
-    }
-
-    .card:hover { transform: translateY(-4px); box-shadow: 0 16px 40px rgba(0,0,0,0.08); border-color: var(--gold-light); }
-    .card:hover::before { transform: scaleX(1); }
-
-    .card-icon {
-      font-size: 2.2rem;
-      margin-bottom: 16px;
-      display: block;
-    }
-
-    .card h2 {
-      font-family: 'Playfair Display', serif;
-      font-size: 1.25rem;
+      font-size: 2rem;
+      font-weight: 700;
+      color: var(--ink);
       margin-bottom: 8px;
+      letter-spacing: -0.5px;
     }
 
-    .card p {
-      font-size: 0.88rem;
+    .logo-sub {
+      font-size: 0.8rem;
+      text-transform: uppercase;
+      letter-spacing: 3px;
+      color: var(--gold);
+      margin-bottom: 48px;
+      font-weight: 500;
+    }
+
+    .hero-title {
+      font-family: 'Playfair Display', serif;
+      font-size: 1.75rem;
+      font-weight: 400;
+      font-style: italic;
+      color: var(--ink);
+      margin-bottom: 16px;
+      line-height: 1.3;
+    }
+
+    .hero-desc {
+      font-size: 0.95rem;
       color: var(--muted);
       line-height: 1.6;
+      margin-bottom: 40px;
     }
 
-    .card .cta {
+    .main-action-area {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      width: 100%;
+    }
+
+    .cta-btn {
       display: inline-flex;
       align-items: center;
-      gap: 6px;
-      margin-top: 20px;
-      font-size: 0.82rem;
+      justify-content: center;
+      background: var(--ink);
+      color: #fff;
+      padding: 16px 32px;
+      border-radius: 12px;
+      font-size: 0.95rem;
       font-weight: 500;
-      color: var(--gold);
       text-decoration: none;
+      border: 1px solid var(--ink);
+      cursor: pointer;
+      transition: all 0.25s ease;
+      box-shadow: 0 4px 12px rgba(13, 13, 13, 0.1);
     }
 
-    .card .cta::after { content: '→'; transition: transform 0.2s; }
-    .card:hover .cta::after { transform: translateX(4px); }
+    .cta-btn:hover {
+      background: #222;
+      transform: translateY(-1px);
+    }
 
-    /* ── Scanner Modal ── */
+    .cta-btn:disabled {
+      background: var(--muted);
+      border-color: var(--muted);
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    /* Modal Styling */
     .modal-overlay {
-      display: none;
       position: fixed;
       inset: 0;
-      background: rgba(13,13,13,0.7);
-      backdrop-filter: blur(4px);
-      z-index: 100;
+      background: rgba(13, 13, 13, 0.6);
+      backdrop-filter: blur(8px);
+      display: none;
       align-items: center;
       justify-content: center;
+      z-index: 100;
+      padding: 20px;
     }
 
-    .modal-overlay.active { display: flex; }
-
-    .modal {
+    .modal-card {
       background: var(--paper);
-      border-radius: 16px;
-      padding: 40px;
-      width: min(480px, 92vw);
+      width: 100%;
+      max-width: 400px;
+      border-radius: 24px;
+      padding: 32px 24px;
+      border: 1px solid var(--cream);
+      box-shadow: 0 24px 48px rgba(0,0,0,0.15);
       position: relative;
-      animation: slideUp 0.3s ease;
     }
 
-    @keyframes slideUp {
-      from { opacity: 0; transform: translateY(20px); }
-      to   { opacity: 1; transform: translateY(0); }
+    .modal-header {
+      font-family: 'Playfair Display', serif;
+      font-size: 1.35rem;
+      margin-bottom: 24px;
     }
 
-    .modal-close {
+    .close-btn {
       position: absolute;
-      top: 16px; right: 20px;
+      top: 20px;
+      right: 20px;
       background: none;
       border: none;
       font-size: 1.5rem;
       cursor: pointer;
       color: var(--muted);
-      line-height: 1;
-    }
-
-    .modal h2 {
-      font-family: 'Playfair Display', serif;
-      font-size: 1.5rem;
-      margin-bottom: 6px;
-    }
-
-    .modal-subtitle {
-      font-size: 0.85rem;
-      color: var(--muted);
-      margin-bottom: 24px;
     }
 
     #qr-reader {
-      border-radius: 10px;
+      width: 100% !important;
+      border: none !important;
+      border-radius: 16px;
       overflow: hidden;
+      background: #000;
     }
 
-    #qr-reader video { border-radius: 10px; }
+    #qr-reader __video {
+      object-fit: cover !important;
+    }
 
-    .manual-input {
-      margin-top: 20px;
+    .divider {
+      margin: 24px 0;
+      position: relative;
+      text-align: center;
+    }
+
+    .divider::before {
+      content: '';
+      position: absolute;
+      left: 0; top: 50%; width: 100%; height: 1px;
+      background: var(--cream);
+      z-index: 1;
+    }
+
+    .divider span {
+      position: relative;
+      z-index: 2;
+      background: var(--paper);
+      padding: 0 16px;
+      font-size: 0.8rem;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      color: var(--muted);
+    }
+
+    .manual-input-wrap {
       display: flex;
       gap: 8px;
     }
 
-    .manual-input input {
+    .manual-input {
       flex: 1;
-      padding: 10px 14px;
+      padding: 14px 16px;
+      border-radius: 10px;
       border: 1px solid var(--cream);
-      border-radius: 8px;
-      font-family: 'DM Sans', sans-serif;
-      font-size: 0.9rem;
       background: #fff;
+      font-family: inherit;
+      font-size: 0.95rem;
+      color: var(--ink);
       outline: none;
-      transition: border-color 0.2s;
     }
 
-    .manual-input input:focus { border-color: var(--gold); }
+    .manual-input:focus {
+      border-color: var(--gold);
+    }
 
-    .btn {
-      padding: 10px 20px;
-      background: var(--gold);
+    .manual-btn {
+      background: var(--ink);
       color: #fff;
       border: none;
-      border-radius: 8px;
-      font-family: 'DM Sans', sans-serif;
-      font-size: 0.9rem;
-      font-weight: 500;
+      padding: 0 20px;
+      border-radius: 10px;
       cursor: pointer;
-      transition: background 0.2s, transform 0.1s;
+      font-weight: 500;
     }
 
-    .btn:hover { background: var(--gold-light); }
-    .btn:active { transform: scale(0.97); }
-
-    /* ── Divider ── */
-    .divider {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      margin: 16px 0;
-      color: var(--muted);
-      font-size: 0.8rem;
-    }
-    .divider::before, .divider::after {
-      content: '';
-      flex: 1;
-      height: 1px;
-      background: var(--cream);
-    }
-
-    /* ── Footer ── */
     footer {
-      text-align: center;
-      padding: 32px;
-      font-size: 0.78rem;
+      position: absolute;
+      bottom: 24px;
+      font-size: 0.75rem;
       color: var(--muted);
-      border-top: 1px solid var(--cream);
-    }
-
-    @media (max-width: 600px) {
-      header { padding: 16px 20px; }
-      .hero { padding: 48px 20px 32px; }
-      .card { width: 100%; max-width: 340px; }
-      .modal { padding: 28px 20px; }
+      letter-spacing: 0.5px;
     }
   </style>
 </head>
 <body>
-<div class="page">
-  <header>
-    <div class="logo">Video<span>Gift</span></div>
-    <span class="ribbon-badge">✦ Gifting, reimagined</span>
-  </header>
 
-  <section class="hero">
-    <p class="hero-eyebrow">Personal video gifts via QR card</p>
-    <h1>Your message,<br><em>delivered with heart</em></h1>
-    <p>Scan the QR code on your gift card to send a personal video — or to watch one waiting just for you.</p>
-  </section>
+  <div class="container">
+    <div class="logo-mark">Forever 27</div>
+    <div class="logo-sub">Physical to Digital</div>
 
-  <div class="cards">
-    <div class="card" onclick="openModal('send')">
-      <span class="card-icon">🎬</span>
-      <h2>Send a Gift</h2>
-      <p>Scan the QR on your card and record or upload a personal video message for someone special.</p>
-      <span class="cta">Start recording</span>
-    </div>
-    <div class="card" onclick="openModal('receive')">
-      <span class="card-icon">🎁</span>
-      <h2>Watch Your Gift</h2>
-      <p>Received a card with a QR code? Scan it to watch your personal video gift.</p>
-      <span class="cta">Open my gift</span>
+    <h1 class="hero-title">Unwrap your memory</h1>
+    <p class="hero-desc">Scan the physical QR code on your gift card or label to upload or enjoy your personalized digital keepsake.</p>
+
+    <div class="main-action-area">
+      <button class="cta-btn" id="main-action-trigger" onclick="openModal()">
+        ✨ Scan QR Code
+      </button>
     </div>
   </div>
-</div>
 
-<!-- Scanner Modal -->
-<div class="modal-overlay" id="scanModal">
-  <div class="modal">
-    <button class="modal-close" onclick="closeModal()">×</button>
-    <h2 id="modal-title">Scan QR Code</h2>
-    <p class="modal-subtitle" id="modal-subtitle">Point your camera at the QR code on the card.</p>
-    <div id="qr-reader" style="width:100%;"></div>
-    <div class="divider">or enter code manually</div>
-    <div class="manual-input">
-      <input type="text" id="manual-code" placeholder="e.g. GIFT-A1B2C3" />
-      <button class="btn" onclick="goWithCode()">Go</button>
+  <div class="modal-overlay" id="scan-modal">
+    <div class="modal-card">
+      <button class="close-btn" onclick="closeModal()">&times;</button>
+      <div class="modal-header">Scan or Enter Code</div>
+      
+      <div id="qr-reader"></div>
+
+      <div class="divider"><span>or</span></div>
+
+      <div class="manual-input-wrap">
+        <input type="text" id="manual-code" class="manual-input" placeholder="Enter Gift ID manually..." autocomplete="off" />
+        <button class="manual-btn" onclick="goWithCode()">Go</button>
+      </div>
     </div>
   </div>
-</div>
 
-<footer>© 2025 VideoGift · Built with ❤️ · <a href="admin.html" style="color:var(--gold);text-decoration:none;">Admin</a></footer>
+  <footer>&copy; 2026 Forever 27. All Rights Reserved.</footer>
 
-<script>
-  let qrScanner = null;
-  let scanMode = 'send';
+  <script>
+    let qrScanner = null;
 
-  function openModal(mode) {
-    scanMode = mode;
-    document.getElementById('modal-title').textContent = mode === 'send' ? 'Scan to Send Gift' : 'Scan to Watch Gift';
-    document.getElementById('modal-subtitle').textContent = mode === 'send'
-      ? 'Scan the QR code on your card to upload a video.'
-      : 'Scan the QR code on your card to watch your gift.';
-    document.getElementById('scanModal').classList.add('active');
-    startScanner();
-  }
-
-  function closeModal() {
-    document.getElementById('scanModal').classList.remove('active');
-    if (qrScanner) {
-      qrScanner.stop().catch(() => {});
-      qrScanner = null;
+    function openModal() {
+      document.getElementById('scan-modal').style.display = 'flex';
+      startScanner();
     }
-  }
 
-  function startScanner() {
-    qrScanner = new Html5Qrcode("qr-reader");
-    qrScanner.start(
-      { facingMode: "environment" },
-      { fps: 10, qrbox: { width: 220, height: 220 } },
-      (decodedText) => {
+    function closeModal() {
+      if (qrScanner) {
         qrScanner.stop().then(() => {
           qrScanner = null;
-          closeModal();
-          navigateToGift(decodedText);
-        });
-      },
-      () => {}
-    ).catch(err => {
-      document.getElementById('qr-reader').innerHTML =
-        '<p style="text-align:center;color:var(--muted);padding:20px;font-size:0.85rem;">Camera not available. Please enter the code manually.</p>';
-    });
-  }
-
-  function goWithCode() {
-    const code = document.getElementById('manual-code').value.trim();
-    if (!code) return alert('Please enter a gift code.');
-    closeModal();
-    navigateToGift(code);
-  }
-
- async function navigateToGift(code) {
-  // 1. Extract the gift ID from the QR code string
-  let giftId = code;
-  try {
-    const url = new URL(code);
-    giftId = url.searchParams.get('id') || url.pathname.split('/').pop();
-  } catch(e) {}
-
-  if (!giftId) return alert('Please enter or scan a valid gift code.');
-
-  // Configuration: Uses your backend API base URL
-  const API_BASE = window.GIFT_API_BASE || 'https://your-backend-api.onrender.com';
-
-  try {
-    // 2. Check the backend database to see if this gift ID already has a video
-    const res = await fetch(`${API_BASE}/api/gift/${encodeURIComponent(giftId)}`);
-    
-    if (res.ok) {
-      const giftData = await res.json();
-      
-      // 3. If a video URL exists, send them straight to watch it!
-      if (giftData && giftData.videoUrl) {
-        window.location.href = `watch.html?id=${encodeURIComponent(giftId)}`;
-        return;
-      }
-    }
-    
-    // 4. If the database returns an error or videoUrl is empty, send them to upload!
-    window.location.href = `upload.html?id=${encodeURIComponent(giftId)}`;
-
-  } catch(e) {
-    // Fallback: If your server is down or checking fails, default to the upload screen
-    window.location.href = `upload.html?id=${encodeURIComponent(giftId)}`;
-  }
-}
-
-  // Close on overlay click
-  document.getElementById('scanModal').addEventListener('click', function(e) {
-    if (e.target === this) closeModal();
-  });
-</script>
-</body>
-</html>
