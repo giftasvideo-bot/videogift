@@ -1,9 +1,9 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Forever 27 | Your Gift</title>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>VideoGift — Your Gift Awaits</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,700;1,400&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
   <style>
@@ -11,146 +11,136 @@
       --ink: #0d0d0d;
       --paper: #faf7f2;
       --gold: #c9933a;
+      --gold-light: #e8b86d;
       --cream: #f0ead8;
       --muted: #7a7060;
-      --error: #b23b3b;
+      --ribbon: #8b2635;
     }
-
-    * { margin: 0; padding: 0; box-sizing: border-box; }
-
+    * { margin:0; padding:0; box-sizing:border-box; }
     body {
-      background: var(--paper);
-      color: var(--ink);
+      background: var(--ink);
+      color: #fff;
       font-family: 'DM Sans', sans-serif;
       min-height: 100vh;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      padding: 20px;
+      display: flex; flex-direction: column;
     }
 
-    .card {
-      max-width: 480px;
-      width: 100%;
-      background: #fff;
-      border: 1px solid rgba(201, 147, 58, 0.15);
-      border-radius: 24px;
-      padding: 32px 24px;
-      box-shadow: 0 20px 40px rgba(13, 13, 13, 0.02);
-      text-align: center;
+    body::before {
+      content: ''; position: fixed; inset: 0;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='80' height='80' viewBox='0 0 80 80'%3E%3Cg fill='%23ffffff' fill-opacity='0.02'%3E%3Cpath d='M11 18c3.866 0 7-3.134 7-7s-3.134-7-7-7-7 3.134-7 7 3.134 7 7 7zm48 25c3.866 0 7-3.134 7-7s-3.134-7-7-7-7 3.134-7 7 3.134 7 7 7zm-43-7c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zm63 31c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zM34 90c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zm1-61c3.16 0 5.722-2.562 5.722-5.722 0-3.16-2.562-5.722-5.722-5.722C31.84 17.556 29.28 20.117 29.28 23.278c0 3.16 2.56 5.722 5.72 5.722zm40 10c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zM24 56c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4z'/%3E%3C/g%3E%3C/svg%3E");
+      z-index: 1; pointer-events: none;
     }
 
-    .brand-title {
-      font-family: 'Playfair Display', serif;
-      font-size: 1.8rem;
-      font-weight: 700;
-      margin-bottom: 4px;
+    .app-wrap {
+      flex: 1; display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      padding: 24px; position: relative; z-index: 2;
+      width: 100%; max-width: 480px; margin: 0 auto;
     }
 
-    .brand-sub {
-      font-size: 0.75rem;
-      text-transform: uppercase;
-      letter-spacing: 2px;
-      color: var(--gold);
-      margin-bottom: 32px;
-    }
+    header { text-align: center; margin-bottom: 40px; }
+    .logo { font-family: 'Playfair Display', serif; font-size: 1.5rem; font-weight: 700; letter-spacing: -0.5px; margin-bottom: 4px; }
+    .tagline { font-size: 0.7rem; text-transform: uppercase; letter-spacing: 2px; color: var(--gold); }
 
-    /* Video Player Wrapper */
-    .video-wrapper {
-      position: relative;
-      width: 100%;
-      border-radius: 16px;
-      overflow: hidden;
-      background: #000;
-      aspect-ratio: 9 / 16; /* Optimized for vertical smartphone videos */
-      box-shadow: 0 12px 24px rgba(0,0,0,0.1);
-      margin-bottom: 24px;
-      display: none; /* Shown dynamically when loaded */
-    }
-
-    video {
-      width: 100%;
-      height: 100%;
-      object-fit: cover;
-    }
-
-    .message-box {
-      font-family: 'Playfair Display', serif;
-      font-size: 1.15rem;
-      font-style: italic;
-      line-height: 1.6;
-      color: var(--ink);
-      margin-top: 16px;
-      padding: 0 8px;
-      display: none;
-    }
-
-    /* Dynamic State Screens */
-    .state-screen {
-      padding: 40px 0;
+    .state-panel {
+      width: 100%; display: flex; flex-direction: column; align-items: center; text-align: center;
     }
 
     .spinner {
-      width: 40px;
-      height: 40px;
-      border: 3px solid var(--cream);
-      border-top-color: var(--gold);
-      border-radius: 50%;
-      margin: 0 auto 16px auto;
-      animation: spin 1s linear infinite;
+      width: 28px; height: 28px; border: 2px solid rgba(255,255,255,0.1);
+      border-top-color: var(--gold); border-radius: 50%;
+      animation: spin 0.8s linear infinite; margin-bottom: 16px;
     }
+    @keyframes spin { to { transform: rotate(360deg); } }
 
-    @keyframes spin {
-      to { transform: rotate(360deg); }
-    }
+    .status-msg { font-size: 0.9rem; color: #b5b0a5; font-weight: 300; }
 
-    .state-text {
-      font-size: 0.95rem;
-      color: var(--muted);
+    /* Unwrap Ribbon Screen */
+    .envelope-box {
+      background: #161616; border: 1px solid #262626; border-radius: 24px;
+      padding: 48px 24px; width: 100%; box-shadow: 0 30px 60px rgba(0,0,0,0.4);
     }
+    .env-title { font-family: 'Playfair Display', serif; font-size: 1.8rem; font-weight: 400; font-style: italic; margin-bottom: 8px; }
+    .env-sub { font-size: 0.85rem; color: #b5b0a5; margin-bottom: 32px; }
+    
+    .ribbon-btn {
+      background: var(--ribbon); color: #fff; border: none; padding: 16px 36px;
+      border-radius: 12px; font-family: inherit; font-size: 0.95rem; font-weight: 500;
+      cursor: pointer; transition: all 0.25s; box-shadow: 0 8px 20px rgba(139,38,53,0.3);
+    }
+    .ribbon-btn:hover { background: #a63243; transform: translateY(-1px); }
 
-    .error-text {
-      color: var(--error);
-      font-size: 0.95rem;
-      line-height: 1.5;
+    /* Video Player Screen */
+    .player-box { width: 100%; display: flex; flex-direction: column; gap: 24px; }
+    .video-viewport {
+      width: 100%; aspect-ratio: 9/16; background: #000; border-radius: 20px;
+      overflow: hidden; box-shadow: 0 20px 50px rgba(0,0,0,0.5);
     }
+    video { width: 100%; height: 100%; object-fit: cover; }
 
-    footer {
-      margin-top: 32px;
-      font-size: 0.75rem;
-      color: var(--muted);
+    .letter-box {
+      background: var(--paper); color: var(--ink); border-radius: 20px;
+      padding: 32px 24px; text-align: left; box-shadow: 0 10px 30px rgba(0,0,0,0.2);
     }
+    .letter-text { font-family: 'Playfair Display', serif; font-size: 1.2rem; font-style: italic; line-height: 1.6; margin-bottom: 20px; }
+    .letter-meta { font-size: 0.75rem; color: var(--muted); text-transform: uppercase; letter-spacing: 1px; }
+
+    .action-row { display: flex; gap: 12px; width: 100%; margin-top: 8px; }
+    .secondary-btn {
+      flex: 1; background: rgba(255,255,255,0.05); color: #fff; border: 1px solid rgba(255,255,255,0.1);
+      padding: 14px; border-radius: 10px; font-size: 0.85rem; cursor: pointer; text-align: center; text-decoration: none;
+    }
+    .secondary-btn:hover { background: rgba(255,255,255,0.1); }
   </style>
 </head>
 <body>
 
-  <div class="card">
-    <div class="brand-title">Forever 27</div>
-    <div class="brand-sub">A Digital Keepsake</div>
+  <div class="app-wrap">
+    <header>
+      <div class="logo">Forever 27</div>
+      <div class="tagline">Digital Keepsake</div>
+    </header>
 
-    <div id="loading-state" class="state-screen">
+    <div id="loading-state" class="state-panel">
       <div class="spinner"></div>
-      <p class="state-text">Unwrapping your video memory...</p>
+      <p class="status-msg">Connecting to media vault...</p>
     </div>
 
-    <div id="player-state" style="display: none;">
-      <div class="video-wrapper">
-        <video id="gift-video" controls playsinline controlsList="nodownload"></video>
+    <div id="unwrap-screen" class="state-panel" style="display: none;">
+      <div class="envelope-box">
+        <h2 class="env-title">A gift awaits you</h2>
+        <p class="env-sub">Someone sent you a personalized video memory.</p>
+        <button class="ribbon-btn" onclick="revealGift()">✨ Unwrap Gift</button>
       </div>
-      <div id="gift-message" class="message-box"></div>
     </div>
 
-    <div id="error-state" class="state-screen" style="display: none;">
-      <p id="error-message" class="error-text">Something went wrong.</p>
+    <div id="gift-state" class="state-panel" style="display: none; width:100%;">
+      <div class="player-box">
+        <div class="video-viewport">
+          <video id="gift-video" controls playsinline controlsList="nodownload"></video>
+        </div>
+        
+        <div id="gift-note" class="letter-box" style="display: none;">
+          <p id="gift-message-text" class="letter-text"></p>
+          <p id="gift-sent-at" class="letter-meta"></p>
+        </div>
+
+        <div class="action-row">
+          <a id="download-link" class="secondary-btn" onclick="downloadVideo()">Save Video</a>
+          <a href="index.html" class="secondary-btn">Scan Another</a>
+        </div>
+      </div>
+    </div>
+
+    <div id="not-found-state" class="state-panel" style="display: none;">
+      <p class="status-msg" id="error-message" style="color: var(--gold); padding: 20px; line-height: 1.5;"></p>
     </div>
   </div>
 
-  <footer>&copy; 2026 Forever 27</footer>
-
   <script>
-    // Hardcoded permanent API connection link
     const API_BASE = 'https://videogift-backend-3.onrender.com';
+    let giftId = '';
+    let giftData = null;
 
     document.addEventListener("DOMContentLoaded", () => {
       fetchGiftDetails();
@@ -158,70 +148,79 @@
 
     async function fetchGiftDetails() {
       const urlParams = new URLSearchParams(window.location.search);
-      const giftId = urlParams.get('id');
+      giftId = urlParams.get('id');
 
       if (!giftId) {
-        showError("No unique Gift ID detected. Please scan your physical QR card code again.");
+        showError("Invalid link. Please scan the original physical QR card item again.");
         return;
       }
 
       try {
         const response = await fetch(`${API_BASE}/api/gift/${encodeURIComponent(giftId)}`);
         
-        // ── SMART REDIRECT LOGIC ──
-        // If the database returns a 404 (Not Found), it means this is a fresh empty gift token card!
+        // ── THE AUTOMATIC ROUTER FIX ──
+        // If the database says 404 (Not Found) or the card contains no data, skip the error screen completely!
         if (response.status === 404) {
           window.location.href = `upload.html?id=${encodeURIComponent(giftId)}`;
           return;
         }
 
-        if (!response.ok) throw new Error("Server communication fault");
+        if (!response.ok) throw new Error();
 
-        const data = await response.json();
+        giftData = await response.json();
 
-        // If the row exists but there is no video tracking URL saved yet, redirect to upload
-        if (!data || !data.videoUrl) {
+        // If the entry placeholder exists but doesn't have a streaming path link yet
+        if (!giftData || !giftData.videoUrl) {
           window.location.href = `upload.html?id=${encodeURIComponent(giftId)}`;
           return;
         }
 
-        // Target found and loaded successfully! Fire up the visual playback interface
-        renderWatchUI(data);
+        // Target found! Stop loading and prompt to open it
+        document.getElementById('loading-state').style.display = 'none';
+        document.getElementById('unwrap-screen').style.display = 'flex';
         
-        // Quietly signal back to the server to change database status row to "viewed"
+        // Let database know it's opened
         markAsViewed(giftId);
 
       } catch (error) {
-        console.error("Fetch Exception:", error);
-        showError("Unable to establish a link to the media server. Please check your network connection.");
+        console.error(error);
+        showError("Unable to reach the server database right now. Please check your internet collection.");
       }
     }
 
-    function renderWatchUI(giftData) {
-      document.getElementById('loading-state').style.display = 'none';
-      document.getElementById('player-state').style.display = 'block';
+    function revealGift() {
+      document.getElementById('unwrap-screen').style.display = 'none';
+      document.getElementById('gift-state').style.display = 'flex';
 
-      // Load Video Source Link
-      const videoElement = document.getElementById('gift-video');
-      videoElement.src = giftData.videoUrl;
+      const video = document.getElementById('gift-video');
+      video.src = giftData.videoUrl;
+      video.play().catch(() => {});
 
-      // Load Text Note if left by sender
       if (giftData.message && giftData.message.trim() !== "") {
-        const msgBox = document.getElementById('gift-message');
-        msgBox.textContent = `"${giftData.message}"`;
-        msgBox.style.display = 'block';
+        document.getElementById('gift-message-text').textContent = giftData.message;
+        document.getElementById('gift-sent-at').textContent =
+          'Uploaded ' + new Date(giftData.createdAt).toLocaleDateString('en-US', { year:'numeric', month:'long', day:'numeric' });
+        document.getElementById('gift-note').style.display = 'block';
       }
     }
 
-    function showError(messageString) {
+    function showError(msg) {
       document.getElementById('loading-state').style.display = 'none';
-      document.getElementById('player-state').style.display = 'none';
+      document.getElementById('unwrap-screen').style.display = 'none';
+      document.getElementById('gift-state').style.display = 'none';
       
-      const errorStateBox = document.getElementById('error-state');
-      const errorMsgLabel = document.getElementById('error-message');
-      
-      errorMsgLabel.textContent = messageString;
-      errorStateBox.style.display = 'block';
+      const label = document.getElementById('error-message');
+      label.textContent = msg;
+      document.getElementById('not-found-state').style.display = 'flex';
+    }
+
+    function downloadVideo() {
+      if (!giftData || !giftData.videoUrl) return;
+      const a = document.createElement('a');
+      a.href = giftData.videoUrl;
+      a.download = `gift-${giftId}.mp4`;
+      a.target = '_blank';
+      a.click();
     }
 
     async function markAsViewed(id) {
@@ -230,9 +229,7 @@
           method: 'POST',
           headers: { 'Content-Type': 'application/json' }
         });
-      } catch (e) {
-        console.warn("View acknowledgement could not register structural status change.");
-      }
+      } catch (e) {}
     }
   </script>
 </body>
