@@ -86,3 +86,28 @@ app.get('/api/gift/:id', async (req, res) => {
 app.listen(port, () => {
   console.log(`Server cruising smoothly on port ${port}`);
 });
+// Admin Endpoint: Batch insert new card unique tokens into Supabase
+app.post('/api/admin/batch-insert', async (req, res) => {
+  const { cards } = req.body; // Array of string IDs
+  if (!cards || !Array.isArray(cards)) return res.status(400).json({ error: 'Invalid data' });
+
+  const rows = cards.map(id => ({ id, status: 'idle' }));
+
+  const { error } = await supabase.from('gifts').insert(rows);
+  if (error) return res.status(500).json({ error: error.message });
+
+  res.status(200).json({ success: true });
+});
+
+// Admin Endpoint: Check multiple ID statuses at once to display on screen tracking counters
+app.post('/api/gifts/status-check', async (req, res) => {
+  const { ids } = req.body;
+  if (!ids || !Array.isArray(ids)) return res.status(400).json({ error: 'Invalid data' });
+
+  const { data, error } = await supabase.from('gifts').select('id, status').in('id', ids);
+  if (error) return res.status(500).json({ error: error.message });
+
+  const statuses = {};
+  data.forEach(row => { statuses[row.id] = row.status; });
+  res.status(200).json({ statuses });
+});

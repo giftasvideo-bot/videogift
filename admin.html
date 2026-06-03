@@ -71,15 +71,17 @@
       transition:box-shadow 0.2s; cursor:pointer;
     }
     .qr-card:hover { box-shadow:0 8px 24px rgba(0,0,0,0.07); }
-    .qr-card canvas { max-width:140px !important; }
-    .qr-id { font-size:0.72rem; color:var(--muted); margin-top:10px; word-break:break-all; }
+    .qr-card canvas { max-width:140px !important; margin: 0 auto; }
+    .qr-id { font-size:0.72rem; color:var(--muted); margin-top:10px; word-break:break-all; font-family: monospace; font-weight: bold; }
     .qr-status {
       display:inline-block; font-size:0.68rem; padding:2px 8px;
       border-radius:10px; margin-top:6px; font-weight:500;
+      text-transform: uppercase;
     }
-    .qr-status.pending { background:#fff3e0; color:#e65100; }
-    .qr-status.uploaded { background:#e8f5e9; color:#2e7d32; }
+    .qr-status.idle, .qr-status.pending { background:#fff3e0; color:#e65100; }
+    .qr-status.sealed, .qr-status.uploaded { background:#e8f5e9; color:#2e7d32; }
     .qr-status.viewed { background:#e3f2fd; color:#1565c0; }
+
 
     .qr-actions { display:flex; gap:6px; justify-content:center; margin-top:10px; flex-wrap:wrap; }
     .qr-actions button {
@@ -122,7 +124,6 @@
   <h1>Admin Dashboard</h1>
   <p class="subtitle">Generate QR codes for gift cards and track gift status.</p>
 
-  <!-- Stats -->
   <div class="panel">
     <h2>Overview</h2>
     <div class="stats-row">
@@ -132,7 +133,6 @@
     </div>
   </div>
 
-  <!-- API Config -->
   <div class="panel">
     <h2>⚙️ API Configuration</h2>
     <p style="font-size:0.85rem;color:var(--muted);margin-bottom:14px;">Set your backend API URL (e.g. from Render.com)</p>
@@ -143,14 +143,13 @@
     </div>
   </div>
 
-  <!-- Generate QR Codes -->
   <div class="panel">
     <h2>🎴 Generate Gift QR Codes</h2>
     <p style="font-size:0.85rem;color:var(--muted);margin-bottom:16px;">Create QR codes to print on physical gift cards.</p>
     <div class="input-row">
       <input type="number" id="gen-count" placeholder="How many? (e.g. 10)" min="1" max="100" value="1"/>
       <input type="text" id="gen-prefix" placeholder="Prefix (e.g. XMAS25)" />
-      <button class="btn" onclick="generateQRCodes()">Generate</button>
+      <button class="btn" id="generate-btn" onclick="generateQRCodes()">Generate</button>
       <button class="btn secondary" onclick="printAll()">🖨 Print All</button>
     </div>
     <div id="qr-grid"></div>
@@ -158,13 +157,14 @@
 </div>
 
 <script>
-  const SITE_BASE = location.origin + location.pathname.replace('admin.html','');
+  // Point this to your live production frontend root directory folder containing watch.html
+  const SITE_BASE = window.location.origin + window.location.pathname.replace('admin.html', '');
   let cards = JSON.parse(localStorage.getItem('vg_cards') || '[]');
 
-  // ── API URL ──
-  const storedApi = localStorage.getItem('vg_api_base') || '';
+  // ── API URL Initializer ──
+  const storedApi = localStorage.getItem('vg_api_base') || 'https://videogift-backend-3.onrender.com';
   document.getElementById('api-url-input').value = storedApi;
-  if (storedApi) window.GIFT_API_BASE = storedApi;
+  window.GIFT_API_BASE = storedApi;
 
   function saveApiUrl() {
     const url = document.getElementById('api-url-input').value.trim();
@@ -173,44 +173,82 @@
     const note = document.getElementById('saved-note');
     note.style.display = 'inline';
     setTimeout(() => note.style.display = 'none', 2000);
+    syncStatuses();
   }
 
-  // ── Stats ──
+  // ── Stats Calculation ──
   function updateStats() {
     document.getElementById('stat-total').textContent = cards.length;
-    document.getElementById('stat-uploaded').textContent = cards.filter(c=>c.status==='uploaded'||c.status==='viewed').length;
+    document.getElementById('stat-uploaded').textContent = cards.filter(c=>c.status==='sealed'||c.status==='uploaded'||c.status==='viewed').length;
     document.getElementById('stat-viewed').textContent = cards.filter(c=>c.status==='viewed').length;
   }
 
-  // ── Generate ──
+  // ── ID Random Engine Generator ──
   function generateId(prefix) {
     const chars = 'ABCDEFGHIJKLMNPQRSTUVWXYZ123456789';
     const rand = Array.from({length:6}, () => chars[Math.floor(Math.random()*chars.length)]).join('');
     return prefix ? `${prefix.toUpperCase()}-${rand}` : `GIFT-${rand}`;
   }
 
-  function generateQRCodes() {
+  // ── NEW WORKFLOW: SYNC LIVE LOGS WITH BACKEND DATABASE ──
+  async function generateQRCodes() {
     const count = parseInt(document.getElementById('gen-count').value) || 1;
     const prefix = document.getElementById('gen-prefix').value.trim();
-
-    for (let i = 0; i < count; i++) {
-      const id = generateId(prefix);
-      cards.push({ id, status:'pending', createdAt: new Date().toISOString() });
+    const btn = document.getElementById('generate-btn');
+    
+    if (!window.GIFT_API_BASE) {
+      alert('Please configure and save your Backend API URL first!');
+      return;
     }
-    localStorage.setItem('vg_cards', JSON.stringify(cards));
-    renderCards();
-    updateStats();
+
+    btn.disabled = true;
+    btn.textContent = 'Syncing...';
+
+    const localGeneratedBatch = [];
+    for (let i = 0; i < count; i++) {
+      const generatedId = generateId(prefix);
+      localGeneratedBatch.push({
+        id: generatedId,
+        status: 'idle',
+        createdAt: new Date().toISOString()
+      });
+    }
+
+    try {
+      // Send the generated IDs to your backend row database
+      const response = await fetch(`${window.GIFT_API_BASE}/api/admin/batch-insert`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ cards: localGeneratedBatch.map(c => c.id) })
+      });
+
+      if (!response.ok) throw new Error('Database insertion rejected.');
+
+      // If database successfully logs them, push onto local list display layout
+      cards = [...cards, ...localGeneratedBatch];
+      localStorage.setItem('vg_cards', JSON.stringify(cards));
+      
+      renderCards();
+      updateStats();
+    } catch (err) {
+      console.error(err);
+      alert('Failed to pre-register IDs in database. Check that your server is online and try again.');
+    } finally {
+      btn.disabled = false;
+      btn.textContent = 'Generate';
+    }
   }
 
-  // ── Render ──
+  // ── Visual Canvas Grid Render ──
   function renderCards() {
     const grid = document.getElementById('qr-grid');
     grid.innerHTML = '';
+    
     [...cards].reverse().forEach(card => {
       const div = document.createElement('div');
       div.className = 'qr-card';
       div.innerHTML = `
-        <div id="qr-${card.id}"></div>
+        <div id="qr-${card.id}" style="display:flex; justify-content:center;"></div>
         <div class="qr-id">${card.id}</div>
         <span class="qr-status ${card.status}">${card.status}</span>
         <div class="qr-actions">
@@ -245,39 +283,46 @@
     navigator.clipboard.writeText(url).then(() => alert('Link copied:\n' + url));
   }
 
-  function deleteCard(id) {
-    if (!confirm(`Delete card ${id}? This cannot be undone.`)) return;
+  async function deleteCard(id) {
+    if (!confirm(`Delete card ${id} from local list and database?`)) return;
+    try {
+      await fetch(`${window.GIFT_API_BASE}/api/gift/${encodeURIComponent(id)}`, { method: 'DELETE' });
+    } catch (e) {}
+    
     cards = cards.filter(c => c.id !== id);
     localStorage.setItem('vg_cards', JSON.stringify(cards));
-    renderCards(); updateStats();
+    renderCards(); 
+    updateStats();
   }
 
   function printAll() {
     window.print();
   }
 
-  // ── Poll status from API ──
+  // ── Poll and Refresh Realtime Tracking Status ──
   async function syncStatuses() {
-    const apiBase = localStorage.getItem('vg_api_base');
-    if (!apiBase || cards.length === 0) return;
+    if (!window.GIFT_API_BASE || cards.length === 0) return;
     try {
-      const ids = cards.map(c=>c.id);
-      const res = await fetch(`${apiBase}/api/gifts/status`, {
-        method:'POST',
-        headers:{'Content-Type':'application/json'},
-        body:JSON.stringify({ids})
+      const ids = cards.map(c => c.id);
+      const res = await fetch(`${window.GIFT_API_BASE}/api/gifts/status-check`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ids })
       });
       if (!res.ok) return;
-      const data = await res.json(); // { statuses: { id: 'uploaded'|'viewed'|'pending' } }
-      cards = cards.map(c => ({...c, status: data.statuses[c.id] || c.status }));
+      const data = await res.json(); // returns { statuses: { ID: 'status' } }
+      
+      cards = cards.map(c => ({ ...c, status: data.statuses[c.id] || c.status }));
       localStorage.setItem('vg_cards', JSON.stringify(cards));
-      renderCards(); updateStats();
+      renderCards(); 
+      updateStats();
     } catch(e){}
   }
 
+  // Init
   renderCards();
   updateStats();
-  syncStatuses();
+  setTimeout(syncStatuses, 1000);
 </script>
 </body>
 </html>
