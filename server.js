@@ -2,8 +2,7 @@ require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
 const multer = require('multer');
-const { createClient } = require('@supabase/supabase-core');
-const { SupabaseClient } = require('@supabase/supabase-js');
+const { createClient } = require('@supabase/supabase-js');
 
 const app = express();
 const PORT = process.env.PORT || 10000;
@@ -21,8 +20,8 @@ if (!supabaseUrl || !supabaseAnonKey) {
   process.exit(1);
 }
 
-// Initialize the Supabase Client
-const supabase = new SupabaseClient(supabaseUrl, supabaseAnonKey);
+// Initialize the Supabase Client securely using the standard library
+const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
 // Configure Multer for temporary memory buffer file storage
 const storage = multer.memoryStorage();
@@ -55,9 +54,9 @@ app.get('/api/gift/:id', async (req, res) => {
   }
 });
 
-// ── ROUTE 3: ADMIN BATCH GENERATION INSERT (Used by your admin.html) ──
+// ── ROUTE 3: ADMIN BATCH GENERATION INSERT (Used by admin.html) ──
 app.post('/api/admin/batch-insert', async (req, res) => {
-  const { cards } = req.body; // Array of generated string IDs
+  const { cards } = req.body; 
   if (!cards || !Array.isArray(cards)) {
     return res.status(400).json({ error: 'Invalid data format provided.' });
   }
@@ -80,114 +79,5 @@ app.post('/api/admin/batch-insert', async (req, res) => {
   }
 });
 
-// ── ROUTE 4: ADMIN STATUS TRACKING SYNC (Used by your admin.html syncStatuses) ──
-app.post('/api/gifts/status', async (req, res) => {
-  const { ids } = req.body;
-  if (!ids || !Array.isArray(ids)) {
-    return res.status(400).json({ error: 'Missing or invalid ID array.' });
-  }
-
-  try {
-    const { data, error } = await supabase
-      .from('gifts')
-      .select('id, status')
-      .in('id', ids);
-
-    if (error) throw error;
-
-    // Build key-value map response structured for the admin script layout
-    const statuses = {};
-    data.forEach(row => {
-      statuses[row.id] = row.status;
-    });
-
-    res.status(200).json({ statuses });
-  } catch (error) {
-    console.error('Status sync lookup failed:', error);
-    res.status(500).json({ error: error.message });
-  }
-});
-
-// ── ROUTE 5: USER VIDEO UPLOAD AND ATTACHMENT (Used by upload.html) ──
-// CRITICAL FIX: Changed from .insert() to .update().eq('id', giftId) to prevent RLS blocks.
-app.post('/api/upload', upload.single('video'), async (req, res) => {
-  const { giftId, message } = req.body;
-  const file = req.file;
-
-  if (!giftId) {
-    return res.status(400).json({ error: 'Missing target Gift ID.' });
-  }
-  if (!file) {
-    return res.status(400).json({ error: 'No video media file attached.' });
-  }
-
-  try {
-    // 1. Generate a unique name for the file path inside your Supabase Storage bucket
-    const fileExtension = file.originalname.split('.').pop() || 'mp4';
-    const fileName = `${giftId}-${Date.now()}.${fileExtension}`;
-    const filePath = `videos/${fileName}`;
-
-    // 2. Upload file to Supabase Storage Bucket (Assumes bucket name is 'videos')
-    const { error: storageError } = await supabase.storage
-      .from('videos')
-      .upload(filePath, file.buffer, {
-        contentType: file.mimetype,
-        cacheControl: '3600',
-        upsert: true
-      });
-
-    if (storageError) throw storageError;
-
-    // 3. Construct the official Public URL link path for your video
-    const { data: urlData } = supabase.storage
-      .from('videos')
-      .getPublicUrl(filePath);
-
-    const publicVideoUrl = urlData.publicUrl;
-
-    // 4. FIX: Use .update() instead of .insert() to update the pre-existing row ID
-    const { error: dbError } = await supabase
-      .from('gifts')
-      .update({
-        video_url: publicVideoUrl,
-        message: message || '',
-        status: 'uploaded' // Changes status to unwrap-ready state
-      })
-      .eq('id', giftId); // Targets the ID pre-created by the Admin panel
-
-    if (dbError) throw dbError;
-
-    res.status(200).json({ 
-      success: true, 
-      message: 'Gift sealed and database row updated successfully!',
-      video_url: publicVideoUrl
-    });
-
-  } catch (error) {
-    console.error('Upload Process Crash Error:', error);
-    res.status(500).json({ error: error.message || 'Internal pipeline processing breakdown.' });
-  }
-});
-
-// ── ROUTE 6: ADMIN CARD ROW DELETION (Used by admin.html) ──
-app.delete('/api/gift/:id', async (req, res) => {
-  const giftId = req.params.id;
-  try {
-    const { error } = await supabase
-      .from('gifts')
-      .delete()
-      .eq('id', giftId);
-
-    if (error) throw error;
-    res.status(200).json({ success: true, message: 'Card entry wiped clean.' });
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-});
-
-// ── INITIALIZE NETWORK LISTENER ENGINE ──
-app.listen(PORT, () => {
-  console.log(`=================================================`);
-  console.log(` 🚀 Server cruising smoothly on port: ${PORT}   `);
-  console.log(`=================================================`);
-});
+// ── ROUTE 4: ADMIN STATUS TRACKING SYNC (Used by admin.html) ──
+app.post('/api/gifts/status', async (req, res
