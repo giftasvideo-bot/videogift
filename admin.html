@@ -194,51 +194,47 @@
   async function generateQRCodes() {
     const count = parseInt(document.getElementById('gen-count').value) || 1;
     const prefix = document.getElementById('gen-prefix').value.trim();
-    const btn = document.getElementById('generate-btn');
+    const btn = document.querySelector('.input-row .btn:not(.secondary)');
     
     if (!window.GIFT_API_BASE) {
-      alert('Please configure and save your Backend API URL first!');
+      alert('Please enter your Render API URL in the configuration box above and click Save first!');
       return;
     }
 
+    // Temporarily freeze the UI button to prevent rapid double-clicks while the database processes
     btn.disabled = true;
-    btn.textContent = 'Syncing...';
+    btn.textContent = 'Syncing Cluster...';
 
-    const localGeneratedBatch = [];
+    const localBatch = [];
     for (let i = 0; i < count; i++) {
-      const generatedId = generateId(prefix);
-      localGeneratedBatch.push({
-        id: generatedId,
-        status: 'idle',
-        createdAt: new Date().toISOString()
-      });
+      const id = generateId(prefix);
+      localBatch.push({ id, status: 'pending', createdAt: new Date().toISOString() });
     }
 
     try {
-      // Send the generated IDs to your backend row database
+      // Send the array of fresh custom IDs to your backend before displaying them
       const response = await fetch(`${window.GIFT_API_BASE}/api/admin/batch-insert`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ cards: localGeneratedBatch.map(c => c.id) })
+        body: JSON.stringify({ cards: localBatch.map(c => c.id) })
       });
 
-      if (!response.ok) throw new Error('Database insertion rejected.');
+      if (!response.ok) throw new Error('Database server rejected batch insertion.');
 
-      // If database successfully logs them, push onto local list display layout
-      cards = [...cards, ...localGeneratedBatch];
+      // If the backend responds with a success status, save securely to browser cache and paint UI
+      cards = [...cards, ...localBatch];
       localStorage.setItem('vg_cards', JSON.stringify(cards));
       
       renderCards();
       updateStats();
     } catch (err) {
       console.error(err);
-      alert('Failed to pre-register IDs in database. Check that your server is online and try again.');
+      alert('Could not synchronize with cloud database. Make sure your Render service is awake and active!');
     } finally {
       btn.disabled = false;
       btn.textContent = 'Generate';
     }
   }
-
   // ── Visual Canvas Grid Render ──
   function renderCards() {
     const grid = document.getElementById('qr-grid');

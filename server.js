@@ -82,7 +82,56 @@ app.get('/api/gift/:id', async (req, res) => {
     res.status(500).json({ error: error.message });
   }
 });
+// 1. Endpoint for your "Generate" button: Registers new card IDs directly into Supabase
+app.post('/api/admin/batch-insert', async (req, res) => {
+  const { cards } = req.body; 
+  if (!cards || !Array.isArray(cards)) {
+    return res.status(400).json({ error: 'Invalid data format provided.' });
+  }
 
+  // Map your array of string IDs into objects that fit your Supabase table schema
+  const rows = cards.map(id => ({ 
+    id: id, 
+    status: 'pending' // Matches the default status your admin.html uses
+  }));
+
+  try {
+    const { error } = await supabase.from('gifts').insert(rows);
+    if (error) throw error;
+    res.status(200).json({ success: true, message: 'IDs safely stored in cloud database.' });
+  } catch (error) {
+    console.error('Database Sync Error:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// 2. Endpoint for your page's tracking system: Keeps tabs on uploaded/viewed gifts
+app.post('/api/gifts/status', async (req, res) => {
+  const { ids } = req.body;
+  if (!ids || !Array.isArray(ids)) {
+    return res.status(400).json({ error: 'Invalid or missing ID array.' });
+  }
+
+  try {
+    const { data, error } = await supabase
+      .from('gifts')
+      .select('id, status')
+      .in('id', ids);
+
+    if (error) throw error;
+
+    // Structure the response exactly how your admin.html frontend parses it
+    const statuses = {};
+    data.forEach(row => {
+      statuses[row.id] = row.status;
+    });
+
+    res.status(200).json({ statuses });
+  } catch (error) {
+    console.error('Status Check Failed:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
 app.listen(port, () => {
   console.log(`Server cruising smoothly on port ${port}`);
 });
