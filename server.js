@@ -20,22 +20,20 @@ if (!supabaseUrl || !supabaseAnonKey) {
   process.exit(1);
 }
 
-// Initialize the Supabase Client securely using the standard library
 const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
-// Configure Multer for temporary memory buffer file storage
 const storage = multer.memoryStorage();
 const upload = multer({ 
   storage: storage,
   limits: { fileSize: 50 * 1024 * 1024 } // 50MB Max Video Size Limit
 });
 
-// ── ROUTE 1: BASE PLACEHOLDER INDEX ──
+// ── ROUTE 1: BASE INDEX ──
 app.get('/', (req, res) => {
   res.status(200).send('🚀 VideoGift API Backend is active and cruising smoothly!');
 });
 
-// ── ROUTE 2: LOOKUP GIFT ROW STATUS (Used by watch.html & upload.html) ──
+// ── ROUTE 2: LOOKUP GIFT STATUS ──
 app.get('/api/gift/:id', async (req, res) => {
   const giftId = req.params.id;
   try {
@@ -46,7 +44,7 @@ app.get('/api/gift/:id', async (req, res) => {
       .single();
 
     if (error || !data) {
-      return res.status(404).json({ error: 'Gift record ID not found in database.' });
+      return res.status(404).json({ error: 'Gift record ID not found.' });
     }
     res.status(200).json(data);
   } catch (err) {
@@ -54,14 +52,13 @@ app.get('/api/gift/:id', async (req, res) => {
   }
 });
 
-// ── ROUTE 3: ADMIN BATCH GENERATION INSERT (Used by admin.html) ──
+// ── ROUTE 3: ADMIN BATCH GENERATION INSERT ──
 app.post('/api/admin/batch-insert', async (req, res) => {
   const { cards } = req.body; 
   if (!cards || !Array.isArray(cards)) {
-    return res.status(400).json({ error: 'Invalid data format provided.' });
+    return res.status(400).json({ error: 'Invalid data format.' });
   }
 
-  // Create empty placeholder rows to register IDs ahead of time
   const rows = cards.map(id => ({ 
     id: id, 
     status: 'pending',
@@ -79,7 +76,7 @@ app.post('/api/admin/batch-insert', async (req, res) => {
   }
 });
 
-// ── ROUTE 4: ADMIN STATUS TRACKING SYNC (Used by admin.html) ──
+// ── ROUTE 4: ADMIN STATUS TRACKING SYNC ──
 app.post('/api/gifts/status', async (req, res) => {
   const { ids } = req.body;
   if (!ids || !Array.isArray(ids)) {
@@ -94,7 +91,6 @@ app.post('/api/gifts/status', async (req, res) => {
 
     if (error) throw error;
 
-    // Build key-value map response structured for the admin script layout
     const statuses = {};
     data.forEach(row => {
       statuses[row.id] = row.status;
@@ -107,7 +103,7 @@ app.post('/api/gifts/status', async (req, res) => {
   }
 });
 
-// ── ROUTE 5: USER VIDEO UPLOAD AND ATTACHMENT (Used by upload.html) ──
+// ── ROUTE 5: USER VIDEO UPLOAD AND ATTACHMENT ──
 app.post('/api/upload', upload.single('video'), async (req, res) => {
   const { giftId, message } = req.body;
   const file = req.file;
@@ -120,12 +116,10 @@ app.post('/api/upload', upload.single('video'), async (req, res) => {
   }
 
   try {
-    // 1. Generate a unique name for the file path inside your Supabase Storage bucket
     const fileExtension = file.originalname.split('.').pop() || 'mp4';
     const fileName = `${giftId}-${Date.now()}.${fileExtension}`;
     const filePath = `videos/${fileName}`;
 
-    // 2. Upload file to Supabase Storage Bucket (Assumes bucket name is 'videos')
     const { error: storageError } = await supabase.storage
       .from('videos')
       .upload(filePath, file.buffer, {
@@ -136,15 +130,12 @@ app.post('/api/upload', upload.single('video'), async (req, res) => {
 
     if (storageError) throw storageError;
 
-    // 3. Construct the official Public URL link path for your video
     const { data: urlData } = supabase.storage
       .from('videos')
       .getPublicUrl(filePath);
 
     const publicVideoUrl = urlData.publicUrl;
 
-    // 4. Use .update() to update the pre-existing row ID matching the admin pre-generation
-    // STANDARDIZED: Set status to exactly 'uploaded' to match admin layout polls
     const { error: dbError } = await supabase
       .from('gifts')
       .update({
@@ -168,13 +159,12 @@ app.post('/api/upload', upload.single('video'), async (req, res) => {
   }
 });
 
-// ── ROUTE 6: ADMIN CARD ROW DELETION (Smarter Dynamic Fallback) ──
+// ── ROUTE 6: ADMIN CARD ROW DELETION ──
 app.delete('/api/gift/:id?', async (req, res) => {
-  // Gracefully handles URL path parameter, URL query string parameter (?id=X), or JSON body payload
   const giftId = req.params.id || req.query.id || req.body.id;
 
   if (!giftId) {
-    return res.status(400).json({ error: 'Deletion failed: No valid Card ID provided in request payload.' });
+    return res.status(400).json({ error: 'Deletion failed: No valid Card ID provided.' });
   }
 
   try {
