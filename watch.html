@@ -62,7 +62,7 @@
     }
     .env-title { font-family: 'Playfair Display', serif; font-size: 1.8rem; font-weight: 400; font-style: italic; margin-bottom: 8px; }
     .env-sub { font-size: 0.85rem; color: #b5b0a5; margin-bottom: 32px; }
-    
+     
     .ribbon-btn {
       background: var(--ribbon); color: #fff; border: none; padding: 16px 36px;
       border-radius: 12px; font-family: inherit; font-size: 0.95rem; font-weight: 500;
@@ -119,7 +119,7 @@
         <div class="video-viewport">
           <video id="gift-video" controls playsinline controlsList="nodownload"></video>
         </div>
-        
+         
         <div id="gift-note" class="letter-box" style="display: none;">
           <p id="gift-message-text" class="letter-text"></p>
           <p id="gift-sent-at" class="letter-meta"></p>
@@ -158,8 +158,7 @@
       try {
         const response = await fetch(`${API_BASE}/api/gift/${encodeURIComponent(giftId)}`);
         
-        // ── THE AUTOMATIC ROUTER FIX ──
-        // If the database says 404 (Not Found) or the card contains no data, skip the error screen completely!
+        // If the database says 404 (Not Found), route over to upload interface smoothly!
         if (response.status === 404) {
           window.location.href = `upload.html?id=${encodeURIComponent(giftId)}`;
           return;
@@ -169,22 +168,25 @@
 
         giftData = await response.json();
 
-        // If the entry placeholder exists but doesn't have a streaming path link yet
-        if (!giftData || !giftData.videoUrl) {
+        // ── ALIGNED DATA VARIABLES TO MATCH BACKEND SNAKE_CASE ──
+        const videoUrl = giftData.video_url || giftData.videoUrl;
+
+        // If the database row exists but doesn't have a video file yet, route to upload
+        if (!giftData || !videoUrl) {
           window.location.href = `upload.html?id=${encodeURIComponent(giftId)}`;
           return;
         }
 
-        // Target found! Stop loading and prompt to open it
+        // Target found! Stop loading and show ribbon button
         document.getElementById('loading-state').style.display = 'none';
         document.getElementById('unwrap-screen').style.display = 'flex';
         
-        // Let database know it's opened
+        // Log view tracking quietly
         markAsViewed(giftId);
 
       } catch (error) {
         console.error(error);
-        showError("Unable to reach the server database right now. Please check your internet collection.");
+        showError("Unable to reach the server database right now. Please check your internet connection.");
       }
     }
 
@@ -193,13 +195,17 @@
       document.getElementById('gift-state').style.display = 'flex';
 
       const video = document.getElementById('gift-video');
-      video.src = giftData.videoUrl;
+      // Fallback alignment check for safe streaming parsing
+      const videoUrl = giftData.video_url || giftData.videoUrl;
+      const createdAt = giftData.created_at || giftData.createdAt;
+
+      video.src = videoUrl;
       video.play().catch(() => {});
 
       if (giftData.message && giftData.message.trim() !== "") {
         document.getElementById('gift-message-text').textContent = giftData.message;
         document.getElementById('gift-sent-at').textContent =
-          'Uploaded ' + new Date(giftData.createdAt).toLocaleDateString('en-US', { year:'numeric', month:'long', day:'numeric' });
+          'Uploaded ' + new Date(createdAt).toLocaleDateString('en-US', { year:'numeric', month:'long', day:'numeric' });
         document.getElementById('gift-note').style.display = 'block';
       }
     }
@@ -215,9 +221,10 @@
     }
 
     function downloadVideo() {
-      if (!giftData || !giftData.videoUrl) return;
+      const videoUrl = giftData ? (giftData.video_url || giftData.videoUrl) : null;
+      if (!videoUrl) return;
       const a = document.createElement('a');
-      a.href = giftData.videoUrl;
+      a.href = videoUrl;
       a.download = `gift-${giftId}.mp4`;
       a.target = '_blank';
       a.click();
