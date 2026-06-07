@@ -147,49 +147,52 @@
     });
 
     async function fetchGiftDetails() {
-      const urlParams = new URLSearchParams(window.location.search);
-      giftId = urlParams.get('id');
+  const urlParams = new URLSearchParams(window.location.search);
+  giftId = urlParams.get('id');
 
-      if (!giftId) {
-        showError("Invalid link. Please scan the original physical QR card item again.");
-        return;
-      }
+  if (!giftId) {
+    showError("Invalid link. Please scan the QR card again.");
+    return;
+  }
 
-      try {
-        const response = await fetch(`${API_BASE}/api/gift/${encodeURIComponent(giftId)}`);
-        
-        // If the database says 404 (Not Found), route over to upload interface smoothly!
-        if (response.status === 404) {
-          window.location.href = `upload.html?id=${encodeURIComponent(giftId)}`;
-          return;
-        }
+  // Add timeout so it doesn't hang forever
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 10000); // 10 sec
 
-        if (!response.ok) throw new Error();
+  try {
+    const response = await fetch(`${API_BASE}/api/gift/${encodeURIComponent(giftId)}`, {
+      signal: controller.signal
+    });
+    clearTimeout(timeout);
 
-        giftData = await response.json();
-
-        // ── ALIGNED DATA VARIABLES TO MATCH BACKEND SNAKE_CASE ──
-        const videoUrl = giftData.video_url || giftData.videoUrl;
-
-        // If the database row exists but doesn't have a video file yet, route to upload
-        if (!giftData || !videoUrl) {
-          window.location.href = `upload.html?id=${encodeURIComponent(giftId)}`;
-          return;
-        }
-
-        // Target found! Stop loading and show ribbon button
-        document.getElementById('loading-state').style.display = 'none';
-        document.getElementById('unwrap-screen').style.display = 'flex';
-        
-        // Log view tracking quietly
-        markAsViewed(giftId);
-
-      } catch (error) {
-        console.error(error);
-        showError("Unable to reach the server database right now. Please check your internet connection.");
-      }
+    if (response.status === 404) {
+      window.location.href = `upload.html?id=${encodeURIComponent(giftId)}`;
+      return;
     }
 
+    if (!response.ok) throw new Error('Server error');
+
+    giftData = await response.json();
+    const videoUrl = giftData.video_url || giftData.videoUrl;
+
+    if (!videoUrl) {
+      window.location.href = `upload.html?id=${encodeURIComponent(giftId)}`;
+      return;
+    }
+
+    document.getElementById('loading-state').style.display = 'none';
+    document.getElementById('unwrap-screen').style.display = 'flex';
+    markAsViewed(giftId);
+
+  } catch (error) {
+    clearTimeout(timeout);
+    if (error.name === 'AbortError') {
+      showError("Server is waking up — please wait 30 seconds and refresh the page. 🕐");
+    } else {
+      showError("Could not connect to server. Please check your internet and try again.");
+    }
+  }
+}
     function revealGift() {
       document.getElementById('unwrap-screen').style.display = 'none';
       document.getElementById('gift-state').style.display = 'flex';
