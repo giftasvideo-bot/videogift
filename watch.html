@@ -60,7 +60,6 @@
       border-radius: 16px;
       padding: 40px 24px;
       width: 100%;
-      text-align: center;
     }
     .error-box .error-icon { font-size: 3rem; margin-bottom: 16px; display: block; }
     .error-box h3 { font-family: 'Playfair Display', serif; font-size: 1.3rem; margin-bottom: 10px; }
@@ -109,15 +108,43 @@
     .letter-text { font-family: 'Playfair Display', serif; font-size: 1.2rem; font-style: italic; line-height: 1.6; margin-bottom: 20px; }
     .letter-meta { font-size: 0.75rem; color: var(--muted); text-transform: uppercase; letter-spacing: 1px; }
 
-    .action-row { display: flex; gap: 12px; width: 100%; margin-top: 8px; }
+    .action-row { display: flex; gap: 12px; width: 100%; }
     .secondary-btn {
       flex: 1; background: rgba(255,255,255,0.05); color: #fff;
       border: 1px solid rgba(255,255,255,0.1);
       padding: 14px; border-radius: 10px; font-size: 0.85rem;
       cursor: pointer; text-align: center; text-decoration: none;
       transition: background 0.2s; font-family: 'DM Sans', sans-serif;
+      display: flex; align-items: center; justify-content: center; gap: 6px;
     }
     .secondary-btn:hover { background: rgba(255,255,255,0.1); }
+    .secondary-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+    .download-hint {
+      text-align: center;
+      font-size: 0.72rem;
+      color: rgba(255,255,255,0.25);
+      margin-top: 10px;
+      line-height: 1.5;
+    }
+
+    /* Download progress */
+    .download-progress {
+      display: none;
+      width: 100%;
+      background: rgba(255,255,255,0.08);
+      border-radius: 8px;
+      height: 4px;
+      overflow: hidden;
+      margin-top: -12px;
+    }
+    .download-progress-bar {
+      height: 100%;
+      background: var(--gold);
+      width: 0%;
+      transition: width 0.2s;
+      border-radius: 8px;
+    }
   </style>
 </head>
 <body>
@@ -146,16 +173,30 @@
     <div id="gift-state" class="state-panel" style="display:none; width:100%;">
       <div class="player-box">
         <div class="video-viewport">
-          <video id="gift-video" controls playsinline controlsList="nodownload"></video>
+          <video id="gift-video" controls playsinline></video>
         </div>
+
         <div id="gift-note" class="letter-box" style="display:none;">
           <p id="gift-message-text" class="letter-text"></p>
           <p id="gift-sent-at" class="letter-meta"></p>
         </div>
+
         <div class="action-row">
-          <button class="secondary-btn" onclick="downloadVideo()">⬇ Save Video</button>
+          <button class="secondary-btn" id="download-btn" onclick="downloadVideo()">
+            ⬇ Save Video
+          </button>
           <a href="index.html" class="secondary-btn">🏠 Home</a>
         </div>
+
+        <!-- Download progress bar -->
+        <div class="download-progress" id="download-progress">
+          <div class="download-progress-bar" id="download-progress-bar"></div>
+        </div>
+
+        <!-- Mobile hint -->
+        <p class="download-hint" id="download-hint">
+          Tap "Save Video" to download · On iPhone, long-press the video → Save to Photos
+        </p>
       </div>
     </div>
 
@@ -178,7 +219,6 @@
     document.addEventListener("DOMContentLoaded", () => {
       const urlParams = new URLSearchParams(window.location.search);
       giftId = urlParams.get('id');
-
       if (!giftId) {
         showError('⚠️', 'Invalid Link', 'This link is missing a gift ID. Please scan the QR card again.');
         return;
@@ -187,7 +227,6 @@
     });
 
     async function fetchGiftDetails() {
-      // Timeout after 12 seconds — don't silently hang
       const controller = new AbortController();
       const timeout = setTimeout(() => controller.abort(), 12000);
 
@@ -197,24 +236,22 @@
         });
         clearTimeout(timeout);
 
-        // Card not in DB at all → go to upload
         if (response.status === 404) {
           window.location.href = `upload.html?id=${encodeURIComponent(giftId)}`;
           return;
         }
 
-        if (!response.ok) throw new Error('Server returned an error.');
+        if (!response.ok) throw new Error('Server error');
 
         giftData = await response.json();
         const videoUrl = giftData.video_url || giftData.videoUrl;
 
         if (!videoUrl) {
-          // Card exists but no video yet → go to upload
           window.location.href = `upload.html?id=${encodeURIComponent(giftId)}`;
           return;
         }
 
-        // ✅ Video exists — show the gift, never redirect to upload
+        // ✅ Video exists — show gift
         document.getElementById('loading-state').style.display = 'none';
         document.getElementById('unwrap-screen').style.display = 'flex';
         markAsViewed(giftId);
@@ -222,17 +259,9 @@
       } catch (error) {
         clearTimeout(timeout);
         if (error.name === 'AbortError') {
-          showError(
-            '🕐',
-            'Server is waking up...',
-            'The server is starting up from sleep mode. Please wait 30 seconds and tap Try Again.'
-          );
+          showError('🕐', 'Server is waking up...', 'The server is starting from sleep. Please wait 30 seconds and tap Try Again.');
         } else {
-          showError(
-            '📡',
-            'Connection Failed',
-            'Could not reach the server. Please check your internet connection and try again.'
-          );
+          showError('📡', 'Connection Failed', 'Could not reach the server. Check your internet connection and try again.');
         }
       }
     }
@@ -258,6 +287,93 @@
       }
     }
 
+    // ── DOWNLOAD: fetch as blob to force save on mobile ──
+    async function downloadVideo() {
+      const videoUrl = giftData ? (giftData.video_url || giftData.videoUrl) : null;
+      if (!videoUrl) return;
+
+      const btn = document.getElementById('download-btn');
+      const progressWrap = document.getElementById('download-progress');
+      const progressBar = document.getElementById('download-progress-bar');
+      const hint = document.getElementById('download-hint');
+
+      // Detect iOS — blob download doesn't work on iOS Safari, open in new tab instead
+      const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+      if (isIOS) {
+        hint.textContent = 'Opening video — long-press it then tap "Save to Photos" 📱';
+        hint.style.color = 'rgba(201,147,58,0.8)';
+        window.open(videoUrl, '_blank');
+        return;
+      }
+
+      try {
+        btn.textContent = '⏳ Downloading...';
+        btn.disabled = true;
+        progressWrap.style.display = 'block';
+        progressBar.style.width = '0%';
+
+        // Fetch with progress tracking
+        const response = await fetch(videoUrl);
+        if (!response.ok) throw new Error('Fetch failed');
+
+        const contentLength = response.headers.get('Content-Length');
+        const total = contentLength ? parseInt(contentLength) : 0;
+        let loaded = 0;
+
+        const reader = response.body.getReader();
+        const chunks = [];
+
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+          chunks.push(value);
+          loaded += value.length;
+          if (total > 0) {
+            const pct = Math.round((loaded / total) * 100);
+            progressBar.style.width = pct + '%';
+          } else {
+            // Unknown size — animate bar
+            progressBar.style.width = '60%';
+          }
+        }
+
+        progressBar.style.width = '100%';
+
+        // Build blob and trigger download
+        const blob = new Blob(chunks, { type: 'video/mp4' });
+        const blobUrl = URL.createObjectURL(blob);
+
+        const a = document.createElement('a');
+        a.href = blobUrl;
+        a.download = `forever27-gift-${giftId}.mp4`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+
+        setTimeout(() => {
+          URL.revokeObjectURL(blobUrl);
+          progressWrap.style.display = 'none';
+          progressBar.style.width = '0%';
+        }, 3000);
+
+        btn.textContent = '✅ Saved!';
+        setTimeout(() => {
+          btn.textContent = '⬇ Save Video';
+          btn.disabled = false;
+        }, 3000);
+
+      } catch (err) {
+        console.error('Download failed, opening in new tab:', err);
+        // Fallback: open in new tab
+        window.open(videoUrl, '_blank');
+        hint.textContent = 'Video opened in new tab — long-press to save it 📱';
+        hint.style.color = 'rgba(201,147,58,0.8)';
+        btn.textContent = '⬇ Save Video';
+        btn.disabled = false;
+        progressWrap.style.display = 'none';
+      }
+    }
+
     function showError(icon, title, message) {
       document.getElementById('loading-state').style.display = 'none';
       document.getElementById('unwrap-screen').style.display = 'none';
@@ -266,16 +382,6 @@
       document.getElementById('error-title').textContent = title;
       document.getElementById('error-message').textContent = message;
       document.getElementById('not-found-state').style.display = 'flex';
-    }
-
-    function downloadVideo() {
-      const videoUrl = giftData ? (giftData.video_url || giftData.videoUrl) : null;
-      if (!videoUrl) return;
-      const a = document.createElement('a');
-      a.href = videoUrl;
-      a.download = `gift-${giftId}.mp4`;
-      a.target = '_blank';
-      a.click();
     }
 
     async function markAsViewed(id) {
