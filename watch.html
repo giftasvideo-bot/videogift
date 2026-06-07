@@ -165,23 +165,23 @@
     });
     clearTimeout(timeout);
 
-    if (response.status === 404) {
-      window.location.href = `upload.html?id=${encodeURIComponent(giftId)}`;
-      return;
-    }
+  if (response.status === 404) {
+  window.location.href = `upload.html?id=${encodeURIComponent(giftId)}`;
+  return;
+}
 
-    if (!response.ok) throw new Error('Server error');
+giftData = await response.json();
+const videoUrl = giftData.video_url || giftData.videoUrl;
 
-    giftData = await response.json();
-    const videoUrl = giftData.video_url || giftData.videoUrl;
+if (!videoUrl) {
+  // No video yet → send to upload
+  window.location.href = `upload.html?id=${encodeURIComponent(giftId)}`;
+  return;
+}
 
-    if (!videoUrl) {
-      window.location.href = `upload.html?id=${encodeURIComponent(giftId)}`;
-      return;
-    }
-
-    document.getElementById('loading-state').style.display = 'none';
-    document.getElementById('unwrap-screen').style.display = 'flex';
+// Video exists → show the gift!
+document.getElementById('loading-state').style.display = 'none';
+document.getElementById('unwrap-screen').style.display = 'flex';
     markAsViewed(giftId);
 
   } catch (error) {
