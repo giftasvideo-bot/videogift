@@ -69,7 +69,6 @@
     .btn-secondary { background: var(--cream); color: var(--ink); }
     .btn-secondary:hover { background: #e5dec9; }
     
-    /* Layout Cards Matrix Grid Setup */
     .qr-grid {
       display: grid;
       grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
@@ -123,6 +122,8 @@
     }
     .status-pending { background: var(--pending-bg); color: var(--pending-text); }
     .status-uploaded { background: var(--success-bg); color: var(--success-text); }
+    .status-viewed { background: #e3f2fd; color: #1565c0; }
+    .status-sealed { background: var(--success-bg); color: var(--success-text); }
 
     .card-actions {
       display: flex;
@@ -143,7 +144,16 @@
       background: #ffcdd2;
     }
 
-    /* Print Formatting Rules */
+    .notice-box {
+      background: #e8f5e9;
+      border: 1px solid #a5d6a7;
+      border-radius: 8px;
+      padding: 12px 16px;
+      font-size: 0.85rem;
+      color: #2e7d32;
+      margin-bottom: 16px;
+    }
+
     #print-area { display: none; }
     @media print {
       body * { display: none !important; }
@@ -165,13 +175,16 @@
   <div class="card-section">
     <h2>⚙️ Backend Server Routing Configuration</h2>
     <div class="form-group">
-      <input type="text" id="api-url-input" value="https://videogift-backend-3.onrender.com" placeholder="Paste live Render backend service deployment link URL">
+      <input type="text" id="api-url-input" value="https://videogift-backend-3.onrender.com" placeholder="Paste live Render backend service URL">
       <button class="btn" onclick="saveApiUrl()">Lock Config Link</button>
     </div>
   </div>
 
   <div class="card-section">
     <h2>🎟️ Generate Unique QR Gift Tokens</h2>
+    <div class="notice-box">
+      ✅ QR codes now point to <strong>watch.html</strong> — the system automatically redirects to upload if no video exists yet, or plays the gift if a video is already uploaded.
+    </div>
     <div class="form-group">
       <input type="number" id="batch-count" value="1" min="1" max="100">
       <input type="text" id="id-prefix" placeholder="Prefix (e.g. XMAS25, GIFT, LIVE)">
@@ -184,9 +197,7 @@
       <h2>📋 Active Card Registry Collection</h2>
       <button class="btn btn-secondary" onclick="window.print()">🖨️ Print All Cards</button>
     </div>
-    
-    <div class="qr-grid" id="cards-grid-container">
-      </div>
+    <div class="qr-grid" id="cards-grid-container"></div>
   </div>
 </div>
 
@@ -196,14 +207,13 @@
   let BACKEND_API_BASE = localStorage.getItem('videogift_api_url') || 'https://videogift-backend-3.onrender.com';
   document.getElementById('api-url-input').value = BACKEND_API_BASE;
 
-  // Track operational variables locally
   let localRegistry = JSON.parse(localStorage.getItem('forever27_cards_manifest')) || [];
 
   function saveApiUrl() {
     const url = document.getElementById('api-url-input').value.trim().replace(/\/$/, "");
     BACKEND_API_BASE = url;
     localStorage.setItem('videogift_api_url', url);
-    alert('✅ Base Server Domain Target Configuration verified and saved.');
+    alert('✅ Backend URL saved successfully.');
     syncStatusesWithDatabase();
   }
 
@@ -214,6 +224,12 @@
       output += chars.charAt(Math.floor(Math.random() * chars.length));
     }
     return output;
+  }
+
+  // ── KEY FIX: Build URL pointing to watch.html (not upload.html) ──
+  function buildWatchUrl(id) {
+    const base = window.location.origin + window.location.pathname.replace('admin.html', '');
+    return `${base}watch.html?id=${id}`;
   }
 
   async function generateBatchCodes() {
@@ -238,19 +254,18 @@
         body: JSON.stringify({ cards: newCodes })
       });
 
-      if (!response.ok) throw new Error('Database registry handshake refused integration pipeline processing.');
+      if (!response.ok) throw new Error('Database rejected batch insertion.');
 
       localRegistry = [...newCodes, ...localRegistry];
       localStorage.setItem('forever27_cards_manifest', JSON.stringify(localRegistry));
-      
+
       renderDashboardGrid();
       syncStatusesWithDatabase();
     } catch (err) {
-      alert(`⚠️ Generation Aborted: ${err.message}`);
+      alert(`⚠️ Generation Failed: ${err.message}`);
     }
   }
 
-  // Dynamic Background Sync Process Engine
   async function syncStatusesWithDatabase() {
     if (localRegistry.length === 0) return;
 
@@ -263,38 +278,36 @@
 
       if (!response.ok) return;
       const data = await response.json();
-      
+
       localRegistry.forEach(id => {
         const remoteStatus = data.statuses[id] || 'pending';
         const badge = document.getElementById(`badge-${id}`);
         if (badge) {
           badge.textContent = remoteStatus.toUpperCase();
-          // Clear current styling states to apply the live updated class structures
           badge.className = `status-badge status-${remoteStatus}`;
         }
       });
     } catch (err) {
-      console.warn('Realtime database background status sync dropped thread loop.', err);
+      console.warn('Status sync failed:', err);
     }
   }
 
-  // Construct Visual Card Matrix Layout
   function renderDashboardGrid() {
     const gridContainer = document.getElementById('cards-grid-container');
     const printArea = document.getElementById('print-area');
-    
+
     gridContainer.innerHTML = '';
     printArea.innerHTML = '';
 
     if (localRegistry.length === 0) {
-      gridContainer.innerHTML = `<div style="grid-column: 1/-1; text-align:center; color:var(--muted); padding: 40px;">No registered gift cards found in local workspace profile.</div>`;
+      gridContainer.innerHTML = `<div style="grid-column:1/-1; text-align:center; color:var(--muted); padding:40px;">No registered gift cards found. Generate some above!</div>`;
       return;
     }
 
     localRegistry.forEach(id => {
-      const targetUploadUrl = `${window.location.origin}${window.location.pathname.replace('admin.html', 'upload.html')}?id=${id}`;
+      // ✅ Points to watch.html — smart routing handles upload vs watch automatically
+      const targetWatchUrl = buildWatchUrl(id);
 
-      // Create main visual interface component block structure item 
       const card = document.createElement('div');
       card.className = 'qr-card';
       card.id = `card-${id}`;
@@ -303,18 +316,23 @@
         <div class="qr-id-label">${id}</div>
         <div class="status-badge status-pending" id="badge-${id}">CHECKING...</div>
         <div class="card-actions">
-          <button class="btn btn-secondary" onclick="navigator.clipboard.writeText('${targetUploadUrl}'); alert('Link copied!');">🔗 Link</button>
+          <button class="btn btn-secondary" onclick="copyWatchLink('${id}')">🔗 Copy Link</button>
           <button class="btn btn-action-delete" onclick="deleteCardRow('${id}')">🗑️ Delete</button>
         </div>
       `;
       gridContainer.appendChild(card);
 
-      // Render Dashboard QR Vector
+      // Render QR code pointing to watch.html
       setTimeout(() => {
-        new QRCode(document.getElementById(`qr-container-${id}`), { text: targetUploadUrl, width: 140, height: 140, correctLevel: QRCode.CorrectLevel.M });
+        new QRCode(document.getElementById(`qr-container-${id}`), {
+          text: targetWatchUrl,
+          width: 140,
+          height: 140,
+          correctLevel: QRCode.CorrectLevel.M
+        });
       }, 10);
 
-      // Construct corresponding print card elements layout configuration block sheets
+      // Print card
       const pCard = document.createElement('div');
       pCard.className = 'print-card';
       const qrTarget = document.createElement('div');
@@ -324,34 +342,39 @@
       pCard.appendChild(label);
       printArea.appendChild(pCard);
 
-      new QRCode(qrTarget, { text: targetUploadUrl, width: 140, height: 140 });
+      new QRCode(qrTarget, { text: targetWatchUrl, width: 140, height: 140 });
+    });
+  }
+
+  function copyWatchLink(id) {
+    const url = buildWatchUrl(id);
+    navigator.clipboard.writeText(url).then(() => {
+      alert(`✅ Link copied!\n\n${url}`);
     });
   }
 
   async function deleteCardRow(id) {
-    if (!confirm(`Are you certain you want to delete card ${id}? This breaks its path forever.`)) return;
+    if (!confirm(`Delete card ${id}? This cannot be undone.`)) return;
 
     try {
-      const response = await fetch(`${BACKEND_API_BASE}/api/gift/${id}`, { method: 'DELETE' });
-      if (!response.ok) throw new Error('Backend server refused deletion command sequence.');
-
-      localRegistry = localRegistry.filter(item => item !== id);
-      localStorage.setItem('forever27_cards_manifest', JSON.stringify(localRegistry));
-      
-      const cardElement = document.getElementById(`card-${id}`);
-      if (cardElement) cardElement.remove();
-      
-      renderDashboardGrid();
-      syncStatusesWithDatabase();
+      await fetch(`${BACKEND_API_BASE}/api/gift/${id}`, { method: 'DELETE' });
     } catch (err) {
-      alert(`⚠️ Deletion Blocked: ${err.message}`);
+      console.warn('Backend delete failed, removing locally only.');
     }
+
+    localRegistry = localRegistry.filter(item => item !== id);
+    localStorage.setItem('forever27_cards_manifest', JSON.stringify(localRegistry));
+
+    const cardElement = document.getElementById(`card-${id}`);
+    if (cardElement) cardElement.remove();
+
+    renderDashboardGrid();
   }
 
-  // Fire execution loops hooks
+  // Init
   renderDashboardGrid();
   syncStatusesWithDatabase();
-  setInterval(syncStatusesWithDatabase, 4000); // Check status tracking records every 4 seconds
+  setInterval(syncStatusesWithDatabase, 4000);
 </script>
 </body>
 </html>
