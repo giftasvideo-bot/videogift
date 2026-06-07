@@ -15,13 +15,7 @@
       --cream: #f0ead8;
       --muted: #7a7060;
     }
-
-    * {
-      margin: 0;
-      padding: 0;
-      box-sizing: border-box;
-    }
-
+    * { margin: 0; padding: 0; box-sizing: border-box; }
     body {
       background-color: var(--paper);
       color: var(--ink);
@@ -32,185 +26,111 @@
       min-height: 100vh;
       padding: 20px;
     }
-
-    /* Subtle background grain texture matching your admin layout */
     body::before {
       content: '';
-      position: fixed;
-      inset: 0;
+      position: fixed; inset: 0;
       background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='300'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='300' height='300' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");
-      pointer-events: none;
-      z-index: 0;
+      pointer-events: none; z-index: 0;
     }
-
     .upload-container {
-      position: relative;
-      z-index: 1;
+      position: relative; z-index: 1;
       background: #ffffff;
       border: 1px solid var(--cream);
       border-radius: 16px;
       padding: 40px;
       max-width: 480px;
       width: 100%;
-      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.03);
+      box-shadow: 0 10px 30px rgba(0,0,0,0.03);
     }
-
-    .header {
-      text-align: center;
-      margin-bottom: 32px;
-    }
-
-    .logo {
-      font-family: 'Playfair Display', serif;
-      font-size: 1.5rem;
-      margin-bottom: 8px;
-    }
-
-    .logo span {
-      color: var(--gold);
-      font-style: italic;
-    }
-
-    h1 {
-      font-family: 'Playfair Display', serif;
-      font-size: 1.8rem;
-      font-weight: 700;
-      margin-bottom: 8px;
-    }
-
-    .subtitle {
-      color: var(--muted);
-      font-size: 0.9rem;
-    }
-
-    .form-group {
-      margin-bottom: 24px;
-    }
-
-    label {
-      display: block;
-      font-size: 0.85rem;
-      font-weight: 500;
-      margin-bottom: 8px;
-      letter-spacing: 0.03em;
-    }
-
-    input[type="text"], textarea {
-      width: 100%;
-      padding: 12px 16px;
-      border: 1px solid var(--cream);
-      border-radius: 8px;
-      font-family: 'DM Sans', sans-serif;
-      font-size: 0.95rem;
-      background: var(--paper);
-      outline: none;
-      transition: border-color 0.2s;
-    }
-
-    input[type="text"]:focus, textarea:focus {
-      border-color: var(--gold);
-    }
-
+    .header { text-align: center; margin-bottom: 32px; }
+    .logo { font-family: 'Playfair Display', serif; font-size: 1.5rem; margin-bottom: 8px; }
+    .logo span { color: var(--gold); font-style: italic; }
+    h1 { font-family: 'Playfair Display', serif; font-size: 1.8rem; font-weight: 700; margin-bottom: 8px; }
+    .subtitle { color: var(--muted); font-size: 0.9rem; }
+    .form-group { margin-bottom: 24px; }
+    label { display: block; font-size: 0.85rem; font-weight: 500; margin-bottom: 8px; letter-spacing: 0.03em; }
     textarea {
-      resize: vertical;
-      min-height: 100px;
+      width: 100%; padding: 12px 16px;
+      border: 1px solid var(--cream); border-radius: 8px;
+      font-family: 'DM Sans', sans-serif; font-size: 0.95rem;
+      background: var(--paper); outline: none; transition: border-color 0.2s;
+      resize: vertical; min-height: 100px;
     }
-
-    /* Custom File Upload Styling */
+    textarea:focus { border-color: var(--gold); }
     .file-dropzone {
       border: 2px dashed var(--cream);
-      padding: 30px 20px;
-      border-radius: 8px;
-      text-align: center;
-      background: var(--paper);
-      cursor: pointer;
-      transition: border-color 0.2s;
+      padding: 30px 20px; border-radius: 8px;
+      text-align: center; background: var(--paper);
+      cursor: pointer; transition: border-color 0.2s;
     }
-
-    .file-dropzone:hover {
-      border-color: var(--gold);
-    }
-
-    .file-dropzone input[type="file"] {
-      display: none;
-    }
-
-    .file-label-text {
-      font-size: 0.9rem;
-      color: var(--muted);
-    }
-
-    .file-chosen-name {
-      margin-top: 8px;
-      font-size: 0.85rem;
-      font-weight: 500;
-      color: var(--gold);
-      word-break: break-all;
-    }
-
+    .file-dropzone:hover { border-color: var(--gold); }
+    .file-dropzone input[type="file"] { display: none; }
+    .file-label-text { font-size: 0.9rem; color: var(--muted); }
+    .file-chosen-name { margin-top: 8px; font-size: 0.85rem; font-weight: 500; color: var(--gold); word-break: break-all; }
     .btn {
-      width: 100%;
-      padding: 14px;
-      background: var(--gold);
-      color: #ffffff;
-      border: none;
-      border-radius: 8px;
-      font-family: 'DM Sans', sans-serif;
-      font-size: 1rem;
-      font-weight: 500;
-      cursor: pointer;
-      transition: background-color 0.2s;
-      margin-top: 8px;
+      width: 100%; padding: 14px;
+      background: var(--gold); color: #ffffff;
+      border: none; border-radius: 8px;
+      font-family: 'DM Sans', sans-serif; font-size: 1rem; font-weight: 500;
+      cursor: pointer; transition: background-color 0.2s; margin-top: 8px;
     }
-
-    .btn:hover {
-      background: var(--gold-light);
-    }
-
-    .btn:disabled {
-      background: var(--cream);
-      color: var(--muted);
-      cursor: not-allowed;
-    }
-
-    /* Upload Progress Utility */
-    .progress-container {
-      margin-top: 24px;
-      display: none;
-    }
-
+    .btn:hover { background: var(--gold-light); }
+    .btn:disabled { background: var(--cream); color: var(--muted); cursor: not-allowed; }
+    .progress-container { margin-top: 24px; display: none; }
     .progress-bar-wrapper {
-      width: 100%;
-      background: var(--cream);
-      height: 8px;
-      border-radius: 4px;
-      overflow: hidden;
-      margin-bottom: 8px;
+      width: 100%; background: var(--cream);
+      height: 8px; border-radius: 4px; overflow: hidden; margin-bottom: 8px;
     }
-
-    .progress-bar {
-      height: 100%;
-      width: 0%;
-      background: var(--gold);
-      transition: width 0.1s linear;
-    }
-
-    .progress-text {
-      font-size: 0.8rem;
-      color: var(--muted);
-      text-align: center;
-    }
-
+    .progress-bar { height: 100%; width: 0%; background: var(--gold); transition: width 0.1s linear; }
+    .progress-text { font-size: 0.8rem; color: var(--muted); text-align: center; }
     #status-badge {
-      display: inline-block;
-      font-family: monospace;
-      font-size: 0.85rem;
-      background: var(--cream);
-      padding: 4px 10px;
-      border-radius: 4px;
-      margin-top: 4px;
-      font-weight: bold;
+      display: inline-block; font-family: monospace; font-size: 0.85rem;
+      background: var(--cream); padding: 4px 10px; border-radius: 4px;
+      margin-top: 4px; font-weight: bold;
     }
+
+    /* Already used screen */
+    .already-used {
+      display: none;
+      text-align: center;
+      padding: 40px 20px;
+      background: #fff8e1;
+      border: 1px solid #ffe082;
+      border-radius: 12px;
+      margin-top: 20px;
+    }
+    .already-used .lock-icon { font-size: 3.5rem; margin-bottom: 16px; display: block; }
+    .already-used h2 {
+      font-family: 'Playfair Display', serif;
+      font-size: 1.4rem; margin-bottom: 10px;
+    }
+    .already-used p { color: var(--muted); font-size: 0.9rem; line-height: 1.6; }
+    .watch-btn {
+      display: inline-block;
+      margin-top: 24px; padding: 12px 28px;
+      background: var(--gold); color: #fff;
+      border: none; border-radius: 8px;
+      font-size: 0.95rem; cursor: pointer;
+      font-family: 'DM Sans', sans-serif;
+      font-weight: 500; transition: background 0.2s;
+      text-decoration: none;
+    }
+    .watch-btn:hover { background: var(--gold-light); }
+
+    /* Checking screen */
+    .checking-screen {
+      text-align: center; padding: 40px 20px;
+    }
+    .spinner {
+      width: 36px; height: 36px;
+      border: 3px solid var(--cream);
+      border-top-color: var(--gold);
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+      margin: 0 auto 16px;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .checking-screen p { color: var(--muted); font-size: 0.9rem; }
   </style>
 </head>
 <body>
@@ -223,12 +143,26 @@
     <div>Card ID: <span id="status-badge">Detecting...</span></div>
   </div>
 
-  <form id="upload-form" onsubmit="handleFormSubmit(event)">
+  <!-- Checking state -->
+  <div class="checking-screen" id="checking-screen">
+    <div class="spinner"></div>
+    <p>Verifying card status...</p>
+  </div>
+
+  <!-- Already used state -->
+  <div class="already-used" id="already-used-screen">
+    <span class="lock-icon">🔒</span>
+    <h2>This gift has already been sealed</h2>
+    <p>A video has already been attached to card <strong id="used-card-id"></strong>.<br>Each card can only hold one gift.</p>
+    <a id="watch-redirect-btn" href="#" class="watch-btn">▶ Watch the Gift Instead</a>
+  </div>
+
+  <!-- Upload form -->
+  <form id="upload-form" style="display:none;" onsubmit="handleFormSubmit(event)">
     <div class="form-group">
       <label for="message-input">Personal Message (Optional)</label>
       <textarea id="message-input" placeholder="Write a warm note to go along with your video gift..."></textarea>
     </div>
-
     <div class="form-group">
       <label>Select Video File</label>
       <div class="file-dropzone" onclick="document.getElementById('video-input').click()">
@@ -237,39 +171,76 @@
         <div id="file-name-preview" class="file-chosen-name"></div>
       </div>
     </div>
-
-    <button type="submit" id="submit-btn" class="btn" disabled>Upload Video Gift</button>
+    <button type="submit" id="submit-btn" class="btn">Upload Video Gift</button>
   </form>
 
   <div class="progress-container" id="progress-container">
     <div class="progress-bar-wrapper">
       <div class="progress-bar" id="progress-bar"></div>
     </div>
-    <div class="progress-text" id="progress-text">Uploading to processing cluster: 0%</div>
+    <div class="progress-text" id="progress-text">Uploading: 0%</div>
   </div>
 </div>
 
 <script>
-  // Point this directly to your live production Render backend
   const BACKEND_API_BASE = 'https://videogift-backend-3.onrender.com';
 
-  // 1. Parse URL Parameter string to isolate and lock the target unique Card ID
   const urlParams = new URLSearchParams(window.location.search);
   const giftId = urlParams.get('id');
   const badge = document.getElementById('status-badge');
-  const submitBtn = document.getElementById('submit-btn');
 
-  if (giftId) {
-    badge.textContent = giftId.toUpperCase();
-    submitBtn.disabled = false;
-  } else {
+  if (!giftId) {
     badge.textContent = 'MISSING ID';
     badge.style.background = '#ffebee';
     badge.style.color = '#c62828';
-    alert('Error: This link is invalid because it is missing a unique Card Parameter ID string.');
+    document.getElementById('checking-screen').style.display = 'none';
+    alert('Error: This link is missing a Card ID. Please scan the QR code again.');
+  } else {
+    badge.textContent = giftId.toUpperCase();
+    checkCardStatus();
   }
 
-  // Helper: Visual file picker label updates
+  async function checkCardStatus() {
+    try {
+      const res = await fetch(`${BACKEND_API_BASE}/api/gift/${encodeURIComponent(giftId)}`);
+
+      // Card not in DB at all — allow upload
+      if (res.status === 404) {
+        showUploadForm();
+        return;
+      }
+
+      if (!res.ok) throw new Error('Server error');
+
+      const data = await res.json();
+      const videoUrl = data.video_url || data.videoUrl;
+
+      if (videoUrl) {
+        // ✅ Already has a video — block upload, show locked screen
+        showAlreadyUsed();
+      } else {
+        // In DB but no video yet — allow upload
+        showUploadForm();
+      }
+    } catch (err) {
+      // If server is sleeping or error — allow upload with warning
+      console.warn('Card check failed, allowing upload:', err);
+      showUploadForm();
+    }
+  }
+
+  function showUploadForm() {
+    document.getElementById('checking-screen').style.display = 'none';
+    document.getElementById('upload-form').style.display = 'block';
+  }
+
+  function showAlreadyUsed() {
+    document.getElementById('checking-screen').style.display = 'none';
+    document.getElementById('already-used-screen').style.display = 'block';
+    document.getElementById('used-card-id').textContent = giftId;
+    document.getElementById('watch-redirect-btn').href = `watch.html?id=${encodeURIComponent(giftId)}`;
+  }
+
   function displayFileName() {
     const fileInput = document.getElementById('video-input');
     const preview = document.getElementById('file-name-preview');
@@ -278,69 +249,58 @@
     }
   }
 
-  // 2. Multi-part AJAX Request Form Pipeline
   async function handleFormSubmit(event) {
     event.preventDefault();
 
     const fileInput = document.getElementById('video-input');
-    const messageInput = document.getElementById('message-input');
     const progressContainer = document.getElementById('progress-container');
     const progressBar = document.getElementById('progress-bar');
     const progressText = document.getElementById('progress-text');
+    const submitBtn = document.getElementById('submit-btn');
 
-    if (!giftId) return alert('Cannot execute upload without a locked Card ID parameter.');
-    if (!fileInput.files || fileInput.files.length === 0) return alert('Please select a valid video file first.');
+    if (!fileInput.files || fileInput.files.length === 0) {
+      alert('Please select a video file first.');
+      return;
+    }
 
-    const targetFile = fileInput.files[0];
-
-    // Wrap form content into a standard multipart payload boundary box
     const payload = new FormData();
-    payload.append('video', targetFile);
+    payload.append('video', fileInput.files[0]);
     payload.append('giftId', giftId);
-    payload.append('message', messageInput.value.trim());
+    payload.append('message', document.getElementById('message-input').value.trim());
 
-    // Display progress elements and freeze fields
     progressContainer.style.display = 'block';
     submitBtn.disabled = true;
     submitBtn.textContent = 'Uploading...';
 
-    // Set up native browser XMLHttpRequest to correctly support upload progress reporting
     const xhr = new XMLHttpRequest();
 
     xhr.upload.addEventListener('progress', (e) => {
       if (e.lengthComputable) {
         const percent = Math.round((e.loaded / e.total) * 100);
         progressBar.style.width = percent + '%';
-        progressText.textContent = `Uploading to processing cluster: ${percent}%`;
+        progressText.textContent = `Uploading: ${percent}%`;
       }
     });
 
     xhr.open('POST', `${BACKEND_API_BASE}/api/upload`, true);
 
-    xhr.onload = function() {
+    xhr.onload = function () {
       if (xhr.status === 200) {
-        try {
-          const res = JSON.parse(xhr.responseText);
-          console.log('Success Payload:', res);
-          alert('🎉 Success! Your video gift has been successfully recorded and attached to this card!');
-          // Redirect the user over to the watch view screen or complete a soft reset
-          window.location.reload();
-        } catch(e) {
-          alert('Video captured, but engine failed to parse confirmation reply.');
-        }
+        alert('🎉 Your video gift has been successfully uploaded!');
+        window.location.href = `watch.html?id=${encodeURIComponent(giftId)}`;
       } else {
         try {
           const errRes = JSON.parse(xhr.responseText);
-          alert(`Upload Failed: ${errRes.error || 'Server processing error occurred.'}`);
-        } catch(e) {
-          alert(`Upload Failed with system code status: ${xhr.status}`);
+          alert(`Upload Failed: ${errRes.error || 'Server error.'}`);
+        } catch (e) {
+          alert(`Upload Failed. Status: ${xhr.status}`);
         }
         resetFormUI();
       }
     };
 
-    xhr.onerror = function() {
-      alert('Network transmission failed. Please make sure your server is online.');
+    xhr.onerror = function () {
+      alert('Network error. Please make sure your connection is stable.');
       resetFormUI();
     };
 
@@ -348,6 +308,7 @@
   }
 
   function resetFormUI() {
+    const submitBtn = document.getElementById('submit-btn');
     submitBtn.disabled = false;
     submitBtn.textContent = 'Upload Video Gift';
     document.getElementById('progress-container').style.display = 'none';

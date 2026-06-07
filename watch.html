@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>VideoGift — Your Gift Awaits</title>
+  <title>Forever 27 | Your Gift Awaits</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,700;1,400&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
   <style>
@@ -24,89 +24,117 @@
       min-height: 100vh;
       display: flex; flex-direction: column;
     }
-
     body::before {
       content: ''; position: fixed; inset: 0;
       background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='80' height='80' viewBox='0 0 80 80'%3E%3Cg fill='%23ffffff' fill-opacity='0.02'%3E%3Cpath d='M11 18c3.866 0 7-3.134 7-7s-3.134-7-7-7-7 3.134-7 7 3.134 7 7 7zm48 25c3.866 0 7-3.134 7-7s-3.134-7-7-7-7 3.134-7 7 3.134 7 7 7zm-43-7c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zm63 31c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zM34 90c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zm1-61c3.16 0 5.722-2.562 5.722-5.722 0-3.16-2.562-5.722-5.722-5.722C31.84 17.556 29.28 20.117 29.28 23.278c0 3.16 2.56 5.722 5.72 5.722zm40 10c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zM24 56c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4z'/%3E%3C/g%3E%3C/svg%3E");
       z-index: 1; pointer-events: none;
     }
-
     .app-wrap {
       flex: 1; display: flex; flex-direction: column;
       align-items: center; justify-content: center;
       padding: 24px; position: relative; z-index: 2;
       width: 100%; max-width: 480px; margin: 0 auto;
     }
-
     header { text-align: center; margin-bottom: 40px; }
     .logo { font-family: 'Playfair Display', serif; font-size: 1.5rem; font-weight: 700; letter-spacing: -0.5px; margin-bottom: 4px; }
     .tagline { font-size: 0.7rem; text-transform: uppercase; letter-spacing: 2px; color: var(--gold); }
 
-    .state-panel {
-      width: 100%; display: flex; flex-direction: column; align-items: center; text-align: center;
-    }
+    .state-panel { width: 100%; display: flex; flex-direction: column; align-items: center; text-align: center; }
 
+    /* Loading */
     .spinner {
-      width: 28px; height: 28px; border: 2px solid rgba(255,255,255,0.1);
-      border-top-color: var(--gold); border-radius: 50%;
-      animation: spin 0.8s linear infinite; margin-bottom: 16px;
+      width: 28px; height: 28px;
+      border: 2px solid rgba(255,255,255,0.1);
+      border-top-color: var(--gold);
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+      margin-bottom: 16px;
     }
     @keyframes spin { to { transform: rotate(360deg); } }
-
     .status-msg { font-size: 0.9rem; color: #b5b0a5; font-weight: 300; }
 
-    /* Unwrap Ribbon Screen */
+    /* Error state */
+    .error-box {
+      background: rgba(255,255,255,0.04);
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 16px;
+      padding: 40px 24px;
+      width: 100%;
+      text-align: center;
+    }
+    .error-box .error-icon { font-size: 3rem; margin-bottom: 16px; display: block; }
+    .error-box h3 { font-family: 'Playfair Display', serif; font-size: 1.3rem; margin-bottom: 10px; }
+    .error-box p { color: #b5b0a5; font-size: 0.88rem; line-height: 1.6; }
+    .retry-btn {
+      margin-top: 20px; padding: 12px 28px;
+      background: var(--gold); color: #fff;
+      border: none; border-radius: 8px;
+      font-family: 'DM Sans', sans-serif;
+      font-size: 0.9rem; cursor: pointer;
+      transition: background 0.2s;
+    }
+    .retry-btn:hover { background: var(--gold-light); }
+
+    /* Unwrap screen */
     .envelope-box {
-      background: #161616; border: 1px solid #262626; border-radius: 24px;
-      padding: 48px 24px; width: 100%; box-shadow: 0 30px 60px rgba(0,0,0,0.4);
+      background: #161616; border: 1px solid #262626;
+      border-radius: 24px; padding: 48px 24px; width: 100%;
+      box-shadow: 0 30px 60px rgba(0,0,0,0.4);
     }
     .env-title { font-family: 'Playfair Display', serif; font-size: 1.8rem; font-weight: 400; font-style: italic; margin-bottom: 8px; }
     .env-sub { font-size: 0.85rem; color: #b5b0a5; margin-bottom: 32px; }
-     
     .ribbon-btn {
-      background: var(--ribbon); color: #fff; border: none; padding: 16px 36px;
-      border-radius: 12px; font-family: inherit; font-size: 0.95rem; font-weight: 500;
-      cursor: pointer; transition: all 0.25s; box-shadow: 0 8px 20px rgba(139,38,53,0.3);
+      background: var(--ribbon); color: #fff; border: none;
+      padding: 16px 36px; border-radius: 12px;
+      font-family: inherit; font-size: 0.95rem; font-weight: 500;
+      cursor: pointer; transition: all 0.25s;
+      box-shadow: 0 8px 20px rgba(139,38,53,0.3);
     }
     .ribbon-btn:hover { background: #a63243; transform: translateY(-1px); }
 
-    /* Video Player Screen */
+    /* Video player */
     .player-box { width: 100%; display: flex; flex-direction: column; gap: 24px; }
     .video-viewport {
-      width: 100%; aspect-ratio: 9/16; background: #000; border-radius: 20px;
+      width: 100%; aspect-ratio: 9/16;
+      background: #000; border-radius: 20px;
       overflow: hidden; box-shadow: 0 20px 50px rgba(0,0,0,0.5);
     }
     video { width: 100%; height: 100%; object-fit: cover; }
 
     .letter-box {
-      background: var(--paper); color: var(--ink); border-radius: 20px;
-      padding: 32px 24px; text-align: left; box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+      background: var(--paper); color: var(--ink);
+      border-radius: 20px; padding: 32px 24px;
+      text-align: left; box-shadow: 0 10px 30px rgba(0,0,0,0.2);
     }
     .letter-text { font-family: 'Playfair Display', serif; font-size: 1.2rem; font-style: italic; line-height: 1.6; margin-bottom: 20px; }
     .letter-meta { font-size: 0.75rem; color: var(--muted); text-transform: uppercase; letter-spacing: 1px; }
 
     .action-row { display: flex; gap: 12px; width: 100%; margin-top: 8px; }
     .secondary-btn {
-      flex: 1; background: rgba(255,255,255,0.05); color: #fff; border: 1px solid rgba(255,255,255,0.1);
-      padding: 14px; border-radius: 10px; font-size: 0.85rem; cursor: pointer; text-align: center; text-decoration: none;
+      flex: 1; background: rgba(255,255,255,0.05); color: #fff;
+      border: 1px solid rgba(255,255,255,0.1);
+      padding: 14px; border-radius: 10px; font-size: 0.85rem;
+      cursor: pointer; text-align: center; text-decoration: none;
+      transition: background 0.2s; font-family: 'DM Sans', sans-serif;
     }
     .secondary-btn:hover { background: rgba(255,255,255,0.1); }
   </style>
 </head>
 <body>
-
   <div class="app-wrap">
     <header>
       <div class="logo">Forever 27</div>
       <div class="tagline">Digital Keepsake</div>
     </header>
 
+    <!-- Loading -->
     <div id="loading-state" class="state-panel">
       <div class="spinner"></div>
       <p class="status-msg">Connecting to media vault...</p>
     </div>
 
-    <div id="unwrap-screen" class="state-panel" style="display: none;">
+    <!-- Unwrap screen -->
+    <div id="unwrap-screen" class="state-panel" style="display:none;">
       <div class="envelope-box">
         <h2 class="env-title">A gift awaits you</h2>
         <p class="env-sub">Someone sent you a personalized video memory.</p>
@@ -114,26 +142,31 @@
       </div>
     </div>
 
-    <div id="gift-state" class="state-panel" style="display: none; width:100%;">
+    <!-- Video player -->
+    <div id="gift-state" class="state-panel" style="display:none; width:100%;">
       <div class="player-box">
         <div class="video-viewport">
           <video id="gift-video" controls playsinline controlsList="nodownload"></video>
         </div>
-         
-        <div id="gift-note" class="letter-box" style="display: none;">
+        <div id="gift-note" class="letter-box" style="display:none;">
           <p id="gift-message-text" class="letter-text"></p>
           <p id="gift-sent-at" class="letter-meta"></p>
         </div>
-
         <div class="action-row">
-          <a id="download-link" class="secondary-btn" onclick="downloadVideo()">Save Video</a>
-          <a href="index.html" class="secondary-btn">Scan Another</a>
+          <button class="secondary-btn" onclick="downloadVideo()">⬇ Save Video</button>
+          <a href="index.html" class="secondary-btn">🏠 Home</a>
         </div>
       </div>
     </div>
 
-    <div id="not-found-state" class="state-panel" style="display: none;">
-      <p class="status-msg" id="error-message" style="color: var(--gold); padding: 20px; line-height: 1.5;"></p>
+    <!-- Error / not found -->
+    <div id="not-found-state" class="state-panel" style="display:none;">
+      <div class="error-box">
+        <span class="error-icon" id="error-icon">⚠️</span>
+        <h3 id="error-title">Something went wrong</h3>
+        <p id="error-message"></p>
+        <button class="retry-btn" onclick="location.reload()">Try Again</button>
+      </div>
     </div>
   </div>
 
@@ -143,83 +176,95 @@
     let giftData = null;
 
     document.addEventListener("DOMContentLoaded", () => {
+      const urlParams = new URLSearchParams(window.location.search);
+      giftId = urlParams.get('id');
+
+      if (!giftId) {
+        showError('⚠️', 'Invalid Link', 'This link is missing a gift ID. Please scan the QR card again.');
+        return;
+      }
       fetchGiftDetails();
     });
 
     async function fetchGiftDetails() {
-  const urlParams = new URLSearchParams(window.location.search);
-  giftId = urlParams.get('id');
+      // Timeout after 12 seconds — don't silently hang
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 12000);
 
-  if (!giftId) {
-    showError("Invalid link. Please scan the QR card again.");
-    return;
-  }
+      try {
+        const response = await fetch(`${API_BASE}/api/gift/${encodeURIComponent(giftId)}`, {
+          signal: controller.signal
+        });
+        clearTimeout(timeout);
 
-  // Add timeout so it doesn't hang forever
-  const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), 10000); // 10 sec
+        // Card not in DB at all → go to upload
+        if (response.status === 404) {
+          window.location.href = `upload.html?id=${encodeURIComponent(giftId)}`;
+          return;
+        }
 
-  try {
-    const response = await fetch(`${API_BASE}/api/gift/${encodeURIComponent(giftId)}`, {
-      signal: controller.signal
-    });
-    clearTimeout(timeout);
+        if (!response.ok) throw new Error('Server returned an error.');
 
-  if (response.status === 404) {
-  window.location.href = `upload.html?id=${encodeURIComponent(giftId)}`;
-  return;
-}
+        giftData = await response.json();
+        const videoUrl = giftData.video_url || giftData.videoUrl;
 
-giftData = await response.json();
-const videoUrl = giftData.video_url || giftData.videoUrl;
+        if (!videoUrl) {
+          // Card exists but no video yet → go to upload
+          window.location.href = `upload.html?id=${encodeURIComponent(giftId)}`;
+          return;
+        }
 
-if (!videoUrl) {
-  // No video yet → send to upload
-  window.location.href = `upload.html?id=${encodeURIComponent(giftId)}`;
-  return;
-}
+        // ✅ Video exists — show the gift, never redirect to upload
+        document.getElementById('loading-state').style.display = 'none';
+        document.getElementById('unwrap-screen').style.display = 'flex';
+        markAsViewed(giftId);
 
-// Video exists → show the gift!
-document.getElementById('loading-state').style.display = 'none';
-document.getElementById('unwrap-screen').style.display = 'flex';
-    markAsViewed(giftId);
-
-  } catch (error) {
-    clearTimeout(timeout);
-    if (error.name === 'AbortError') {
-      showError("Server is waking up — please wait 30 seconds and refresh the page. 🕐");
-    } else {
-      showError("Could not connect to server. Please check your internet and try again.");
+      } catch (error) {
+        clearTimeout(timeout);
+        if (error.name === 'AbortError') {
+          showError(
+            '🕐',
+            'Server is waking up...',
+            'The server is starting up from sleep mode. Please wait 30 seconds and tap Try Again.'
+          );
+        } else {
+          showError(
+            '📡',
+            'Connection Failed',
+            'Could not reach the server. Please check your internet connection and try again.'
+          );
+        }
+      }
     }
-  }
-}
+
     function revealGift() {
       document.getElementById('unwrap-screen').style.display = 'none';
       document.getElementById('gift-state').style.display = 'flex';
 
       const video = document.getElementById('gift-video');
-      // Fallback alignment check for safe streaming parsing
       const videoUrl = giftData.video_url || giftData.videoUrl;
       const createdAt = giftData.created_at || giftData.createdAt;
 
       video.src = videoUrl;
       video.play().catch(() => {});
 
-      if (giftData.message && giftData.message.trim() !== "") {
+      if (giftData.message && giftData.message.trim() !== '') {
         document.getElementById('gift-message-text').textContent = giftData.message;
         document.getElementById('gift-sent-at').textContent =
-          'Uploaded ' + new Date(createdAt).toLocaleDateString('en-US', { year:'numeric', month:'long', day:'numeric' });
+          'Uploaded ' + new Date(createdAt).toLocaleDateString('en-US', {
+            year: 'numeric', month: 'long', day: 'numeric'
+          });
         document.getElementById('gift-note').style.display = 'block';
       }
     }
 
-    function showError(msg) {
+    function showError(icon, title, message) {
       document.getElementById('loading-state').style.display = 'none';
       document.getElementById('unwrap-screen').style.display = 'none';
       document.getElementById('gift-state').style.display = 'none';
-      
-      const label = document.getElementById('error-message');
-      label.textContent = msg;
+      document.getElementById('error-icon').textContent = icon;
+      document.getElementById('error-title').textContent = title;
+      document.getElementById('error-message').textContent = message;
       document.getElementById('not-found-state').style.display = 'flex';
     }
 
