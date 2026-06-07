@@ -190,3 +190,8 @@ app.listen(PORT, () => {
   console.log(` 🚀 Server cruising smoothly on port: ${PORT}   `);
   console.log(`=================================================`);
 });
+// Self-ping every 14 minutes to prevent sleep
+setInterval(() => {
+  fetch(`https://videogift-backend-3.onrender.com/`)
+    .catch(() => {});
+}, 14 * 60 * 1000);
