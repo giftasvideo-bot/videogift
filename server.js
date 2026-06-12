@@ -105,15 +105,23 @@ app.post('/api/gifts/status', async (req, res) => {
 
 // ── ROUTE 5: USER VIDEO UPLOAD AND ATTACHMENT ──
 app.post('/api/upload', upload.single('video'), async (req, res) => {
-  const { giftId, message } = req.body;
-  const file = req.file;
+    const { giftId, message } = req.body;
+    
+    // 1. SECURITY GATE: Validate ID exists in database before touching the file
+    const { data, error: dbError } = await supabase
+        .from('gifts')
+        .select('id')
+        .eq('id', giftId)
+        .single();
 
-  if (!giftId) {
-    return res.status(400).json({ error: 'Missing target Gift ID.' });
-  }
-  if (!file) {
-    return res.status(400).json({ error: 'No video media file attached.' });
-  }
+    // If ID is not found or error occurred, stop everything!
+    if (dbError || !data) {
+        return res.status(400).json({ error: 'Invalid or unauthorized Gift ID.' });
+    }
+
+    // 2. If it passed, NOW proceed with your existing upload logic...
+    // (Proceed to upload to Supabase Storage and update the row)
+});
 
   try {
     const fileExtension = file.originalname.split('.').pop() || 'mp4';
@@ -195,3 +203,23 @@ setInterval(() => {
   fetch(`https://videogift-backend-3.onrender.com/`)
     .catch(() => {});
 }, 14 * 60 * 1000);
+app.get('/api/validate', async (req, res) => {
+    const { id } = req.query;
+
+    if (!id) return res.json({ isValid: false });
+
+    // Query your Supabase table 'gifts'
+    const { data, error } = await supabase
+        .from('gifts')
+        .select('id')
+        .eq('id', id)
+        .single();
+
+    // If there is an error or no data, the ID is invalid
+    if (error || !data) {
+        return res.json({ isValid: false });
+    }
+
+    // If we found the record, it's valid
+    return res.json({ isValid: true });
+});
