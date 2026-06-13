@@ -12,55 +12,19 @@
       --ink: #0d0d0d; --paper: #faf7f2; --gold: #c9933a; --gold-light: #e8b86d; 
       --cream: #f0ead8; --muted: #7a7060; --success-bg: #e8f5e9; --pending-bg: #fff3e0;
     }
-
     * { margin: 0; padding: 0; box-sizing: border-box; }
     body { background-color: var(--paper); color: var(--ink); font-family: 'DM Sans', sans-serif; padding: 40px 20px; min-height: 100vh; }
-
-    /* Login Overlay Styles */
-    #login-overlay {
-      position: fixed; inset: 0; background: var(--paper);
-      display: flex; align-items: center; justify-content: center; z-index: 9999;
-    }
-    .login-box {
-      background: #ffffff; padding: 40px; border-radius: 16px;
-      border: 1px solid var(--cream); text-align: center;
-      box-shadow: 0 10px 40px rgba(0,0,0,0.1);
-    }
-    .login-box input { display: block; margin: 20px auto; padding: 12px; border: 1px solid var(--cream); border-radius: 6px; width: 250px; }
-
-    /* Dashboard Styles */
-    .dashboard { display: none; max-width: 1100px; margin: 0 auto; }
-    .header { text-align: center; margin-bottom: 40px; }
-    .logo { font-family: 'Playfair Display', serif; font-size: 2rem; }
-    .logo span { color: var(--gold); }
+    .dashboard { max-width: 1100px; margin: 0 auto; }
     .card-section { background: #ffffff; border: 1px solid var(--cream); border-radius: 12px; padding: 30px; margin-bottom: 30px; }
     .btn { padding: 12px 24px; background: var(--gold); color: #ffffff; border: none; border-radius: 6px; cursor: pointer; }
     .qr-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 24px; margin-top: 20px; }
-    .qr-card { border: 1px solid var(--cream); border-radius: 12px; padding: 24px; text-align: center; }
+    .qr-card { background: #ffffff; border: 1px solid var(--cream); border-radius: 12px; padding: 24px; text-align: center; display: flex; flex-direction: column; align-items: center; }
+    .qr-container { width: 160px; height: 160px; background: white; margin-bottom: 16px; border-radius: 8px; display: flex; align-items: center; justify-content: center; }
   </style>
 </head>
 <body>
 
-<div id="login-overlay">
-  <div class="login-box">
-    <h2>🔒 Admin Access</h2>
-    <input type="password" id="admin-pass" placeholder="Enter Admin Password">
-    <button class="btn" onclick="checkPassword()">Unlock Dashboard</button>
-  </div>
-</div>
-
-<div class="dashboard" id="main-content">
-  <div class="header">
-    <div class="logo">Forever<span>27</span></div>
-    <h1>System Operations Control</h1>
-  </div>
-
-  <div class="card-section">
-    <h2>⚙️ Backend Server Routing</h2>
-    <input type="text" id="api-url-input" value="https://videogift-backend-3.onrender.com" style="width: 100%; padding: 10px; margin-bottom: 10px;">
-    <button class="btn" onclick="saveApiUrl()">Save Config</button>
-  </div>
-
+<div class="dashboard">
   <div class="card-section">
     <h2>📋 Active Card Registry</h2>
     <div class="qr-grid" id="cards-grid-container"></div>
@@ -68,38 +32,52 @@
 </div>
 
 <script>
-  // 1. Password Protection Logic
-  function checkPassword() {
-    const pass = document.getElementById('admin-pass').value;
-    
-    // CHANGE THIS PASSWORD TO YOUR PREFERRED ONE
-    if (pass === "212327") { 
-      document.getElementById('login-overlay').style.display = 'none';
-      document.getElementById('main-content').style.display = 'block';
-    } else {
-      alert("Incorrect password!");
-    }
-  }
-
-  document.getElementById('admin-pass').addEventListener('keypress', function (e) {
-    if (e.key === 'Enter') checkPassword();
-  });
-
-  // 2. Existing Registry Logic
   let BACKEND_API_BASE = localStorage.getItem('videogift_api_url') || 'https://videogift-backend-3.onrender.com';
   let localRegistry = JSON.parse(localStorage.getItem('forever27_cards_manifest')) || [];
 
-  function saveApiUrl() {
-    const url = document.getElementById('api-url-input').value.trim().replace(/\/$/, "");
-    BACKEND_API_BASE = url;
-    localStorage.setItem('videogift_api_url', url);
-    alert('✅ Backend URL saved.');
+  function buildWatchUrl(id) {
+    const base = window.location.origin + window.location.pathname.replace('admin.html', '');
+    return `${base}watch.html?id=${id}`;
   }
 
-  // (Include your existing renderDashboardGrid and other functions here)
-  
+  function renderDashboardGrid() {
+    const gridContainer = document.getElementById('cards-grid-container');
+    gridContainer.innerHTML = ''; 
+
+    localRegistry.forEach(id => {
+      const targetWatchUrl = buildWatchUrl(id);
+
+      // Create card elements
+      const card = document.createElement('div');
+      card.className = 'qr-card';
+      
+      const qrWrapper = document.createElement('div');
+      qrWrapper.className = 'qr-container';
+      // Give it a unique ID for the library to target
+      qrWrapper.id = `qr-code-${id}`; 
+      
+      card.appendChild(qrWrapper);
+      card.innerHTML += `<div class="qr-id-label">${id}</div>`;
+      gridContainer.appendChild(card);
+
+      // Initialize QR Code inside a timeout to ensure DOM is ready
+      setTimeout(() => {
+        try {
+          new QRCode(document.getElementById(`qr-code-${id}`), {
+            text: targetWatchUrl,
+            width: 140,
+            height: 140,
+            correctLevel: QRCode.CorrectLevel.M
+          });
+        } catch (e) {
+          console.error("QR Render Error for " + id, e);
+        }
+      }, 50);
+    });
+  }
+
   // Initialization
-  // renderDashboardGrid();
+  renderDashboardGrid();
 </script>
 </body>
 </html>
