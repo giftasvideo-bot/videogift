@@ -16,18 +16,47 @@
     .logo-sub { font-size: 0.8rem; text-transform: uppercase; letter-spacing: 3px; color: var(--gold); margin-bottom: 40px; }
     .hero-title { font-family: 'Playfair Display', serif; font-size: 1.75rem; font-style: italic; margin-bottom: 12px; }
     .hero-desc { font-size: 0.92rem; color: var(--muted); line-height: 1.65; margin-bottom: 30px; }
-    
-    /* New Instructions Section */
     .instructions { text-align: left; margin-bottom: 30px; font-size: 0.85rem; color: var(--muted); }
     .instructions h3 { color: var(--ink); margin-bottom: 10px; font-family: 'Playfair Display', serif; }
     .instructions ul { list-style-position: inside; line-height: 1.8; margin-bottom: 10px; }
+    .cta-btn { width: 100%; padding: 16px 24px; background: var(--ink); color: #fff; border: none; border-radius: 12px; font-size: 1rem; font-family: 'DM Sans', sans-serif; cursor: pointer; transition: background 0.2s; }
+    .cta-btn:hover { background: #2a2a2a; }
 
-    .cta-btn { width: 100%; padding: 16px 24px; background: var(--ink); color: #fff; border: none; border-radius: 12px; font-size: 1rem; cursor: pointer; }
-    .modal-overlay { position: fixed; inset: 0; background: rgba(13,13,13,0.65); display: none; align-items: flex-end; justify-content: center; z-index: 200; }
-    .modal-card { background: var(--paper); width: 100%; max-width: 480px; border-radius: 24px 24px 0 0; padding: 28px 24px 40px; }
-    .manual-wrap { display: flex; gap: 8px; margin-top: 20px; }
-    .manual-input { flex: 1; padding: 13px 16px; border: 1px solid var(--cream); border-radius: 10px; }
-    .manual-btn { padding: 0 22px; background: var(--gold); color: #fff; border: none; border-radius: 10px; cursor: pointer; }
+    /* Modal */
+    .modal-overlay { position: fixed; inset: 0; background: rgba(13,13,13,0.65); display: none; align-items: flex-end; justify-content: center; z-index: 200; padding: 0; }
+    .modal-card { background: var(--paper); width: 100%; max-width: 480px; border-radius: 24px 24px 0 0; padding: 28px 24px 48px; position: relative; }
+    .drag-handle { width: 40px; height: 4px; background: var(--cream); border-radius: 2px; margin: 0 auto 20px; }
+    .modal-title { font-family: 'Playfair Display', serif; font-size: 1.2rem; margin-bottom: 16px; text-align: center; }
+    .close-btn { position: absolute; top: 20px; right: 20px; background: var(--cream); border: none; width: 32px; height: 32px; border-radius: 50%; font-size: 1.1rem; cursor: pointer; color: var(--muted); }
+
+    /* Scanner */
+    .scanner-wrap { width: 100%; border-radius: 14px; overflow: hidden; background: #111; min-height: 260px; display: flex; align-items: center; justify-content: center; position: relative; }
+    #qr-reader { width: 100% !important; border: none !important; }
+    #qr-reader__header_message { display: none !important; }
+    #qr-reader__status_span { display: none !important; }
+    #qr-reader__camera_permission_button, #qr-reader__camera_start_button {
+      background: var(--gold) !important; color: #fff !important; border: none !important;
+      padding: 10px 20px !important; border-radius: 8px !important;
+      font-family: 'DM Sans', sans-serif !important; cursor: pointer !important; margin: 8px !important;
+    }
+
+    /* Loading spinner */
+    .scan-loading { position: absolute; display: flex; flex-direction: column; align-items: center; gap: 10px; color: rgba(255,255,255,0.5); font-size: 0.82rem; }
+    .spin { width: 28px; height: 28px; border: 2px solid rgba(255,255,255,0.15); border-top-color: #c9933a; border-radius: 50%; animation: spin 0.8s linear infinite; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* Camera fallback */
+    .cam-fail { display: none; text-align: center; padding: 20px; color: rgba(255,255,255,0.4); font-size: 0.82rem; line-height: 1.6; }
+
+    /* Divider */
+    .divider { display: flex; align-items: center; gap: 10px; margin: 18px 0; color: var(--muted); font-size: 0.78rem; text-transform: uppercase; letter-spacing: 1px; }
+    .divider::before, .divider::after { content: ''; flex: 1; height: 1px; background: var(--cream); }
+
+    .manual-wrap { display: flex; gap: 8px; }
+    .manual-input { flex: 1; padding: 13px 16px; border: 1px solid var(--cream); border-radius: 10px; font-family: 'DM Sans', sans-serif; font-size: 0.95rem; outline: none; background: #fff; }
+    .manual-input:focus { border-color: var(--gold); }
+    .manual-btn { padding: 0 22px; background: var(--gold); color: #fff; border: none; border-radius: 10px; cursor: pointer; font-family: 'DM Sans', sans-serif; font-size: 0.95rem; font-weight: 500; transition: background 0.2s; }
+    .manual-btn:hover { background: var(--gold-light); }
   </style>
 </head>
 <body>
@@ -37,66 +66,166 @@
     <div class="logo-sub">Physical to Digital</div>
     <h1 class="hero-title">Unwrap your memory</h1>
     <p class="hero-desc">Scan the QR code on your gift card to upload or watch your personalized video keepsake.</p>
-    
+
     <div class="instructions">
       <h3>How it works:</h3>
       <ul>
         <li><strong>For Givers:</strong> Scan your card to attach a video or personal message.</li>
         <li><strong>For Receivers:</strong> Scan the card to watch the video memory attached by your loved one.</li>
       </ul>
-      <p><em>Purpose: Forever 27 seamlessly blends physical keepsakes with digital moments, ensuring your memories last forever.</em></p>
+      <p><em>Forever 27 blends physical keepsakes with digital moments, ensuring your memories last forever.</em></p>
     </div>
 
-    <button class="cta-btn" onclick="openModal()">✨ Scan QR Code</button>
+    <button class="cta-btn" id="scan-btn" onclick="openModal()">✨ Scan QR Code</button>
   </div>
 
+  <!-- Modal -->
   <div class="modal-overlay" id="scan-modal">
     <div class="modal-card">
-      <div id="qr-reader"></div>
+      <div class="drag-handle"></div>
+      <button class="close-btn" onclick="closeModal()">✕</button>
+      <div class="modal-title">Point camera at QR code</div>
+
+      <div class="scanner-wrap" id="scanner-wrap">
+        <div class="scan-loading" id="scan-loading">
+          <div class="spin"></div>
+          <span>Starting camera...</span>
+        </div>
+        <div class="cam-fail" id="cam-fail">
+          📷 Camera unavailable.<br>Enter your code below.
+        </div>
+        <div id="qr-reader"></div>
+      </div>
+
+      <div class="divider">or enter code</div>
+
       <div class="manual-wrap">
-        <input type="text" id="manual-code" class="manual-input" placeholder="Enter code manually..." />
+        <input type="text" id="manual-code" class="manual-input"
+          placeholder="e.g. GIFT-A1B2C3"
+          onkeydown="if(event.key==='Enter') goWithCode()" />
         <button class="manual-btn" onclick="goWithCode()">Go</button>
       </div>
     </div>
   </div>
 
   <script>
+    // ── FIX 1: API base stored as a plain string (original had broken template literal) ──
     const BACKEND_URL = 'https://videogift-backend-3.onrender.com';
+
     let qrScanner = null;
+    let isScanning = false;
+    let scanDone = false;
 
     function openModal() {
-        document.getElementById('scan-modal').style.display = 'flex';
+      scanDone = false;
+      document.getElementById('scan-modal').style.display = 'flex';
+      document.getElementById('scan-loading').style.display = 'flex';
+      document.getElementById('cam-fail').style.display = 'none';
+      document.getElementById('qr-reader').innerHTML = '';
+      // ── FIX 2: Delay so modal is visible before camera initialises ──
+      setTimeout(startScanner, 400);
+    }
+
+    function startScanner() {
+      try {
         qrScanner = new Html5Qrcode('qr-reader');
-        qrScanner.start({ facingMode: 'environment' }, { fps: 10, qrbox: 250 }, (text) => {
-            closeModal();
-            navigateToGift(text);
-        });
+      } catch(e) {
+        showCamFail(); return;
+      }
+
+      // Try to enumerate cameras first, prefer rear
+      Html5Qrcode.getCameras().then(cameras => {
+        if (!cameras || cameras.length === 0) { showCamFail(); return; }
+
+        const cam = cameras.find(c =>
+          c.label.toLowerCase().includes('back') ||
+          c.label.toLowerCase().includes('rear') ||
+          c.label.toLowerCase().includes('environment')
+        ) || cameras[cameras.length - 1];
+
+        qrScanner.start(
+          cam.id,
+          { fps: 10, qrbox: { width: 220, height: 220 } },
+          onQRSuccess, () => {}
+        ).then(() => {
+          isScanning = true;
+          document.getElementById('scan-loading').style.display = 'none';
+        }).catch(() => tryFacingMode());
+
+      }).catch(() => tryFacingMode());
+    }
+
+    function tryFacingMode() {
+      qrScanner.start(
+        { facingMode: 'environment' },
+        { fps: 10, qrbox: { width: 220, height: 220 } },
+        onQRSuccess, () => {}
+      ).then(() => {
+        isScanning = true;
+        document.getElementById('scan-loading').style.display = 'none';
+      }).catch(() => showCamFail());
+    }
+
+    function onQRSuccess(decodedText) {
+      if (scanDone) return;
+      scanDone = true;
+      stopScanner().then(() => {
+        closeModal();
+        // ── FIX 3: Removed broken /api/validate call — go directly to watch.html ──
+        navigateToGift(decodedText);
+      });
+    }
+
+    function showCamFail() {
+      isScanning = false;
+      document.getElementById('scan-loading').style.display = 'none';
+      document.getElementById('cam-fail').style.display = 'block';
+      document.getElementById('qr-reader').innerHTML = '';
+      setTimeout(() => document.getElementById('manual-code').focus(), 100);
+    }
+
+    function stopScanner() {
+      if (qrScanner && isScanning) {
+        isScanning = false;
+        return qrScanner.stop().catch(() => {});
+      }
+      return Promise.resolve();
     }
 
     function closeModal() {
-        if (qrScanner) qrScanner.stop().catch(()=>{});
+      stopScanner().finally(() => {
+        qrScanner = null;
         document.getElementById('scan-modal').style.display = 'none';
+        document.getElementById('qr-reader').innerHTML = '';
+        document.getElementById('manual-code').value = '';
+      });
     }
 
-    async function navigateToGift(rawText) {
-        let giftId = rawText.trim();
-        try {
-            const response = await fetch(`${https://videogift-backend-3.onrender.com}/api/validate?id=${encodeURIComponent(giftId)}`);
-            const result = await response.json();
-            if (result.isValid) {
-                window.location.href = `upload.html?id=${encodeURIComponent(giftId)}`;
-            } else {
-                alert("Invalid code.");
-            }
-        } catch (e) {
-            alert("System error. Check connection.");
-        }
-    }
-    
     function goWithCode() {
-        const code = document.getElementById('manual-code').value;
-        if(code) navigateToGift(code);
+      const code = document.getElementById('manual-code').value.trim();
+      if (!code) { document.getElementById('manual-code').focus(); return; }
+      stopScanner().finally(() => {
+        document.getElementById('scan-modal').style.display = 'none';
+        navigateToGift(code);
+      });
     }
+
+    function navigateToGift(rawText) {
+      let giftId = rawText.trim();
+      // Extract ?id= param if it's a full URL
+      try {
+        const url = new URL(rawText);
+        const param = url.searchParams.get('id');
+        if (param) giftId = param;
+      } catch(e) {}
+      // Always go to watch.html — it smart-routes to upload if no video yet
+      window.location.href = `watch.html?id=${encodeURIComponent(giftId)}`;
+    }
+
+    // Close on backdrop tap
+    document.getElementById('scan-modal').addEventListener('click', function(e) {
+      if (e.target === this) closeModal();
+    });
   </script>
 </body>
 </html>
