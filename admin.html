@@ -5,79 +5,62 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Forever 27 | Admin Dashboard</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,700;1,400&family=DM+Sans:wght@300;400;500;700&display=swap" rel="stylesheet">
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&family=DM+Sans:wght@400;500&display=swap" rel="stylesheet">
+  
+  <script src="https://cdn.jsdelivr.net/gh/davidshimjs/qrcodejs/qrcode.min.js"></script>
+
   <style>
-    :root {
-      --ink: #0d0d0d; --paper: #faf7f2; --gold: #c9933a; --gold-light: #e8b86d; 
-      --cream: #f0ead8; --muted: #7a7060; --success-bg: #e8f5e9; --pending-bg: #fff3e0;
-    }
-    * { margin: 0; padding: 0; box-sizing: border-box; }
-    body { background-color: var(--paper); color: var(--ink); font-family: 'DM Sans', sans-serif; padding: 40px 20px; min-height: 100vh; }
-    .dashboard { max-width: 1100px; margin: 0 auto; }
-    .card-section { background: #ffffff; border: 1px solid var(--cream); border-radius: 12px; padding: 30px; margin-bottom: 30px; }
-    .btn { padding: 12px 24px; background: var(--gold); color: #ffffff; border: none; border-radius: 6px; cursor: pointer; }
-    .qr-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 24px; margin-top: 20px; }
-    .qr-card { background: #ffffff; border: 1px solid var(--cream); border-radius: 12px; padding: 24px; text-align: center; display: flex; flex-direction: column; align-items: center; }
-    .qr-container { width: 160px; height: 160px; background: white; margin-bottom: 16px; border-radius: 8px; display: flex; align-items: center; justify-content: center; }
+    :root { --ink: #0d0d0d; --paper: #faf7f2; --gold: #c9933a; }
+    body { background-color: var(--paper); color: var(--ink); font-family: 'DM Sans', sans-serif; padding: 40px; }
+    .dashboard { max-width: 1000px; margin: 0 auto; }
+    .qr-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 20px; margin-top: 20px; }
+    .qr-card { background: white; padding: 20px; border: 1px solid #e5dec9; border-radius: 10px; text-align: center; }
+    .qr-container { width: 140px; height: 140px; margin: 0 auto 10px; }
   </style>
 </head>
 <body>
 
 <div class="dashboard">
-  <div class="card-section">
-    <h2>📋 Active Card Registry</h2>
-    <div class="qr-grid" id="cards-grid-container"></div>
-  </div>
+  <h1>System Registry</h1>
+  <div class="qr-grid" id="cards-grid-container"></div>
 </div>
 
 <script>
-  let BACKEND_API_BASE = localStorage.getItem('videogift_api_url') || 'https://videogift-backend-3.onrender.com';
-  let localRegistry = JSON.parse(localStorage.getItem('forever27_cards_manifest')) || [];
+  // Wait for the library to be loaded
+  window.addEventListener('load', () => {
+    if (typeof QRCode === "undefined") {
+      alert("Error: QR Code library failed to load. Check your internet connection.");
+      console.error("QRCode library not found.");
+      return;
+    }
 
-  function buildWatchUrl(id) {
-    const base = window.location.origin + window.location.pathname.replace('admin.html', '');
-    return `${base}watch.html?id=${id}`;
-  }
-
-  function renderDashboardGrid() {
+    let localRegistry = JSON.parse(localStorage.getItem('forever27_cards_manifest')) || [];
     const gridContainer = document.getElementById('cards-grid-container');
-    gridContainer.innerHTML = ''; 
 
     localRegistry.forEach(id => {
-      const targetWatchUrl = buildWatchUrl(id);
-
-      // Create card elements
       const card = document.createElement('div');
       card.className = 'qr-card';
       
       const qrWrapper = document.createElement('div');
       qrWrapper.className = 'qr-container';
-      // Give it a unique ID for the library to target
-      qrWrapper.id = `qr-code-${id}`; 
+      qrWrapper.id = `qr-${id}`;
       
       card.appendChild(qrWrapper);
-      card.innerHTML += `<div class="qr-id-label">${id}</div>`;
+      card.innerHTML += `<div>${id}</div>`;
       gridContainer.appendChild(card);
 
-      // Initialize QR Code inside a timeout to ensure DOM is ready
-      setTimeout(() => {
-        try {
-          new QRCode(document.getElementById(`qr-code-${id}`), {
-            text: targetWatchUrl,
-            width: 140,
-            height: 140,
-            correctLevel: QRCode.CorrectLevel.M
-          });
-        } catch (e) {
-          console.error("QR Render Error for " + id, e);
-        }
-      }, 50);
+      // Initialize after DOM is fully painted
+      try {
+        new QRCode(document.getElementById(`qr-${id}`), {
+          text: `${window.location.origin}/watch.html?id=${id}`,
+          width: 140,
+          height: 140
+        });
+      } catch (err) {
+        console.error("Render failed for " + id, err);
+      }
     });
-  }
-
-  // Initialization
-  renderDashboardGrid();
+  });
 </script>
 </body>
 </html>
