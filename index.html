@@ -23,7 +23,7 @@
     .cta-btn:hover { background: #2a2a2a; }
 
     /* Modal */
-    .modal-overlay { position: fixed; inset: 0; background: rgba(13,13,13,0.65); display: none; align-items: flex-end; justify-content: center; z-index: 200; padding: 0; }
+    .modal-overlay { position: fixed; inset: 0; background: rgba(13,13,13,0.65); display: none; align-items: flex-end; justify-content: center; z-index: 200; }
     .modal-card { background: var(--paper); width: 100%; max-width: 480px; border-radius: 24px 24px 0 0; padding: 28px 24px 48px; position: relative; }
     .drag-handle { width: 40px; height: 4px; background: var(--cream); border-radius: 2px; margin: 0 auto 20px; }
     .modal-title { font-family: 'Playfair Display', serif; font-size: 1.2rem; margin-bottom: 16px; text-align: center; }
@@ -39,13 +39,9 @@
       padding: 10px 20px !important; border-radius: 8px !important;
       font-family: 'DM Sans', sans-serif !important; cursor: pointer !important; margin: 8px !important;
     }
-
-    /* Loading spinner */
     .scan-loading { position: absolute; display: flex; flex-direction: column; align-items: center; gap: 10px; color: rgba(255,255,255,0.5); font-size: 0.82rem; }
     .spin { width: 28px; height: 28px; border: 2px solid rgba(255,255,255,0.15); border-top-color: #c9933a; border-radius: 50%; animation: spin 0.8s linear infinite; }
     @keyframes spin { to { transform: rotate(360deg); } }
-
-    /* Camera fallback */
     .cam-fail { display: none; text-align: center; padding: 20px; color: rgba(255,255,255,0.4); font-size: 0.82rem; line-height: 1.6; }
 
     /* Divider */
@@ -53,10 +49,28 @@
     .divider::before, .divider::after { content: ''; flex: 1; height: 1px; background: var(--cream); }
 
     .manual-wrap { display: flex; gap: 8px; }
-    .manual-input { flex: 1; padding: 13px 16px; border: 1px solid var(--cream); border-radius: 10px; font-family: 'DM Sans', sans-serif; font-size: 0.95rem; outline: none; background: #fff; }
+    .manual-input { flex: 1; padding: 13px 16px; border: 1px solid var(--cream); border-radius: 10px; font-family: 'DM Sans', sans-serif; font-size: 0.95rem; outline: none; background: #fff; transition: border-color 0.2s; }
     .manual-input:focus { border-color: var(--gold); }
-    .manual-btn { padding: 0 22px; background: var(--gold); color: #fff; border: none; border-radius: 10px; cursor: pointer; font-family: 'DM Sans', sans-serif; font-size: 0.95rem; font-weight: 500; transition: background 0.2s; }
+    .manual-input.error { border-color: #e53935; background: #fff8f8; }
+    .manual-btn { padding: 0 22px; background: var(--gold); color: #fff; border: none; border-radius: 10px; cursor: pointer; font-family: 'DM Sans', sans-serif; font-size: 0.95rem; font-weight: 500; transition: background 0.2s; white-space: nowrap; }
     .manual-btn:hover { background: var(--gold-light); }
+    .manual-btn:disabled { background: var(--cream); color: var(--muted); cursor: not-allowed; }
+
+    /* Validation message box */
+    .msg-box {
+      display: none;
+      margin-top: 12px;
+      padding: 12px 16px;
+      border-radius: 10px;
+      font-size: 0.85rem;
+      line-height: 1.5;
+      text-align: center;
+      animation: fadeIn 0.2s ease;
+    }
+    @keyframes fadeIn { from { opacity:0; transform:translateY(-4px); } to { opacity:1; transform:translateY(0); } }
+    .msg-box.error   { background: #ffebee; border: 1px solid #ffcdd2; color: #c62828; }
+    .msg-box.loading { background: #fff8e1; border: 1px solid #ffe082; color: #7a6020; }
+    .msg-box.success { background: #e8f5e9; border: 1px solid #a5d6a7; color: #2e7d32; }
   </style>
 </head>
 <body>
@@ -71,12 +85,12 @@
       <h3>How it works:</h3>
       <ul>
         <li><strong>For Givers:</strong> Scan your card to attach a video or personal message.</li>
-        <li><strong>For Receivers:</strong> Scan the card to watch the video memory attached by your loved one.</li>
+        <li><strong>For Receivers:</strong> Scan the card to watch the video memory from your loved one.</li>
       </ul>
       <p><em>Forever 27 blends physical keepsakes with digital moments, ensuring your memories last forever.</em></p>
     </div>
 
-    <button class="cta-btn" id="scan-btn" onclick="openModal()">✨ Scan QR Code</button>
+    <button class="cta-btn" onclick="openModal()">✨ Scan QR Code</button>
   </div>
 
   <!-- Modal -->
@@ -97,73 +111,61 @@
         <div id="qr-reader"></div>
       </div>
 
-      <div class="divider">or enter code</div>
+      <div class="divider">or enter code manually</div>
 
       <div class="manual-wrap">
         <input type="text" id="manual-code" class="manual-input"
           placeholder="e.g. GIFT-A1B2C3"
+          autocomplete="off"
+          oninput="clearMsg()"
           onkeydown="if(event.key==='Enter') goWithCode()" />
-        <button class="manual-btn" onclick="goWithCode()">Go</button>
+        <button class="manual-btn" id="go-btn" onclick="goWithCode()">Go</button>
       </div>
+
+      <!-- Validation feedback message -->
+      <div class="msg-box" id="msg-box"></div>
     </div>
   </div>
 
   <script>
-    // ── FIX 1: API base stored as a plain string (original had broken template literal) ──
     const BACKEND_URL = 'https://videogift-backend-3.onrender.com';
-
     let qrScanner = null;
     let isScanning = false;
     let scanDone = false;
 
     function openModal() {
       scanDone = false;
+      clearMsg();
       document.getElementById('scan-modal').style.display = 'flex';
       document.getElementById('scan-loading').style.display = 'flex';
       document.getElementById('cam-fail').style.display = 'none';
       document.getElementById('qr-reader').innerHTML = '';
-      // ── FIX 2: Delay so modal is visible before camera initialises ──
+      document.getElementById('manual-code').value = '';
       setTimeout(startScanner, 400);
     }
 
     function startScanner() {
-      try {
-        qrScanner = new Html5Qrcode('qr-reader');
-      } catch(e) {
-        showCamFail(); return;
-      }
+      try { qrScanner = new Html5Qrcode('qr-reader'); }
+      catch(e) { showCamFail(); return; }
 
-      // Try to enumerate cameras first, prefer rear
       Html5Qrcode.getCameras().then(cameras => {
         if (!cameras || cameras.length === 0) { showCamFail(); return; }
-
         const cam = cameras.find(c =>
           c.label.toLowerCase().includes('back') ||
           c.label.toLowerCase().includes('rear') ||
           c.label.toLowerCase().includes('environment')
         ) || cameras[cameras.length - 1];
 
-        qrScanner.start(
-          cam.id,
-          { fps: 10, qrbox: { width: 220, height: 220 } },
-          onQRSuccess, () => {}
-        ).then(() => {
-          isScanning = true;
-          document.getElementById('scan-loading').style.display = 'none';
-        }).catch(() => tryFacingMode());
-
+        qrScanner.start(cam.id, { fps: 10, qrbox: { width: 220, height: 220 } }, onQRSuccess, () => {})
+          .then(() => { isScanning = true; document.getElementById('scan-loading').style.display = 'none'; })
+          .catch(() => tryFacingMode());
       }).catch(() => tryFacingMode());
     }
 
     function tryFacingMode() {
-      qrScanner.start(
-        { facingMode: 'environment' },
-        { fps: 10, qrbox: { width: 220, height: 220 } },
-        onQRSuccess, () => {}
-      ).then(() => {
-        isScanning = true;
-        document.getElementById('scan-loading').style.display = 'none';
-      }).catch(() => showCamFail());
+      qrScanner.start({ facingMode: 'environment' }, { fps: 10, qrbox: { width: 220, height: 220 } }, onQRSuccess, () => {})
+        .then(() => { isScanning = true; document.getElementById('scan-loading').style.display = 'none'; })
+        .catch(() => showCamFail());
     }
 
     function onQRSuccess(decodedText) {
@@ -171,8 +173,7 @@
       scanDone = true;
       stopScanner().then(() => {
         closeModal();
-        // ── FIX 3: Removed broken /api/validate call — go directly to watch.html ──
-        navigateToGift(decodedText);
+        validateAndNavigate(decodedText);
       });
     }
 
@@ -185,10 +186,7 @@
     }
 
     function stopScanner() {
-      if (qrScanner && isScanning) {
-        isScanning = false;
-        return qrScanner.stop().catch(() => {});
-      }
+      if (qrScanner && isScanning) { isScanning = false; return qrScanner.stop().catch(() => {}); }
       return Promise.resolve();
     }
 
@@ -198,28 +196,88 @@
         document.getElementById('scan-modal').style.display = 'none';
         document.getElementById('qr-reader').innerHTML = '';
         document.getElementById('manual-code').value = '';
+        clearMsg();
       });
     }
 
     function goWithCode() {
       const code = document.getElementById('manual-code').value.trim();
-      if (!code) { document.getElementById('manual-code').focus(); return; }
-      stopScanner().finally(() => {
-        document.getElementById('scan-modal').style.display = 'none';
-        navigateToGift(code);
-      });
+      if (!code) {
+        document.getElementById('manual-code').focus();
+        showMsg('error', '⚠️ Please enter a gift code first.');
+        return;
+      }
+      validateAndNavigate(code);
     }
 
-    function navigateToGift(rawText) {
+    // ── CORE FIX: validate against database before navigating ──
+    async function validateAndNavigate(rawText) {
       let giftId = rawText.trim();
-      // Extract ?id= param if it's a full URL
+
+      // Extract ?id= if it's a full URL
       try {
         const url = new URL(rawText);
         const param = url.searchParams.get('id');
         if (param) giftId = param;
       } catch(e) {}
-      // Always go to watch.html — it smart-routes to upload if no video yet
-      window.location.href = `watch.html?id=${encodeURIComponent(giftId)}`;
+
+      if (!giftId) {
+        showMsg('error', '⚠️ Invalid code. Please try again.');
+        return;
+      }
+
+      // Show checking state
+      showMsg('loading', '🔍 Checking gift code...');
+      const goBtn = document.getElementById('go-btn');
+      const input = document.getElementById('manual-code');
+      goBtn.disabled = true;
+      input.classList.remove('error');
+
+      try {
+        const response = await fetch(`${BACKEND_URL}/api/gift/${encodeURIComponent(giftId)}`);
+
+        if (response.status === 404) {
+          // Code not found in database
+          showMsg('error', '❌ Gift code <strong>' + giftId + '</strong> was not found. Please check the code and try again.');
+          input.classList.add('error');
+          goBtn.disabled = false;
+          return;
+        }
+
+        if (!response.ok) {
+          showMsg('error', '⚠️ Server error. Please try again in a moment.');
+          goBtn.disabled = false;
+          return;
+        }
+
+        // ✅ Code is valid — navigate to watch.html
+        showMsg('success', '✅ Gift found! Opening...');
+        setTimeout(() => {
+          window.location.href = `watch.html?id=${encodeURIComponent(giftId)}`;
+        }, 600);
+
+      } catch(err) {
+        // Network/server down
+        showMsg('error', '📡 Could not reach server. Please check your connection and try again.');
+        goBtn.disabled = false;
+      }
+    }
+
+    // ── Message helpers ──
+    function showMsg(type, html) {
+      const box = document.getElementById('msg-box');
+      box.className = `msg-box ${type}`;
+      box.innerHTML = html;
+      box.style.display = 'block';
+    }
+
+    function clearMsg() {
+      const box = document.getElementById('msg-box');
+      box.style.display = 'none';
+      box.className = 'msg-box';
+      document.getElementById('manual-code').classList.remove('error');
+      const goBtn = document.getElementById('go-btn');
+      if (goBtn) goBtn.disabled = false;
     }
 
     // Close on backdrop tap
