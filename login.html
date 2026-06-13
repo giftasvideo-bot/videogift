@@ -1,0 +1,317 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Forever 27 | Admin Login</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,700;1,400&family=DM+Sans:wght@300;400;500;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --ink: #0d0d0d;
+      --paper: #faf7f2;
+      --gold: #c9933a;
+      --gold-light: #e8b86d;
+      --cream: #f0ead8;
+      --muted: #7a7060;
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      background-color: var(--paper);
+      color: var(--ink);
+      font-family: 'DM Sans', sans-serif;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+
+    body::before {
+      content: ''; position: fixed; inset: 0;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='300'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='300' height='300' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");
+      pointer-events: none; z-index: 0;
+    }
+
+    .login-wrap {
+      position: relative; z-index: 1;
+      width: 100%; max-width: 420px;
+    }
+
+    .header {
+      text-align: center;
+      margin-bottom: 36px;
+    }
+
+    .logo {
+      font-family: 'Playfair Display', serif;
+      font-size: 2.2rem;
+      letter-spacing: -0.01em;
+      margin-bottom: 6px;
+    }
+    .logo span { color: var(--gold); font-style: italic; }
+
+    .tagline {
+      font-size: 0.8rem;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.15em;
+      font-weight: 500;
+    }
+
+    .card {
+      background: #ffffff;
+      border: 1px solid var(--cream);
+      border-radius: 14px;
+      padding: 36px 32px;
+      box-shadow: 0 4px 32px rgba(0,0,0,0.04);
+    }
+
+    .card-title {
+      font-family: 'Playfair Display', serif;
+      font-size: 1.3rem;
+      margin-bottom: 6px;
+    }
+
+    .card-sub {
+      font-size: 0.85rem;
+      color: var(--muted);
+      margin-bottom: 28px;
+    }
+
+    .field {
+      margin-bottom: 18px;
+    }
+
+    label {
+      display: block;
+      font-size: 0.8rem;
+      font-weight: 500;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: var(--muted);
+      margin-bottom: 7px;
+    }
+
+    input[type="password"],
+    input[type="text"] {
+      width: 100%;
+      padding: 13px 16px;
+      border: 1px solid var(--cream);
+      border-radius: 8px;
+      background: var(--paper);
+      font-size: 1rem;
+      font-family: 'DM Sans', sans-serif;
+      color: var(--ink);
+      outline: none;
+      transition: border-color 0.2s;
+    }
+    input[type="password"]:focus,
+    input[type="text"]:focus {
+      border-color: var(--gold);
+    }
+
+    .show-toggle {
+      position: relative;
+    }
+    .show-toggle input { padding-right: 48px; }
+    .toggle-btn {
+      position: absolute; right: 14px; top: 50%;
+      transform: translateY(-50%);
+      background: none; border: none; cursor: pointer;
+      color: var(--muted); font-size: 0.8rem; font-weight: 500;
+      font-family: 'DM Sans', sans-serif;
+      padding: 4px;
+    }
+    .toggle-btn:hover { color: var(--ink); }
+
+    .btn-login {
+      width: 100%;
+      padding: 14px;
+      background: var(--gold);
+      color: #ffffff;
+      border: none;
+      border-radius: 8px;
+      font-size: 1rem;
+      font-weight: 600;
+      font-family: 'DM Sans', sans-serif;
+      cursor: pointer;
+      transition: background 0.2s, transform 0.1s;
+      margin-top: 8px;
+      letter-spacing: 0.02em;
+    }
+    .btn-login:hover { background: var(--gold-light); }
+    .btn-login:active { transform: scale(0.99); }
+
+    .error-msg {
+      display: none;
+      background: #fff0f0;
+      border: 1px solid #f5c6c6;
+      color: #c0392b;
+      border-radius: 8px;
+      padding: 11px 14px;
+      font-size: 0.85rem;
+      margin-bottom: 16px;
+      text-align: center;
+    }
+    .error-msg.visible { display: block; }
+
+    .divider {
+      border: none;
+      border-top: 1px solid var(--cream);
+      margin: 28px 0 20px;
+    }
+
+    .footer-note {
+      text-align: center;
+      font-size: 0.78rem;
+      color: var(--muted);
+      line-height: 1.6;
+    }
+
+    .lock-icon {
+      display: block;
+      width: 42px; height: 42px;
+      background: var(--cream);
+      border-radius: 50%;
+      margin: 0 auto 20px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1.2rem;
+    }
+
+    @keyframes shake {
+      0%, 100% { transform: translateX(0); }
+      20%, 60% { transform: translateX(-6px); }
+      40%, 80% { transform: translateX(6px); }
+    }
+    .shake { animation: shake 0.4s ease; }
+  </style>
+</head>
+<body>
+
+<div class="login-wrap">
+  <div class="header">
+    <div class="logo">Forever<span>27</span></div>
+    <div class="tagline">System Operations</div>
+  </div>
+
+  <div class="card">
+    <div class="lock-icon" aria-hidden="true">🔐</div>
+    <div class="card-title">Admin access</div>
+    <div class="card-sub">Enter your credentials to continue.</div>
+
+    <div class="error-msg" id="error-msg">Incorrect username or password.</div>
+
+    <div class="field">
+      <label for="username">Username</label>
+      <input type="text" id="username" autocomplete="username" placeholder="admin" />
+    </div>
+
+    <div class="field">
+      <label for="password">Password</label>
+      <div class="show-toggle">
+        <input type="password" id="password" autocomplete="current-password" placeholder="••••••••" />
+        <button class="toggle-btn" onclick="togglePassword()" id="toggle-btn" type="button">show</button>
+      </div>
+    </div>
+
+    <button class="btn-login" onclick="attemptLogin()">Sign in</button>
+
+    <hr class="divider">
+
+    <p class="footer-note">
+      This area is restricted to authorised administrators.<br>
+      Unauthorised access attempts are logged.
+    </p>
+  </div>
+</div>
+
+<script>
+  const SESSION_KEY = 'f27_admin_auth';
+  const SESSION_DURATION_MS = 8 * 60 * 60 * 1000; // 8 hours
+
+  const BACKEND_URL = localStorage.getItem('videogift_api_url') || 'https://videogift-backend-3.onrender.com';
+
+  // If already authenticated with a valid token, skip login
+  (function checkSession() {
+    const s = JSON.parse(sessionStorage.getItem(SESSION_KEY) || 'null');
+    if (s && s.token && s.expires > Date.now()) {
+      window.location.replace('admin.html');
+    }
+  })();
+
+  async function attemptLogin() {
+    const username = document.getElementById('username').value.trim();
+    const password = document.getElementById('password').value;
+    const errEl = document.getElementById('error-msg');
+    const card = document.querySelector('.card');
+    const btn = document.querySelector('.btn-login');
+
+    if (!username || !password) {
+      showError('Please enter both username and password.');
+      return;
+    }
+
+    btn.textContent = 'Signing in…';
+    btn.disabled = true;
+    errEl.classList.remove('visible');
+
+    try {
+      const response = await fetch(`${BACKEND_URL}/api/admin/login`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username, password })
+      });
+
+      const data = await response.json();
+
+      if (response.ok && data.token) {
+        // Store the server-issued token in sessionStorage
+        sessionStorage.setItem(SESSION_KEY, JSON.stringify({
+          token: data.token,
+          expires: Date.now() + SESSION_DURATION_MS
+        }));
+        window.location.replace('admin.html');
+      } else {
+        showError(data.message || 'Incorrect username or password.');
+      }
+    } catch (err) {
+      showError('Could not reach the server. Check your connection and try again.');
+    } finally {
+      btn.textContent = 'Sign in';
+      btn.disabled = false;
+    }
+  }
+
+  function showError(msg) {
+    const errEl = document.getElementById('error-msg');
+    const card = document.querySelector('.card');
+    errEl.textContent = msg;
+    errEl.classList.add('visible');
+    card.classList.remove('shake');
+    void card.offsetWidth;
+    card.classList.add('shake');
+    document.getElementById('password').value = '';
+    document.getElementById('password').focus();
+  }
+
+  function togglePassword() {
+    const input = document.getElementById('password');
+    const btn = document.getElementById('toggle-btn');
+    if (input.type === 'password') {
+      input.type = 'text';
+      btn.textContent = 'hide';
+    } else {
+      input.type = 'password';
+      btn.textContent = 'show';
+    }
+  }
+
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Enter') attemptLogin();
+  });
+</script>
+</body>
+</html>
