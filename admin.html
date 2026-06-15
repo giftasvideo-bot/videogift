@@ -8,204 +8,478 @@
   <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,700;1,400&family=DM+Sans:wght@300;400;500;700&display=swap" rel="stylesheet">
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
   <style>
-    :root { --ink: #0d0d0d; --paper: #faf7f2; --gold: #c9933a; --gold-light: #e8b86d; --cream: #f0ead8; --muted: #7a7060; --success-bg: #e8f5e9; --success-text: #2e7d32; --pending-bg: #fff3e0; --pending-text: #ef6c00; }
+    :root {
+      --ink: #0d0d0d;
+      --paper: #faf7f2;
+      --gold: #c9933a;
+      --gold-light: #e8b86d;
+      --cream: #f0ead8;
+      --muted: #7a7060;
+      --success-bg: #e8f5e9;
+      --success-text: #2e7d32;
+      --pending-bg: #fff3e0;
+      --pending-text: #ef6c00;
+    }
+
     * { margin: 0; padding: 0; box-sizing: border-box; }
-    body { background-color: var(--paper); color: var(--ink); font-family: 'DM Sans', sans-serif; padding: 40px 20px; min-height: 100vh; }
-    .dashboard { max-width: 1100px; margin: 0 auto; }
+    body {
+      background-color: var(--paper);
+      color: var(--ink);
+      font-family: 'DM Sans', sans-serif;
+      padding: 40px 20px;
+      min-height: 100vh;
+    }
+
+    body::before {
+      content: ''; position: fixed; inset: 0;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='300'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='300' height='300' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");
+      pointer-events: none; z-index: 0;
+    }
+
+    .dashboard { position: relative; z-index: 1; max-width: 1100px; margin: 0 auto; }
+    
     .header { text-align: center; margin-bottom: 40px; }
-    .logo { font-family: 'Playfair Display', serif; font-size: 2rem; }
+    .logo { font-family: 'Playfair Display', serif; font-size: 2rem; margin-bottom: 8px; }
     .logo span { color: var(--gold); font-style: italic; }
-    .card-section { background: #ffffff; border: 1px solid var(--cream); border-radius: 12px; padding: 30px; margin-bottom: 30px; }
-    .btn { padding: 12px 24px; background: var(--gold); color: #ffffff; border: none; border-radius: 6px; cursor: pointer; }
+    h1 { font-family: 'Playfair Display', serif; font-size: 1.8rem; margin-bottom: 24px; }
+
+    .card-section {
+      background: #ffffff; border: 1px solid var(--cream);
+      border-radius: 12px; padding: 30px; margin-bottom: 30px;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.01);
+    }
+
+    h2 { font-family: 'Playfair Display', serif; font-size: 1.3rem; margin-bottom: 16px; display: flex; align-items: center; gap: 10px; }
+    
+    .form-group { display: flex; gap: 12px; margin-bottom: 16px; flex-wrap: wrap; }
+    input[type="text"], input[type="number"] {
+      padding: 12px 16px; border: 1px solid var(--cream);
+      border-radius: 6px; background: var(--paper); font-size: 0.95rem; outline: none;
+    }
+    input[type="text"] { flex: 1; min-width: 200px; }
+    input[type="number"] { width: 100px; }
+
+    .btn {
+      padding: 12px 24px; background: var(--gold); color: #ffffff;
+      border: none; border-radius: 6px; font-weight: 500; cursor: pointer;
+      transition: background 0.2s; font-family: 'DM Sans', sans-serif;
+      display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+    }
+    .btn:hover { background: var(--gold-light); }
     .btn-secondary { background: var(--cream); color: var(--ink); }
-    .qr-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 24px; margin-top: 20px; }
-    .qr-card { background: #ffffff; border: 1px solid var(--cream); border-radius: 12px; padding: 24px; text-align: center; display: flex; flex-direction: column; align-items: center; }
-    .qr-container { width: 160px; height: 160px; background: var(--paper); display: flex; align-items: center; justify-content: center; margin-bottom: 16px; border-radius: 8px; }
-    .status-badge { display: inline-block; padding: 6px 14px; border-radius: 6px; font-size: 0.75rem; font-weight: 700; text-transform: uppercase; margin-bottom: 16px; }
+    .btn-secondary:hover { background: #e5dec9; }
+    
+    .qr-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+      gap: 24px;
+      margin-top: 20px;
+    }
+
+    .qr-card {
+      background: #ffffff;
+      border: 1px solid var(--cream);
+      border-radius: 12px;
+      padding: 24px;
+      text-align: center;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      box-shadow: 0 2px 12px rgba(0,0,0,0.01);
+      position: relative;
+    }
+
+    .qr-container {
+      width: 160px;
+      height: 160px;
+      background: var(--paper);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 16px;
+      border-radius: 8px;
+      padding: 10px;
+    }
+
+    .qr-id-label {
+      font-family: monospace;
+      font-weight: 700;
+      font-size: 1.1rem;
+      color: var(--ink);
+      margin-bottom: 8px;
+      letter-spacing: 0.05em;
+    }
+
+    .status-badge {
+      display: inline-block;
+      padding: 6px 14px;
+      border-radius: 6px;
+      font-size: 0.75rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      margin-bottom: 16px;
+    }
     .status-pending { background: var(--pending-bg); color: var(--pending-text); }
     .status-uploaded { background: var(--success-bg); color: var(--success-text); }
-    .card-actions { display: flex; gap: 8px; width: 100%; margin-top: auto; }
-    .btn-action-delete { background: #ffebee; color: #c62828; }
-    .btn-action-delete-video { background: #fff3e0; color: #e65100; }
+    .status-viewed { background: #e3f2fd; color: #1565c0; }
+    .status-sealed { background: var(--success-bg); color: var(--success-text); }
+
+    .card-actions {
+      display: flex;
+      gap: 8px;
+      width: 100%;
+      margin-top: auto;
+    }
+    .card-actions .btn {
+      flex: 1;
+      padding: 8px 12px;
+      font-size: 0.85rem;
+    }
+    .btn-action-delete {
+      background: #ffebee;
+      color: #c62828;
+    }
+    .btn-action-delete:hover {
+      background: #ffcdd2;
+    }
+    .btn-action-delete-video {
+      background: #fff3e0;
+      color: #e65100;
+      flex: 1.4;
+    }
+    .btn-action-delete-video:hover { background: #ffe0b2; }
+    .btn-action-delete-video:disabled { opacity: 0.4; cursor: not-allowed; }
+
+    .notice-box {
+      background: #e8f5e9;
+      border: 1px solid #a5d6a7;
+      border-radius: 8px;
+      padding: 12px 16px;
+      font-size: 0.85rem;
+      color: #2e7d32;
+      margin-bottom: 16px;
+    }
+
+    #print-area { display: none; }
+    @media print {
+      body * { display: none !important; }
+      #print-area { display: grid !important; grid-template-columns: repeat(3, 1fr); gap: 25px; padding: 10px; }
+      #print-area * { display: block !important; }
+      .print-card { border: 1px dashed #bbb; padding: 20px; text-align: center; background: white; page-break-inside: avoid; }
+      .print-card div { margin-top: 10px; font-family: monospace; font-size: 12px; font-weight: bold; }
+    }
   </style>
 </head>
 <body>
+
+<script>
+  // Auth guard — validates token expiry locally, then verifies with backend
+  const SESSION_KEY = 'f27_admin_auth';
+
+  function getSession() {
+    return JSON.parse(sessionStorage.getItem(SESSION_KEY) || 'null');
+  }
+
+  function getAuthToken() {
+    const s = getSession();
+    return (s && s.token && s.expires > Date.now()) ? s.token : null;
+  }
+
+  (async function authGuard() {
+    const token = getAuthToken();
+    if (!token) {
+      window.location.replace('login.html');
+      return;
+    }
+
+    // Verify token is still valid on the backend
+    try {
+      const BACKEND = localStorage.getItem('videogift_api_url') || 'https://videogift-backend-3.onrender.com';
+      const res = await fetch(`${BACKEND}/api/admin/verify`, {
+        method: 'GET',
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      if (!res.ok) {
+        sessionStorage.removeItem(SESSION_KEY);
+        window.location.replace('login.html');
+      }
+    } catch (err) {
+      // If backend is unreachable, allow access if token hasn't expired locally
+      console.warn('Token verification skipped — backend unreachable.');
+    }
+  })();
+</script>
 
 <div class="dashboard">
   <div class="header">
     <div class="logo">Forever<span>27</span></div>
     <h1>System Operations Control</h1>
-  </div>
-
-  <div class="card-section" style="background:#fff8e1;border-color:#ffe082;">
-    <h2>⚙️ Backend Configuration</h2>
-    <p style="font-size:0.85rem;color:var(--muted);margin:10px 0;">Set the correct API endpoint for listing all cards. Try the options below if cards are not loading.</p>
-    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:12px;">
-      <button class="btn btn-secondary" onclick="tryEndpoint('/api/admin/list-all')">Try /api/admin/list-all</button>
-      <button class="btn btn-secondary" onclick="tryEndpoint('/api/gifts')">Try /api/gifts</button>
-      <button class="btn btn-secondary" onclick="tryEndpoint('/api/cards')">Try /api/cards</button>
-      <button class="btn btn-secondary" onclick="tryEndpoint('/api/admin/cards')">Try /api/admin/cards</button>
-      <button class="btn btn-secondary" onclick="tryEndpoint('/api/list')">Try /api/list</button>
+    <div style="margin-top: 12px;">
+      <button class="btn btn-secondary" style="font-size: 0.8rem; padding: 8px 18px;" onclick="adminLogout()">🔓 Sign out</button>
     </div>
-    <div style="display:flex;gap:8px;margin-top:10px;">
-      <input id="custom-endpoint" placeholder="Or type custom path e.g. /api/my/route" style="flex:1;padding:10px;border:1px solid var(--cream);border-radius:6px;font-family:DM Sans,sans-serif;" />
-      <button class="btn" onclick="tryEndpoint(document.getElementById('custom-endpoint').value)">Try It</button>
-    </div>
-    <div id="endpoint-result" style="margin-top:10px;font-size:0.82rem;color:var(--muted);"></div>
   </div>
 
   <div class="card-section">
-    <h2>📋 Active Card Registry Collection</h2>
+    <h2>⚙️ Backend Server Routing Configuration</h2>
+    <div class="form-group">
+      <input type="text" id="api-url-input" value="https://videogift-backend-3.onrender.com" placeholder="Paste live Render backend service URL">
+      <button class="btn" onclick="saveApiUrl()">Lock Config Link</button>
+    </div>
+  </div>
+
+  <div class="card-section">
+    <h2>🎟️ Generate Unique QR Gift Tokens</h2>
+    <div class="notice-box">
+      ✅ QR codes now point to <strong>watch.html</strong> — the system automatically redirects to upload if no video exists yet, or plays the gift if a video is already uploaded.
+    </div>
+    <div class="form-group">
+      <input type="number" id="batch-count" value="1" min="1" max="100">
+      <input type="text" id="id-prefix" placeholder="Prefix (e.g. XMAS25, GIFT, LIVE)">
+      <button class="btn" onclick="generateBatchCodes()">Generate Cards</button>
+    </div>
+  </div>
+
+  <div class="card-section">
+    <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px;">
+      <h2>📋 Active Card Registry Collection</h2>
+      <button class="btn btn-secondary" onclick="window.print()">🖨️ Print All Cards</button>
+    </div>
     <div class="qr-grid" id="cards-grid-container"></div>
   </div>
 </div>
 
+<div id="print-area"></div>
+
 <script>
   let BACKEND_API_BASE = localStorage.getItem('videogift_api_url') || 'https://videogift-backend-3.onrender.com';
-  let localRegistry = [];
+  document.getElementById('api-url-input').value = BACKEND_API_BASE;
 
+  let localRegistry = JSON.parse(localStorage.getItem('forever27_cards_manifest')) || [];
+
+  // Returns Authorization header using the stored session token
+  function authHeaders(extra = {}) {
+    const token = getAuthToken();
+    return {
+      'Content-Type': 'application/json',
+      ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
+      ...extra
+    };
+  }
+
+  // Centralised fetch wrapper — redirects to login on 401
   async function apiFetch(url, options = {}) {
-    const res = await fetch(url, { ...options, headers: { 'Content-Type': 'application/json' } });
+    const res = await fetch(url, {
+      ...options,
+      headers: authHeaders(options.headers || {})
+    });
+    if (res.status === 401) {
+      sessionStorage.removeItem(SESSION_KEY);
+      window.location.replace('login.html');
+      throw new Error('Session expired.');
+    }
     return res;
   }
 
-  // FORCE FETCH FROM DATABASE to fix Chrome rendering issues
-  function showError(msg) {
-    const grid = document.getElementById('cards-grid-container');
-    grid.innerHTML = `<div style="width:100%;padding:20px;background:#ffebee;color:#c62828;border-radius:8px;font-size:0.9rem;word-break:break-all;">
-      <strong>Error loading cards:</strong><br>${msg}
-    </div>`;
+  function saveApiUrl() {
+    const url = document.getElementById('api-url-input').value.trim().replace(/\/$/, "");
+    BACKEND_API_BASE = url;
+    localStorage.setItem('videogift_api_url', url);
+    alert('✅ Backend URL saved successfully.');
+    syncStatusesWithDatabase();
   }
 
-  async function tryEndpoint(path) {
-    if (!path || !path.startsWith('/')) { 
-      document.getElementById('endpoint-result').innerHTML = '<span style="color:#c62828">Path must start with /</span>';
-      return;
+  function generateRandomTokenString(length = 6) {
+    const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+    let output = '';
+    for (let i = 0; i < length; i++) {
+      output += chars.charAt(Math.floor(Math.random() * chars.length));
     }
-    const url = BACKEND_API_BASE + path;
-    document.getElementById('endpoint-result').innerHTML = 'Testing: ' + url + '...';
-    try {
-      const res = await fetch(url, { headers: { 'Content-Type': 'application/json' } });
-      const text = await res.text();
-      if (res.ok) {
-        localStorage.setItem('videogift_list_endpoint', path);
-        document.getElementById('endpoint-result').innerHTML = '<span style="color:#2e7d32">✅ Works! (' + res.status + ') Response: ' + text.substring(0, 120) + '</span>';
-        syncRegistryFromDatabase();
-      } else {
-        document.getElementById('endpoint-result').innerHTML = '<span style="color:#c62828">❌ ' + res.status + ' ' + res.statusText + ' — Response: ' + text.substring(0, 120) + '</span>';
-      }
-    } catch(e) {
-      document.getElementById('endpoint-result').innerHTML = '<span style="color:#c62828">❌ Network error: ' + e.message + '</span>';
-    }
+    return output;
   }
 
-  async function syncRegistryFromDatabase() {
-    const grid = document.getElementById('cards-grid-container');
-    grid.innerHTML = `<div style="padding:20px;color:var(--muted);">Loading cards from server...</div>`;
-    try {
-      const url = BACKEND_API_BASE + (localStorage.getItem('videogift_list_endpoint') || '/api/admin/list-all');
-      console.log("Fetching:", url);
-      const response = await apiFetch(url);
+  function buildWatchUrl(id) {
+    const base = window.location.origin + window.location.pathname.replace('admin.html', '');
+    return `${base}watch.html?id=${id}`;
+  }
 
-      if (!response.ok) {
-        showError('Server returned ' + response.status + ' ' + response.statusText + ' for: ' + url);
-        return;
-      }
+  async function generateBatchCodes() {
+    const count = parseInt(document.getElementById('batch-count').value) || 1;
+    const prefix = document.getElementById('id-prefix').value.trim().toUpperCase();
+    const cleanPrefix = prefix ? `${prefix}-` : '';
 
-      const data = await response.json();
-      console.log("Raw data from server:", data);
-
-      if (data && data.ids && data.ids.length > 0) {
-        localRegistry = data.ids;
-      } else if (Array.isArray(data) && data.length > 0) {
-        localRegistry = data;
+    const newCodes = [];
+    for (let i = 0; i < count; i++) {
+      const targetId = `${cleanPrefix}${generateRandomTokenString()}`;
+      if (!localRegistry.includes(targetId)) {
+        newCodes.push(targetId);
       } else {
-        localRegistry = [];
-        grid.innerHTML = '<div style="padding:20px;color:var(--muted);">No cards found. Raw server response: ' + JSON.stringify(data) + '</div>';
-        return;
+        i--;
       }
+    }
+
+    try {
+      const response = await apiFetch(`${BACKEND_API_BASE}/api/admin/batch-insert`, {
+        method: 'POST',
+        body: JSON.stringify({ cards: newCodes })
+      });
+
+      if (!response.ok) throw new Error('Database rejected batch insertion.');
+
+      localRegistry = [...newCodes, ...localRegistry];
+      localStorage.setItem('forever27_cards_manifest', JSON.stringify(localRegistry));
 
       renderDashboardGrid();
       syncStatusesWithDatabase();
     } catch (err) {
-      console.error("Sync failed:", err);
-      showError('Network error: ' + err.message + '<br><br>API URL being used: ' + BACKEND_API_BASE + '<br>Check that your Render backend is running and CORS is enabled for GitHub Pages.');
+      alert(`⚠️ Generation Failed: ${err.message}`);
     }
   }
 
   async function syncStatusesWithDatabase() {
     if (localRegistry.length === 0) return;
+
     try {
-      const response = await apiFetch(`${BACKEND_API_BASE}/api/gifts/status`, { method: 'POST', body: JSON.stringify({ ids: localRegistry }) });
+      const response = await apiFetch(`${BACKEND_API_BASE}/api/gifts/status`, {
+        method: 'POST',
+        body: JSON.stringify({ ids: localRegistry })
+      });
+
+      if (!response.ok) return;
       const data = await response.json();
+
       localRegistry.forEach(id => {
+        const remoteStatus = data.statuses[id] || 'pending';
         const badge = document.getElementById(`badge-${id}`);
         if (badge) {
-          badge.textContent = (data.statuses[id] || 'pending').toUpperCase();
-          badge.className = `status-badge status-${data.statuses[id] || 'pending'}`;
+          badge.textContent = remoteStatus.toUpperCase();
+          badge.className = `status-badge status-${remoteStatus}`;
         }
       });
-    } catch (err) { console.warn('Status sync failed'); }
+    } catch (err) {
+      console.warn('Status sync failed:', err);
+    }
   }
 
   function renderDashboardGrid() {
     const gridContainer = document.getElementById('cards-grid-container');
-    gridContainer.innerHTML = '';
-    const ids = [...localRegistry];
+    const printArea = document.getElementById('print-area');
 
-    ids.forEach(id => {
+    gridContainer.innerHTML = '';
+    printArea.innerHTML = '';
+
+    if (localRegistry.length === 0) {
+      gridContainer.innerHTML = `<div style="grid-column:1/-1; text-align:center; color:var(--muted); padding:40px;">No registered gift cards found. Generate some above!</div>`;
+      return;
+    }
+
+    localRegistry.forEach(id => {
+      const targetWatchUrl = buildWatchUrl(id);
+
       const card = document.createElement('div');
       card.className = 'qr-card';
       card.id = `card-${id}`;
       card.innerHTML = `
-        <div class="qr-container" id="qr-container-${id}" style="width:140px;height:140px;"></div>
+        <div class="qr-container" id="qr-container-${id}"></div>
         <div class="qr-id-label">${id}</div>
-        <div class="status-badge" id="badge-${id}">LOADING...</div>
-        <div class="card-actions">
-          <button class="btn btn-action-delete-video" onclick="deleteVideoOnly('${id}')">🎬 Delete Video</button>
-          <button class="btn btn-action-delete" onclick="deleteCardRow('${id}')">🗑️ Delete</button>
+        <div class="status-badge status-pending" id="badge-${id}">CHECKING...</div>
+        <div class="card-actions" style="flex-wrap:wrap; gap:6px;">
+          <button class="btn btn-secondary" onclick="copyWatchLink('${id}')">🔗 Link</button>
+          <button class="btn btn-action-delete-video" id="delvid-${id}" onclick="deleteVideoOnly('${id}')">🎬 Delete Video</button>
+          <button class="btn btn-action-delete" onclick="deleteCardRow('${id}')">🗑️ Card</button>
         </div>
       `;
       gridContainer.appendChild(card);
-    });
 
-    // Defer QR generation until after the browser has painted the elements
-    requestAnimationFrame(() => {
       setTimeout(() => {
-        ids.forEach(id => {
-          const container = document.getElementById(`qr-container-${id}`);
-          if (container && !container.hasChildNodes()) {
-            try {
-              new QRCode(container, {
-                text: window.location.origin + '/watch.html?id=' + id,
-                width: 140,
-                height: 140,
-                correctLevel: QRCode.CorrectLevel.M
-              });
-            } catch (e) {
-              console.error('QR generation failed for', id, e);
-            }
-          }
+        new QRCode(document.getElementById(`qr-container-${id}`), {
+          text: targetWatchUrl,
+          width: 140,
+          height: 140,
+          correctLevel: QRCode.CorrectLevel.M
         });
-      }, 50);
+      }, 10);
+
+      const pCard = document.createElement('div');
+      pCard.className = 'print-card';
+      const qrTarget = document.createElement('div');
+      pCard.appendChild(qrTarget);
+      const label = document.createElement('div');
+      label.textContent = id;
+      pCard.appendChild(label);
+      printArea.appendChild(pCard);
+
+      new QRCode(qrTarget, { text: targetWatchUrl, width: 140, height: 140 });
     });
   }
 
-  async function deleteVideoOnly(id) {
-    if (!confirm('Clear the video for this card?')) return;
-    await apiFetch(`${BACKEND_API_BASE}/api/gift/${id}/video`, { method: 'DELETE' });
-    syncStatusesWithDatabase();
+  function copyWatchLink(id) {
+    const url = buildWatchUrl(id);
+    navigator.clipboard.writeText(url).then(() => {
+      alert(`✅ Link copied!\n\n${url}`);
+    });
   }
 
   async function deleteCardRow(id) {
-    if (!confirm('Permanently delete card?')) return;
-    await apiFetch(`${BACKEND_API_BASE}/api/gift/${id}`, { method: 'DELETE' });
-    syncRegistryFromDatabase();
+    if (!confirm(`Delete card ${id}? This cannot be undone.`)) return;
+
+    try {
+      await apiFetch(`${BACKEND_API_BASE}/api/gift/${id}`, { method: 'DELETE' });
+    } catch (err) {
+      console.warn('Backend delete failed, removing locally only.');
+    }
+
+    localRegistry = localRegistry.filter(item => item !== id);
+    localStorage.setItem('forever27_cards_manifest', JSON.stringify(localRegistry));
+
+    const cardElement = document.getElementById(`card-${id}`);
+    if (cardElement) cardElement.remove();
+
+    renderDashboardGrid();
   }
 
-  // Initialize
-  syncRegistryFromDatabase();
-  setInterval(syncStatusesWithDatabase, 5000);
+  async function deleteVideoOnly(id) {
+    if (!confirm(`Delete the video for card ${id}?\n\nThe QR code and card ID will remain active — a new video can be uploaded again.`)) return;
+
+    const btn = document.getElementById(`delvid-${id}`);
+    if (btn) { btn.disabled = true; btn.textContent = 'Deleting…'; }
+
+    try {
+      const response = await apiFetch(`${BACKEND_API_BASE}/api/gift/${id}/video`, {
+        method: 'DELETE'
+      });
+
+      if (response.ok) {
+        // Reset the status badge back to pending
+        const badge = document.getElementById(`badge-${id}`);
+        if (badge) {
+          badge.textContent = 'PENDING';
+          badge.className = 'status-badge status-pending';
+        }
+        alert(`✅ Video deleted for ${id}.\nThe card is now ready to receive a new video.`);
+      } else {
+        const err = await response.json().catch(() => ({}));
+        alert(`⚠️ Could not delete video: ${err.message || 'Server error'}`);
+      }
+    } catch (err) {
+
+      if (err.message !== 'Session expired.') {
+        alert(`⚠️ Request failed: ${err.message}`);
+      }
+    } finally {
+      if (btn) { btn.disabled = false; btn.textContent = '🎬 Delete Video'; }
+    }
+  }
+
+  function adminLogout() {
+    sessionStorage.removeItem(SESSION_KEY);
+    window.location.replace('login.html');
+  }
+
+  // Init
+  renderDashboardGrid();
+  syncStatusesWithDatabase();
+  setInterval(syncStatusesWithDatabase, 4000);
 </script>
 </body>
 </html>
