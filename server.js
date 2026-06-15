@@ -2,6 +2,7 @@ require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
 const multer = require('multer');
+const jwt = require('jsonwebtoken');
 const { createClient } = require('@supabase/supabase-js');
 
 const app = express();
@@ -11,122 +12,153 @@ const PORT = process.env.PORT || 10000;
 app.use(cors());
 app.use(express.json());
 
-// ── SUPABASE CONFIGURATION ──
+// ── SUPABASE ──
 const supabaseUrl = process.env.SUPABASE_URL;
 const supabaseAnonKey = process.env.SUPABASE_ANON_KEY;
-
 if (!supabaseUrl || !supabaseAnonKey) {
-  console.error("❌ Error: SUPABASE_URL and SUPABASE_ANON_KEY must be set in Environment Variables.");
+  console.error("❌ SUPABASE_URL and SUPABASE_ANON_KEY must be set.");
   process.exit(1);
 }
-
 const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
-const storage = multer.memoryStorage();
-const upload = multer({ 
-  storage: storage,
-  limits: { fileSize: 50 * 1024 * 1024 } // 50MB Max Video Size Limit
+// ── JWT CONFIG ──
+const JWT_SECRET     = process.env.JWT_SECRET     || 'forever27-secret-change-this';
+const ADMIN_USERNAME = process.env.ADMIN_USERNAME || 'admin';
+const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'forever27';
+
+// ── MULTER ──
+const upload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 500 * 1024 * 1024 } // 500MB
 });
 
-// ── ROUTE 1: BASE INDEX ──
+// ── AUTH MIDDLEWARE ──
+function requireAuth(req, res, next) {
+  const authHeader = req.headers['authorization'] || '';
+  const token = authHeader.startsWith('Bearer ') ? authHeader.slice(7) : null;
+  if (!token) return res.status(401).json({ message: 'No token provided.' });
+  try {
+    req.admin = jwt.verify(token, JWT_SECRET);
+    next();
+  } catch (err) {
+    return res.status(401).json({ message: 'Token invalid or expired. Please sign in again.' });
+  }
+}
+
+// ════════════════════════════════════════
+// ROUTES
+// ════════════════════════════════════════
+
+// ── BASE ──
 app.get('/', (req, res) => {
-  res.status(200).send('🚀 VideoGift API Backend is active and cruising smoothly!');
+  res.status(200).send('🚀 Forever 27 API is running!');
 });
 
-// ── ROUTE 2: LOOKUP GIFT STATUS ──
+// ── ADMIN LOGIN ──
+app.post('/api/admin/login', (req, res) => {
+  const { username, password } = req.body || {};
+
+  if (!username || !password) {
+    return res.status(400).json({ message: 'Username and password required.' });
+  }
+
+  if (username === ADMIN_USERNAME && password === ADMIN_PASSWORD) {
+    const token = jwt.sign(
+      { username, role: 'admin' },
+      JWT_SECRET,
+      { expiresIn: '8h' }
+    );
+    console.log(`✅ Admin login: ${username}`);
+    return res.json({ token });
+  }
+
+  // Delay to prevent brute force timing attacks
+  setTimeout(() => {
+    res.status(401).json({ message: 'Incorrect username or password.' });
+  }, 400);
+});
+
+// ── VERIFY TOKEN ──
+app.get('/api/admin/verify', requireAuth, (req, res) => {
+  res.json({ ok: true, user: req.admin.username });
+});
+
+// ── GET GIFT BY ID ──
 app.get('/api/gift/:id', async (req, res) => {
   const giftId = req.params.id;
   try {
     const { data, error } = await supabase
-      .from('gifts')
-      .select('*')
-      .eq('id', giftId)
-      .single();
-
-    if (error || !data) {
-      return res.status(404).json({ error: 'Gift record ID not found.' });
-    }
+      .from('gifts').select('*').eq('id', giftId).single();
+    if (error || !data) return res.status(404).json({ error: 'Gift not found.' });
     res.status(200).json(data);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
 });
 
-// ── ROUTE 3: ADMIN BATCH GENERATION INSERT ──
-app.post('/api/admin/batch-insert', async (req, res) => {
-  const { cards } = req.body; 
+// ── VALIDATE GIFT ID ──
+app.get('/api/validate', async (req, res) => {
+  const { id } = req.query;
+  if (!id) return res.json({ isValid: false });
+  const { data, error } = await supabase
+    .from('gifts').select('id').eq('id', id).single();
+  return res.json({ isValid: !error && !!data });
+});
+
+// ── ADMIN BATCH INSERT (protected) ──
+app.post('/api/admin/batch-insert', requireAuth, async (req, res) => {
+  const { cards } = req.body;
   if (!cards || !Array.isArray(cards)) {
     return res.status(400).json({ error: 'Invalid data format.' });
   }
-
-  const rows = cards.map(id => ({ 
-    id: id, 
-    status: 'pending',
-    video_url: null,
-    message: null
-  }));
-
+  const rows = cards.map(id => ({ id, status: 'pending', video_url: null, message: null }));
   try {
     const { error } = await supabase.from('gifts').insert(rows);
     if (error) throw error;
-    res.status(200).json({ success: true, message: 'IDs registered safely inside database.' });
+    res.status(200).json({ success: true });
   } catch (error) {
-    console.error('Database Admin Insert Error:', error);
     res.status(500).json({ error: error.message });
   }
 });
 
-// ── ROUTE 4: ADMIN STATUS TRACKING SYNC ──
+// ── STATUS SYNC ──
 app.post('/api/gifts/status', async (req, res) => {
   const { ids } = req.body;
   if (!ids || !Array.isArray(ids)) {
-    return res.status(400).json({ error: 'Missing or invalid ID array.' });
+    return res.status(400).json({ error: 'Missing ID array.' });
   }
-
   try {
     const { data, error } = await supabase
-      .from('gifts')
-      .select('id, status')
-      .in('id', ids);
-
+      .from('gifts').select('id, status').in('id', ids);
     if (error) throw error;
-
     const statuses = {};
-    data.forEach(row => {
-      statuses[row.id] = row.status;
-    });
-
+    data.forEach(row => { statuses[row.id] = row.status; });
     res.status(200).json({ statuses });
   } catch (error) {
-    console.error('Status sync lookup failed:', error);
     res.status(500).json({ error: error.message });
   }
 });
 
-// ── ROUTE 5: USER VIDEO UPLOAD AND ATTACHMENT ──
+// ── VIDEO UPLOAD ──
 app.post('/api/upload', upload.single('video'), async (req, res) => {
+  try {
     const { giftId, message } = req.body;
-    
-    // 1. SECURITY GATE: Validate ID exists in database before touching the file
-    const { data, error: dbError } = await supabase
-        .from('gifts')
-        .select('id')
-        .eq('id', giftId)
-        .single();
+    const file = req.file;
 
-    // If ID is not found or error occurred, stop everything!
-    if (dbError || !data) {
-        return res.status(400).json({ error: 'Invalid or unauthorized Gift ID.' });
+    if (!giftId || !file) {
+      return res.status(400).json({ error: 'Missing gift ID or video file.' });
     }
 
-    // 2. If it passed, NOW proceed with your existing upload logic...
-    // (Proceed to upload to Supabase Storage and update the row)
-});
+    // Check gift exists
+    const { data: existing, error: lookupErr } = await supabase
+      .from('gifts').select('id').eq('id', giftId).single();
+    if (lookupErr || !existing) {
+      return res.status(400).json({ error: 'Invalid Gift ID.' });
+    }
 
-  try {
-    const fileExtension = file.originalname.split('.').pop() || 'mp4';
-    const fileName = `${giftId}-${Date.now()}.${fileExtension}`;
-    const filePath = `videos/${fileName}`;
+    // Upload to Supabase Storage
+    const ext = (file.originalname.split('.').pop() || 'mp4').toLowerCase();
+    const filePath = `videos/${giftId}-${Date.now()}.${ext}`;
 
     const { error: storageError } = await supabase.storage
       .from('videos')
@@ -135,91 +167,53 @@ app.post('/api/upload', upload.single('video'), async (req, res) => {
         cacheControl: '3600',
         upsert: true
       });
-
     if (storageError) throw storageError;
 
-    const { data: urlData } = supabase.storage
-      .from('videos')
-      .getPublicUrl(filePath);
+    const { data: urlData } = supabase.storage.from('videos').getPublicUrl(filePath);
 
-    const publicVideoUrl = urlData.publicUrl;
-
+    // Update DB row
     const { error: dbError } = await supabase
       .from('gifts')
-      .update({
-        video_url: publicVideoUrl,
-        message: message || '',
-        status: 'uploaded'
-      })
-      .eq('id', giftId); 
-
+      .update({ video_url: urlData.publicUrl, message: message || '', status: 'uploaded' })
+      .eq('id', giftId);
     if (dbError) throw dbError;
 
-    res.status(200).json({ 
-      success: true, 
-      message: 'Gift sealed and database row updated successfully!',
-      video_url: publicVideoUrl
-    });
-
+    res.status(200).json({ success: true, video_url: urlData.publicUrl });
   } catch (error) {
-    console.error('Upload Process Crash Error:', error);
-    res.status(500).json({ error: error.message || 'Internal pipeline processing breakdown.' });
+    console.error('Upload error:', error);
+    res.status(500).json({ error: error.message });
   }
 });
 
-// ── ROUTE 6: ADMIN CARD ROW DELETION ──
-app.delete('/api/gift/:id?', async (req, res) => {
-  const giftId = req.params.id || req.query.id || req.body.id;
-
-  if (!giftId) {
-    return res.status(400).json({ error: 'Deletion failed: No valid Card ID provided.' });
-  }
-
+// ── MARK AS VIEWED ──
+app.post('/api/gift/:id/view', async (req, res) => {
   try {
-    console.log(`🗑️ Admin requested deletion for Card ID: ${giftId}`);
-    
-    const { error } = await supabase
-      .from('gifts')
-      .delete()
-      .eq('id', giftId);
-
-    if (error) throw error;
-    
-    res.status(200).json({ success: true, message: `Card entry ${giftId} wiped clean from database.` });
+    await supabase.from('gifts').update({ status: 'viewed' }).eq('id', req.params.id);
+    res.status(200).json({ success: true });
   } catch (err) {
-    console.error('Database Deletion Error:', err);
     res.status(500).json({ error: err.message });
   }
 });
 
-// ── INITIALIZE NETWORK LISTENER ENGINE ──
+// ── DELETE GIFT (protected) ──
+app.delete('/api/gift/:id', requireAuth, async (req, res) => {
+  const giftId = req.params.id;
+  if (!giftId) return res.status(400).json({ error: 'No ID provided.' });
+  try {
+    const { error } = await supabase.from('gifts').delete().eq('id', giftId);
+    if (error) throw error;
+    res.status(200).json({ success: true });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ── START SERVER ──
 app.listen(PORT, () => {
-  console.log(`=================================================`);
-  console.log(` 🚀 Server cruising smoothly on port: ${PORT}   `);
-  console.log(`=================================================`);
+  console.log(`🚀 Forever 27 API running on port ${PORT}`);
 });
-// Self-ping every 14 minutes to prevent sleep
+
+// Self-ping to prevent Render sleep
 setInterval(() => {
-  fetch(`https://videogift-backend-3.onrender.com/`)
-    .catch(() => {});
+  fetch('https://videogift-backend-3.onrender.com/').catch(() => {});
 }, 14 * 60 * 1000);
-app.get('/api/validate', async (req, res) => {
-    const { id } = req.query;
-
-    if (!id) return res.json({ isValid: false });
-
-    // Query your Supabase table 'gifts'
-    const { data, error } = await supabase
-        .from('gifts')
-        .select('id')
-        .eq('id', id)
-        .single();
-
-    // If there is an error or no data, the ID is invalid
-    if (error || !data) {
-        return res.json({ isValid: false });
-    }
-
-    // If we found the record, it's valid
-    return res.json({ isValid: true });
-});
