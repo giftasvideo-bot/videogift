@@ -54,18 +54,27 @@
 
   // FORCE FETCH FROM DATABASE to fix Chrome rendering issues
   async function syncRegistryFromDatabase() {
-    try {
-      const response = await apiFetch(`${BACKEND_API_BASE}/api/admin/list-all`);
-      if (response.ok) {
-        const data = await response.json();
-        localRegistry = data.ids; // Assuming server returns { ids: [...] }
-        renderDashboardGrid();
-        syncStatusesWithDatabase();
-      }
-    } catch (err) {
-      console.error("Sync failed, check backend connectivity:", err);
+  try {
+    const response = await apiFetch(`${BACKEND_API_BASE}/api/admin/list-all`);
+    const data = await response.json();
+    console.log("Raw data from server:", data); // Add this line
+
+    if (data && data.ids) {
+      localRegistry = data.ids;
+    } else if (Array.isArray(data)) {
+      // Sometimes APIs return an array directly instead of {ids: []}
+      localRegistry = data;
+    } else {
+      console.warn("Unexpected data format received from server");
+      localRegistry = [];
     }
+    
+    renderDashboardGrid();
+    syncStatusesWithDatabase();
+  } catch (err) {
+    console.error("Sync failed:", err);
   }
+}
 
   async function syncStatusesWithDatabase() {
     if (localRegistry.length === 0) return;
@@ -85,12 +94,14 @@
   function renderDashboardGrid() {
     const gridContainer = document.getElementById('cards-grid-container');
     gridContainer.innerHTML = '';
-    localRegistry.forEach(id => {
+    const ids = [...localRegistry];
+
+    ids.forEach(id => {
       const card = document.createElement('div');
       card.className = 'qr-card';
       card.id = `card-${id}`;
       card.innerHTML = `
-        <div class="qr-container" id="qr-container-${id}"></div>
+        <div class="qr-container" id="qr-container-${id}" style="width:140px;height:140px;"></div>
         <div class="qr-id-label">${id}</div>
         <div class="status-badge" id="badge-${id}">LOADING...</div>
         <div class="card-actions">
@@ -99,7 +110,27 @@
         </div>
       `;
       gridContainer.appendChild(card);
-      new QRCode(document.getElementById(`qr-container-${id}`), { text: window.location.origin + '/watch.html?id=' + id, width: 140, height: 140 });
+    });
+
+    // Defer QR generation until after the browser has painted the elements
+    requestAnimationFrame(() => {
+      setTimeout(() => {
+        ids.forEach(id => {
+          const container = document.getElementById(`qr-container-${id}`);
+          if (container && !container.hasChildNodes()) {
+            try {
+              new QRCode(container, {
+                text: window.location.origin + '/watch.html?id=' + id,
+                width: 140,
+                height: 140,
+                correctLevel: QRCode.CorrectLevel.M
+              });
+            } catch (e) {
+              console.error('QR generation failed for', id, e);
+            }
+          }
+        });
+      }, 50);
     });
   }
 
