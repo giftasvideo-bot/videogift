@@ -266,21 +266,26 @@
       }
     }
 
-   function revealGift() {
-  document.getElementById('unwrap-screen').style.display = 'none';
-  document.getElementById('gift-state').style.display = 'flex';
+    function revealGift() {
+      document.getElementById('unwrap-screen').style.display = 'none';
+      document.getElementById('gift-state').style.display = 'flex';
 
-  // --- ADD THIS BLOCK ---
-  const giverName = giftData.giver_name || giftData.giverName;
-  if (giverName && giverName.trim() !== '') {
-    document.getElementById('giver-name-display').textContent = giverName;
-  }
-  // ----------------------
+      const video = document.getElementById('gift-video');
+      const videoUrl = giftData.video_url || giftData.videoUrl;
+      const createdAt = giftData.created_at || giftData.createdAt;
 
-  const video = document.getElementById('gift-video');
-  const videoUrl = giftData.video_url || giftData.videoUrl;
-  // ... rest of your existing revealGift code
-}
+      video.src = videoUrl;
+      video.play().catch(() => {});
+
+      if (giftData.message && giftData.message.trim() !== '') {
+        document.getElementById('gift-message-text').textContent = giftData.message;
+        document.getElementById('gift-sent-at').textContent =
+          'Uploaded ' + new Date(createdAt).toLocaleDateString('en-US', {
+            year: 'numeric', month: 'long', day: 'numeric'
+          });
+        document.getElementById('gift-note').style.display = 'block';
+      }
+    }
 
     // ── DOWNLOAD: fetch as blob to force save on mobile ──
     async function downloadVideo() {
