@@ -53,28 +53,46 @@
   }
 
   // FORCE FETCH FROM DATABASE to fix Chrome rendering issues
-  async function syncRegistryFromDatabase() {
-  try {
-    const response = await apiFetch(`${BACKEND_API_BASE}/api/admin/list-all`);
-    const data = await response.json();
-    console.log("Raw data from server:", data); // Add this line
-
-    if (data && data.ids) {
-      localRegistry = data.ids;
-    } else if (Array.isArray(data)) {
-      // Sometimes APIs return an array directly instead of {ids: []}
-      localRegistry = data;
-    } else {
-      console.warn("Unexpected data format received from server");
-      localRegistry = [];
-    }
-    
-    renderDashboardGrid();
-    syncStatusesWithDatabase();
-  } catch (err) {
-    console.error("Sync failed:", err);
+  function showError(msg) {
+    const grid = document.getElementById('cards-grid-container');
+    grid.innerHTML = `<div style="width:100%;padding:20px;background:#ffebee;color:#c62828;border-radius:8px;font-size:0.9rem;word-break:break-all;">
+      <strong>Error loading cards:</strong><br>${msg}
+    </div>`;
   }
-}
+
+  async function syncRegistryFromDatabase() {
+    const grid = document.getElementById('cards-grid-container');
+    grid.innerHTML = `<div style="padding:20px;color:var(--muted);">Loading cards from server...</div>`;
+    try {
+      const url = BACKEND_API_BASE + '/api/admin/list-all';
+      console.log("Fetching:", url);
+      const response = await apiFetch(url);
+
+      if (!response.ok) {
+        showError('Server returned ' + response.status + ' ' + response.statusText + ' for: ' + url);
+        return;
+      }
+
+      const data = await response.json();
+      console.log("Raw data from server:", data);
+
+      if (data && data.ids && data.ids.length > 0) {
+        localRegistry = data.ids;
+      } else if (Array.isArray(data) && data.length > 0) {
+        localRegistry = data;
+      } else {
+        localRegistry = [];
+        grid.innerHTML = '<div style="padding:20px;color:var(--muted);">No cards found. Raw server response: ' + JSON.stringify(data) + '</div>';
+        return;
+      }
+
+      renderDashboardGrid();
+      syncStatusesWithDatabase();
+    } catch (err) {
+      console.error("Sync failed:", err);
+      showError('Network error: ' + err.message + '<br><br>API URL being used: ' + BACKEND_API_BASE + '<br>Check that your Render backend is running and CORS is enabled for GitHub Pages.');
+    }
+  }
 
   async function syncStatusesWithDatabase() {
     if (localRegistry.length === 0) return;
