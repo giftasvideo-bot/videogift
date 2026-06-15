@@ -84,7 +84,13 @@
     <div class="instructions">
       <h3>How it works:</h3>
       <ul>
-        <li><strong>For Givers:</strong> Scan your card to attach a video or personal message.</li>
+        <li><strong>For Givers:</strong> Steps to send video
+1.	Scan the qrcode or enter the id number in text box and click Go button
+          <img src="manual.png" width="146" height="127"></li><lo>
+        <strong>2.	Write your name(optional), Your message(optional) and select the video you want to send and click UPLOAD VIDEO GIFT button.  Make sure that once the video is uploaded you can’t change it. Only one video is allowed to upload.</strong></lo>
+<lo>3.	After your video uploaded successfully a message will appear ‘🎉 Your video gift has been successfully uploaded!’ which shows the success of your video upload</lo>
+<lo>4.	Once you have finished give your present to your loved ones either in paper form (printed qr code) or send it digitally to ur loved once electronically.</lo>
+
         <li><strong>For Receivers:</strong> Scan the card to watch the video memory from your loved one.</li>
       </ul>
       <p><em>Forever 27 blends physical keepsakes with digital moments, ensuring your memories last forever.</em></p>
@@ -234,7 +240,7 @@
       input.classList.remove('error');
 
       try {
-        const response = await fetch(`${BACKEND_URL}/api/gift/${encodeURIComponent(giftId)}`);
+        const response = await fetch(`${https://videogift-backend-3.onrender.com}/api/gift/${encodeURIComponent(giftId)}`);
 
         if (response.status === 404) {
           // Code not found in database
