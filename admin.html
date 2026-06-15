@@ -37,6 +37,23 @@
     <h1>System Operations Control</h1>
   </div>
 
+  <div class="card-section" style="background:#fff8e1;border-color:#ffe082;">
+    <h2>⚙️ Backend Configuration</h2>
+    <p style="font-size:0.85rem;color:var(--muted);margin:10px 0;">Set the correct API endpoint for listing all cards. Try the options below if cards are not loading.</p>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:12px;">
+      <button class="btn btn-secondary" onclick="tryEndpoint('/api/admin/list-all')">Try /api/admin/list-all</button>
+      <button class="btn btn-secondary" onclick="tryEndpoint('/api/gifts')">Try /api/gifts</button>
+      <button class="btn btn-secondary" onclick="tryEndpoint('/api/cards')">Try /api/cards</button>
+      <button class="btn btn-secondary" onclick="tryEndpoint('/api/admin/cards')">Try /api/admin/cards</button>
+      <button class="btn btn-secondary" onclick="tryEndpoint('/api/list')">Try /api/list</button>
+    </div>
+    <div style="display:flex;gap:8px;margin-top:10px;">
+      <input id="custom-endpoint" placeholder="Or type custom path e.g. /api/my/route" style="flex:1;padding:10px;border:1px solid var(--cream);border-radius:6px;font-family:DM Sans,sans-serif;" />
+      <button class="btn" onclick="tryEndpoint(document.getElementById('custom-endpoint').value)">Try It</button>
+    </div>
+    <div id="endpoint-result" style="margin-top:10px;font-size:0.82rem;color:var(--muted);"></div>
+  </div>
+
   <div class="card-section">
     <h2>📋 Active Card Registry Collection</h2>
     <div class="qr-grid" id="cards-grid-container"></div>
@@ -60,11 +77,33 @@
     </div>`;
   }
 
+  async function tryEndpoint(path) {
+    if (!path || !path.startsWith('/')) { 
+      document.getElementById('endpoint-result').innerHTML = '<span style="color:#c62828">Path must start with /</span>';
+      return;
+    }
+    const url = BACKEND_API_BASE + path;
+    document.getElementById('endpoint-result').innerHTML = 'Testing: ' + url + '...';
+    try {
+      const res = await fetch(url, { headers: { 'Content-Type': 'application/json' } });
+      const text = await res.text();
+      if (res.ok) {
+        localStorage.setItem('videogift_list_endpoint', path);
+        document.getElementById('endpoint-result').innerHTML = '<span style="color:#2e7d32">✅ Works! (' + res.status + ') Response: ' + text.substring(0, 120) + '</span>';
+        syncRegistryFromDatabase();
+      } else {
+        document.getElementById('endpoint-result').innerHTML = '<span style="color:#c62828">❌ ' + res.status + ' ' + res.statusText + ' — Response: ' + text.substring(0, 120) + '</span>';
+      }
+    } catch(e) {
+      document.getElementById('endpoint-result').innerHTML = '<span style="color:#c62828">❌ Network error: ' + e.message + '</span>';
+    }
+  }
+
   async function syncRegistryFromDatabase() {
     const grid = document.getElementById('cards-grid-container');
     grid.innerHTML = `<div style="padding:20px;color:var(--muted);">Loading cards from server...</div>`;
     try {
-      const url = BACKEND_API_BASE + '/api/admin/list-all';
+      const url = BACKEND_API_BASE + (localStorage.getItem('videogift_list_endpoint') || '/api/admin/list-all');
       console.log("Fetching:", url);
       const response = await apiFetch(url);
 
