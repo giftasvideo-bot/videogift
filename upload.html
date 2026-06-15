@@ -131,6 +131,32 @@
     }
     @keyframes spin { to { transform: rotate(360deg); } }
     .checking-screen p { color: var(--muted); font-size: 0.9rem; }
+
+    /* Video preview */
+    .video-preview-wrap {
+      display: none;
+      margin-top: 14px;
+      border-radius: 10px;
+      overflow: hidden;
+      background: #000;
+      position: relative;
+    }
+    .video-preview-wrap video {
+      width: 100%;
+      max-height: 280px;
+      display: block;
+      border-radius: 10px;
+    }
+    .video-preview-label {
+      font-size: 0.78rem;
+      color: var(--muted);
+      margin-top: 6px;
+      text-align: center;
+    }
+    .file-dropzone.has-file {
+      border-color: var(--gold);
+      background: #fffdf8;
+    }
   </style>
 </head>
 <body>
@@ -174,6 +200,10 @@
         <input type="file" id="video-input" accept="video/*" onchange="displayFileName()" required />
         <div id="file-name-preview" class="file-chosen-name"></div>
       </div>
+      <div class="video-preview-wrap" id="video-preview-wrap">
+        <video id="video-preview" controls playsinline></video>
+      </div>
+      <div class="video-preview-label" id="video-preview-label"></div>
     </div>
     <button type="submit" id="submit-btn" class="btn">Upload Video Gift</button>
   </form>
@@ -242,14 +272,28 @@
     document.getElementById('checking-screen').style.display = 'none';
     document.getElementById('already-used-screen').style.display = 'block';
     document.getElementById('used-card-id').textContent = giftId;
-    document.getElementById('watch-redirect-btn').href = `watch.html?id=${encodeURIComponent(giftId)}`;
+    document.getElementById('watch-redirect-btn').href = `index.html`;
   }
 
   function displayFileName() {
     const fileInput = document.getElementById('video-input');
     const preview = document.getElementById('file-name-preview');
-    if (fileInput.files.length > 0) {
-      preview.textContent = `Selected: ${fileInput.files[0].name}`;
+    const previewWrap = document.getElementById('video-preview-wrap');
+    const videoEl = document.getElementById('video-preview');
+    const previewLabel = document.getElementById('video-preview-label');
+    const dropzone = fileInput.closest('.file-dropzone');
+
+    if (fileInput.files && fileInput.files.length > 0) {
+      const file = fileInput.files[0];
+      const sizeMB = (file.size / (1024 * 1024)).toFixed(1);
+      preview.textContent = file.name;
+      previewLabel.textContent = sizeMB + ' MB — scroll to review before uploading';
+
+      // Show video preview
+      const objectUrl = URL.createObjectURL(file);
+      videoEl.src = objectUrl;
+      previewWrap.style.display = 'block';
+      dropzone.classList.add('has-file');
     }
   }
 
@@ -292,7 +336,7 @@
     xhr.onload = function () {
       if (xhr.status === 200) {
         alert('🎉 Your video gift has been successfully uploaded!');
-        window.location.href = `watch.html?id=${encodeURIComponent(giftId)}`;
+        window.location.href = 'index.html';
       } else {
         try {
           const errRes = JSON.parse(xhr.responseText);
