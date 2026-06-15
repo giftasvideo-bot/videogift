@@ -195,6 +195,56 @@ app.post('/api/gift/:id/view', async (req, res) => {
   }
 });
 
+// ── DELETE VIDEO ONLY (protected) ──
+app.delete('/api/gift/:id/video', requireAuth, async (req, res) => {
+  const giftId = req.params.id;
+  try {
+    // 1. Fetch current video_url from DB
+    const { data, error: fetchErr } = await supabase
+      .from('gifts').select('video_url').eq('id', giftId).single();
+
+    if (fetchErr || !data) {
+      return res.status(404).json({ message: 'Gift not found.' });
+    }
+
+    if (!data.video_url) {
+      return res.status(400).json({ message: 'No video attached to this card.' });
+    }
+
+    // 2. Extract storage file path from the public URL
+    // URL format: .../storage/v1/object/public/videos/videos/FILENAME
+    const urlParts = data.video_url.split('/storage/v1/object/public/videos/');
+    if (urlParts.length < 2) {
+      return res.status(400).json({ message: 'Could not parse video URL.' });
+    }
+    const filePath = urlParts[1]; // e.g. "videos/EVRD5L-1234567890.mp4"
+
+    // 3. Delete file from Supabase Storage
+    const { error: storageErr } = await supabase.storage
+      .from('videos')
+      .remove([filePath]);
+
+    if (storageErr) {
+      console.error('Storage delete error:', storageErr);
+      // Continue anyway — still clear the DB reference
+    }
+
+    // 4. Clear video_url, message and reset status to pending
+    const { error: dbErr } = await supabase
+      .from('gifts')
+      .update({ video_url: null, message: null, status: 'pending' })
+      .eq('id', giftId);
+
+    if (dbErr) throw dbErr;
+
+    console.log(`🎬 Video deleted for card: ${giftId}`);
+    res.status(200).json({ ok: true });
+  } catch (err) {
+    console.error('Delete video error:', err);
+    res.status(500).json({ message: err.message });
+  }
+});
+
 // ── DELETE GIFT (protected) ──
 app.delete('/api/gift/:id', requireAuth, async (req, res) => {
   const giftId = req.params.id;
