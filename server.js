@@ -285,6 +285,25 @@ app.delete('/api/gift/:id', requireAuth, async (req, res) => {
   }
 });
 
+// ── GET ALL CARD IDs (protected) ──
+// admin.html calls this on load so ALL browsers see the same cards from DB
+app.get('/api/admin/cards', requireAuth, async (req, res) => {
+  try {
+    const { data, error } = await supabase
+      .from('gifts')
+      .select('id')
+      .order('id', { ascending: false });
+
+    if (error) throw error;
+
+    const ids = (data || []).map(row => row.id);
+    res.json({ ids });
+  } catch (err) {
+    console.error('Failed to fetch card list:', err);
+    res.status(500).json({ message: err.message });
+  }
+});
+
 // ── PURGE ORPHANED STORAGE FILES (protected) ──
 // Deletes all files in the storage bucket that have no matching DB record
 app.delete('/api/admin/purge-storage', requireAuth, async (req, res) => {
