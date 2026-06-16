@@ -195,6 +195,68 @@ app.post('/api/gift/:id/view', async (req, res) => {
   }
 });
 
+// ── DELETE VIDEO ONLY (protected) ──
+app.delete('/api/gift/:id/video', requireAuth, async (req, res) => {
+  const giftId = req.params.id;
+  try {
+    // 1. Fetch current record
+    const { data, error: fetchErr } = await supabase
+      .from('gifts')
+      .select('video_url, status')
+      .eq('id', giftId)
+      .single();
+
+    if (fetchErr || !data) {
+      return res.status(404).json({ message: 'Gift not found.' });
+    }
+
+    if (!data.video_url) {
+      return res.status(400).json({ message: 'No video attached to this card.' });
+    }
+
+    // 2. Extract the file path inside the storage bucket from the public URL
+    // Supabase URL format: https://<project>.supabase.co/storage/v1/object/public/videos/<filePath>
+    const marker = '/object/public/videos/';
+    const markerIdx = data.video_url.indexOf(marker);
+    let filePath = null;
+
+    if (markerIdx !== -1) {
+      filePath = decodeURIComponent(data.video_url.slice(markerIdx + marker.length));
+    }
+
+    if (filePath) {
+      // 3. Delete file from Supabase Storage bucket "videos"
+      const { error: storageErr } = await supabase.storage
+        .from('videos')
+        .remove([filePath]);
+
+      if (storageErr) {
+        console.error(`Storage delete failed for "${filePath}":`, storageErr.message);
+        // Don't return error — still clear the DB below
+      } else {
+        console.log(`🗑️ Storage file deleted: ${filePath}`);
+      }
+    } else {
+      console.warn('Could not parse file path from URL:', data.video_url);
+    }
+
+    // 4. Clear video fields and reset status to pending regardless of storage result
+    const { error: dbErr } = await supabase
+      .from('gifts')
+      .update({ video_url: null, message: null, gifter_name: null, status: 'pending' })
+      .eq('id', giftId);
+
+    if (dbErr) throw dbErr;
+
+    console.log(`✅ Video cleared from DB for card: ${giftId}`);
+    res.status(200).json({ ok: true });
+
+  } catch (err) {
+    console.error('Delete video error:', err);
+    res.status(500).json({ message: err.message });
+  }
+});
+
 // ── DELETE GIFT (protected) ──
 app.delete('/api/gift/:id', requireAuth, async (req, res) => {
   const giftId = req.params.id;
