@@ -8,31 +8,31 @@ const { createClient } = require('@supabase/supabase-js');
 const app = express();
 const PORT = process.env.PORT || 10000;
 
-// ── MIDDLEWARE ──
+// â”€â”€ MIDDLEWARE â”€â”€
 app.use(cors());
 app.use(express.json());
 
-// ── SUPABASE ──
+// â”€â”€ SUPABASE â”€â”€
 const supabaseUrl = process.env.SUPABASE_URL;
 const supabaseAnonKey = process.env.SUPABASE_ANON_KEY;
 if (!supabaseUrl || !supabaseAnonKey) {
-  console.error("❌ SUPABASE_URL and SUPABASE_ANON_KEY must be set.");
+  console.error("âŒ SUPABASE_URL and SUPABASE_ANON_KEY must be set.");
   process.exit(1);
 }
 const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
-// ── JWT CONFIG ──
+// â”€â”€ JWT CONFIG â”€â”€
 const JWT_SECRET     = process.env.JWT_SECRET     || 'forever27-secret-change-this';
 const ADMIN_USERNAME = process.env.ADMIN_USERNAME || 'admin';
 const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'forever27';
 
-// ── MULTER ──
+// â”€â”€ MULTER â”€â”€
 const upload = multer({
   storage: multer.memoryStorage(),
   limits: { fileSize: 500 * 1024 * 1024 } // 500MB
 });
 
-// ── AUTH MIDDLEWARE ──
+// â”€â”€ AUTH MIDDLEWARE â”€â”€
 function requireAuth(req, res, next) {
   const authHeader = req.headers['authorization'] || '';
   const token = authHeader.startsWith('Bearer ') ? authHeader.slice(7) : null;
@@ -45,16 +45,16 @@ function requireAuth(req, res, next) {
   }
 }
 
-// ════════════════════════════════════════
+// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 // ROUTES
-// ════════════════════════════════════════
+// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 
-// ── BASE ──
+// â”€â”€ BASE â”€â”€
 app.get('/', (req, res) => {
-  res.status(200).send('🚀 Forever 27 API is running!');
+  res.status(200).send('ðŸš€ Forever 27 API is running!');
 });
 
-// ── ADMIN LOGIN ──
+// â”€â”€ ADMIN LOGIN â”€â”€
 app.post('/api/admin/login', (req, res) => {
   const { username, password } = req.body || {};
 
@@ -68,7 +68,7 @@ app.post('/api/admin/login', (req, res) => {
       JWT_SECRET,
       { expiresIn: '8h' }
     );
-    console.log(`✅ Admin login: ${username}`);
+    console.log(`âœ… Admin login: ${username}`);
     return res.json({ token });
   }
 
@@ -78,12 +78,12 @@ app.post('/api/admin/login', (req, res) => {
   }, 400);
 });
 
-// ── VERIFY TOKEN ──
+// â”€â”€ VERIFY TOKEN â”€â”€
 app.get('/api/admin/verify', requireAuth, (req, res) => {
   res.json({ ok: true, user: req.admin.username });
 });
 
-// ── GET GIFT BY ID ──
+// â”€â”€ GET GIFT BY ID â”€â”€
 app.get('/api/gift/:id', async (req, res) => {
   const giftId = req.params.id;
   try {
@@ -96,7 +96,7 @@ app.get('/api/gift/:id', async (req, res) => {
   }
 });
 
-// ── VALIDATE GIFT ID ──
+// â”€â”€ VALIDATE GIFT ID â”€â”€
 app.get('/api/validate', async (req, res) => {
   const { id } = req.query;
   if (!id) return res.json({ isValid: false });
@@ -105,7 +105,7 @@ app.get('/api/validate', async (req, res) => {
   return res.json({ isValid: !error && !!data });
 });
 
-// ── ADMIN BATCH INSERT (protected) ──
+// â”€â”€ ADMIN BATCH INSERT (protected) â”€â”€
 app.post('/api/admin/batch-insert', requireAuth, async (req, res) => {
   const { cards } = req.body;
   if (!cards || !Array.isArray(cards)) {
@@ -121,7 +121,7 @@ app.post('/api/admin/batch-insert', requireAuth, async (req, res) => {
   }
 });
 
-// ── STATUS SYNC ──
+// â”€â”€ STATUS SYNC â”€â”€
 app.post('/api/gifts/status', async (req, res) => {
   const { ids } = req.body;
   if (!ids || !Array.isArray(ids)) {
@@ -139,7 +139,7 @@ app.post('/api/gifts/status', async (req, res) => {
   }
 });
 
-// ── VIDEO UPLOAD ──
+// â”€â”€ VIDEO UPLOAD â”€â”€
 app.post('/api/upload', upload.single('video'), async (req, res) => {
   try {
     const { giftId, message, gifterName } = req.body;
@@ -185,7 +185,7 @@ app.post('/api/upload', upload.single('video'), async (req, res) => {
   }
 });
 
-// ── MARK AS VIEWED ──
+// â”€â”€ MARK AS VIEWED â”€â”€
 app.post('/api/gift/:id/view', async (req, res) => {
   try {
     await supabase.from('gifts').update({ status: 'viewed' }).eq('id', req.params.id);
@@ -195,7 +195,7 @@ app.post('/api/gift/:id/view', async (req, res) => {
   }
 });
 
-// ── DELETE VIDEO ONLY (protected) ──
+// â”€â”€ DELETE VIDEO ONLY (protected) â”€â”€
 app.delete('/api/gift/:id/video', requireAuth, async (req, res) => {
   const giftId = req.params.id;
   try {
@@ -232,9 +232,9 @@ app.delete('/api/gift/:id/video', requireAuth, async (req, res) => {
 
       if (storageErr) {
         console.error(`Storage delete failed for "${filePath}":`, storageErr.message);
-        // Don't return error — still clear the DB below
+        // Don't return error â€” still clear the DB below
       } else {
-        console.log(`🗑️ Storage file deleted: ${filePath}`);
+        console.log(`ðŸ—‘ï¸ Storage file deleted: ${filePath}`);
       }
     } else {
       console.warn('Could not parse file path from URL:', data.video_url);
@@ -248,7 +248,7 @@ app.delete('/api/gift/:id/video', requireAuth, async (req, res) => {
 
     if (dbErr) throw dbErr;
 
-    console.log(`✅ Video cleared from DB for card: ${giftId}`);
+    console.log(`âœ… Video cleared from DB for card: ${giftId}`);
     res.status(200).json({ ok: true });
 
   } catch (err) {
@@ -257,7 +257,7 @@ app.delete('/api/gift/:id/video', requireAuth, async (req, res) => {
   }
 });
 
-// ── DELETE GIFT (protected) — also deletes its video from storage ──
+// â”€â”€ DELETE GIFT (protected) â€” also deletes its video from storage â”€â”€
 app.delete('/api/gift/:id', requireAuth, async (req, res) => {
   const giftId = req.params.id;
   if (!giftId) return res.status(400).json({ error: 'No ID provided.' });
@@ -273,7 +273,7 @@ app.delete('/api/gift/:id', requireAuth, async (req, res) => {
         const filePath = decodeURIComponent(data.video_url.slice(markerIdx + marker.length));
         const { error: storageErr } = await supabase.storage.from('videos').remove([filePath]);
         if (storageErr) console.warn('Storage delete on card delete failed:', storageErr.message);
-        else console.log(`🗑️ Storage file deleted with card: ${filePath}`);
+        else console.log(`ðŸ—‘ï¸ Storage file deleted with card: ${filePath}`);
       }
     }
 
@@ -285,7 +285,7 @@ app.delete('/api/gift/:id', requireAuth, async (req, res) => {
   }
 });
 
-// ── GET ALL CARD IDs (protected) ──
+// â”€â”€ GET ALL CARD IDs (protected) â”€â”€
 // admin.html calls this on load so ALL browsers see the same cards from DB
 app.get('/api/admin/cards', requireAuth, async (req, res) => {
   try {
@@ -304,7 +304,7 @@ app.get('/api/admin/cards', requireAuth, async (req, res) => {
   }
 });
 
-// ── PURGE ORPHANED STORAGE FILES (protected) ──
+// â”€â”€ PURGE ORPHANED STORAGE FILES (protected) â”€â”€
 // Deletes all files in the storage bucket that have no matching DB record
 app.delete('/api/admin/purge-storage', requireAuth, async (req, res) => {
   try {
@@ -342,7 +342,7 @@ app.delete('/api/admin/purge-storage', requireAuth, async (req, res) => {
     const { error: delErr } = await supabase.storage.from('videos').remove(orphanPaths);
     if (delErr) throw delErr;
 
-    console.log(`🧹 Purged ${orphans.length} orphaned storage file(s).`);
+    console.log(`ðŸ§¹ Purged ${orphans.length} orphaned storage file(s).`);
     res.json({ deleted: orphans.length, files: orphanPaths });
   } catch (err) {
     console.error('Purge storage error:', err);
@@ -350,9 +350,9 @@ app.delete('/api/admin/purge-storage', requireAuth, async (req, res) => {
   }
 });
 
-// ── START SERVER ──
+// â”€â”€ START SERVER â”€â”€
 app.listen(PORT, () => {
-  console.log(`🚀 Forever 27 API running on port ${PORT}`);
+  console.log(`ðŸš€ Forever 27 API running on port ${PORT}`);
 });
 
 // Self-ping to prevent Render sleep
