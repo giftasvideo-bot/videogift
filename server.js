@@ -257,16 +257,77 @@ app.delete('/api/gift/:id/video', requireAuth, async (req, res) => {
   }
 });
 
-// ── DELETE GIFT (protected) ──
+// ── DELETE GIFT (protected) — also deletes its video from storage ──
 app.delete('/api/gift/:id', requireAuth, async (req, res) => {
   const giftId = req.params.id;
   if (!giftId) return res.status(400).json({ error: 'No ID provided.' });
   try {
+    // Fetch video_url first so we can delete from storage too
+    const { data } = await supabase
+      .from('gifts').select('video_url').eq('id', giftId).single();
+
+    if (data && data.video_url) {
+      const marker = '/object/public/videos/';
+      const markerIdx = data.video_url.indexOf(marker);
+      if (markerIdx !== -1) {
+        const filePath = decodeURIComponent(data.video_url.slice(markerIdx + marker.length));
+        const { error: storageErr } = await supabase.storage.from('videos').remove([filePath]);
+        if (storageErr) console.warn('Storage delete on card delete failed:', storageErr.message);
+        else console.log(`🗑️ Storage file deleted with card: ${filePath}`);
+      }
+    }
+
     const { error } = await supabase.from('gifts').delete().eq('id', giftId);
     if (error) throw error;
     res.status(200).json({ success: true });
   } catch (err) {
     res.status(500).json({ error: err.message });
+  }
+});
+
+// ── PURGE ORPHANED STORAGE FILES (protected) ──
+// Deletes all files in the storage bucket that have no matching DB record
+app.delete('/api/admin/purge-storage', requireAuth, async (req, res) => {
+  try {
+    // 1. List all files in the videos/ folder of the bucket
+    const { data: files, error: listErr } = await supabase.storage
+      .from('videos')
+      .list('videos', { limit: 1000 });
+
+    if (listErr) throw listErr;
+    if (!files || files.length === 0) {
+      return res.json({ deleted: 0, message: 'Storage is already empty.' });
+    }
+
+    // 2. Get all gift IDs from DB
+    const { data: gifts, error: dbErr } = await supabase
+      .from('gifts').select('id, video_url');
+    if (dbErr) throw dbErr;
+
+    const activeUrls = new Set((gifts || []).map(g => g.video_url).filter(Boolean));
+
+    // 3. Find orphaned files (in storage but not referenced in any DB row)
+    const orphans = files.filter(file => {
+      const { data: urlData } = supabase.storage
+        .from('videos')
+        .getPublicUrl(`videos/${file.name}`);
+      return !activeUrls.has(urlData.publicUrl);
+    });
+
+    if (orphans.length === 0) {
+      return res.json({ deleted: 0, message: 'No orphaned files found.' });
+    }
+
+    // 4. Delete orphaned files
+    const orphanPaths = orphans.map(f => `videos/${f.name}`);
+    const { error: delErr } = await supabase.storage.from('videos').remove(orphanPaths);
+    if (delErr) throw delErr;
+
+    console.log(`🧹 Purged ${orphans.length} orphaned storage file(s).`);
+    res.json({ deleted: orphans.length, files: orphanPaths });
+  } catch (err) {
+    console.error('Purge storage error:', err);
+    res.status(500).json({ message: err.message });
   }
 });
 

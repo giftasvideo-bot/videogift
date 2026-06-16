@@ -243,7 +243,10 @@
   <div class="card-section">
     <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px;">
       <h2>📋 Active Card Registry Collection</h2>
-      <button class="btn btn-secondary" onclick="window.print()">🖨️ Print All Cards</button>
+      <div style="display:flex;gap:10px;flex-wrap:wrap;">
+        <button class="btn btn-secondary" onclick="purgeOrphanedStorage()" id="purge-btn">🧹 Purge Storage</button>
+        <button class="btn btn-secondary" onclick="window.print()">🖨️ Print All Cards</button>
+      </div>
     </div>
     <div class="qr-grid" id="cards-grid-container"></div>
   </div>
@@ -471,14 +474,63 @@
     }
   }
 
+  async function purgeOrphanedStorage() {
+    if (!confirm('This will permanently delete all video files in storage that have no matching gift card in the database.\n\nContinue?')) return;
+    const btn = document.getElementById('purge-btn');
+    btn.disabled = true;
+    btn.textContent = '🧹 Purging...';
+    try {
+      const res = await apiFetch(`${BACKEND_API_BASE}/api/admin/purge-storage`, { method: 'DELETE' });
+      const data = await res.json();
+      if (res.ok) {
+        alert(`✅ Purge complete!\n${data.deleted} orphaned file(s) deleted from storage.`);
+      } else {
+        alert(`⚠️ Purge failed: ${data.message || 'Server error'}`);
+      }
+    } catch (err) {
+      if (err.message !== 'Session expired.') alert(`⚠️ ${err.message}`);
+    } finally {
+      btn.disabled = false;
+      btn.textContent = '🧹 Purge Storage';
+    }
+  }
+
   function adminLogout() {
     sessionStorage.removeItem(SESSION_KEY);
     window.location.replace('login.html');
   }
 
-  // Init
-  renderDashboardGrid();
-  syncStatusesWithDatabase();
+  // ── INIT: reconcile localStorage against DB on every page load ──
+  // Removes any card IDs from localStorage that no longer exist in the database
+  async function reconcileWithDatabase() {
+    if (localRegistry.length === 0) {
+      renderDashboardGrid();
+      return;
+    }
+    try {
+      const response = await apiFetch(`${BACKEND_API_BASE}/api/gifts/status`, {
+        method: 'POST',
+        body: JSON.stringify({ ids: localRegistry })
+      });
+      if (!response.ok) throw new Error('Status check failed');
+      const data = await response.json();
+
+      // Keep only IDs that exist in the DB (have any status entry)
+      const validIds = localRegistry.filter(id => id in data.statuses);
+
+      if (validIds.length !== localRegistry.length) {
+        console.log(`🧹 Pruned ${localRegistry.length - validIds.length} stale card(s) from local registry.`);
+        localRegistry = validIds;
+        localStorage.setItem('forever27_cards_manifest', JSON.stringify(localRegistry));
+      }
+    } catch (err) {
+      console.warn('Reconcile failed, rendering with local data:', err);
+    }
+    renderDashboardGrid();
+    syncStatusesWithDatabase();
+  }
+
+  reconcileWithDatabase();
   setInterval(syncStatusesWithDatabase, 4000);
 </script>
 </body>
