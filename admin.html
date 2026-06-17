@@ -258,7 +258,7 @@
   let BACKEND_API_BASE = localStorage.getItem('videogift_api_url') || 'https://videogift-backend-3.onrender.com';
   document.getElementById('api-url-input').value = BACKEND_API_BASE;
 
-  let localRegistry = JSON.parse(localStorage.getItem('forever27_cards_manifest')) || [];
+  let localRegistry = [];
 
   // Returns Authorization header using the stored session token
   function authHeaders(extra = {}) {
@@ -329,10 +329,8 @@
 
       if (!response.ok) throw new Error('Database rejected batch insertion.');
 
-      localRegistry = [...newCodes, ...localRegistry];
-      localStorage.setItem('forever27_cards_manifest', JSON.stringify(localRegistry));
-
-      renderDashboardGrid();
+      // Reload all cards from DB so every browser stays in sync
+      await loadCardsFromDatabase();
       syncStatusesWithDatabase();
     } catch (err) {
       alert(`⚠️ Generation Failed: ${err.message}`);
@@ -433,7 +431,6 @@
     }
 
     localRegistry = localRegistry.filter(item => item !== id);
-    localStorage.setItem('forever27_cards_manifest', JSON.stringify(localRegistry));
 
     const cardElement = document.getElementById(`card-${id}`);
     if (cardElement) cardElement.remove();
@@ -500,37 +497,27 @@
     window.location.replace('login.html');
   }
 
-  // ── INIT: reconcile localStorage against DB on every page load ──
-  // Removes any card IDs from localStorage that no longer exist in the database
-  async function reconcileWithDatabase() {
-    if (localRegistry.length === 0) {
-      renderDashboardGrid();
-      return;
-    }
+  // ── INIT: load ALL cards from the database on every page load ──
+  // This ensures every browser/device always sees the same cards
+  async function loadCardsFromDatabase() {
+    const gridContainer = document.getElementById('cards-grid-container');
+    gridContainer.innerHTML = `<div style="grid-column:1/-1; text-align:center; color:var(--muted); padding:40px;">⏳ Loading cards from database...</div>`;
+
     try {
-      const response = await apiFetch(`${BACKEND_API_BASE}/api/gifts/status`, {
-        method: 'POST',
-        body: JSON.stringify({ ids: localRegistry })
-      });
-      if (!response.ok) throw new Error('Status check failed');
+      const response = await apiFetch(`${BACKEND_API_BASE}/api/admin/cards`);
+      if (!response.ok) throw new Error('Failed to load cards from database.');
       const data = await response.json();
-
-      // Keep only IDs that exist in the DB (have any status entry)
-      const validIds = localRegistry.filter(id => id in data.statuses);
-
-      if (validIds.length !== localRegistry.length) {
-        console.log(`🧹 Pruned ${localRegistry.length - validIds.length} stale card(s) from local registry.`);
-        localRegistry = validIds;
-        localStorage.setItem('forever27_cards_manifest', JSON.stringify(localRegistry));
-      }
+      localRegistry = data.ids || [];
     } catch (err) {
-      console.warn('Reconcile failed, rendering with local data:', err);
+      console.warn('Could not load cards from DB:', err);
+      localRegistry = [];
     }
+
     renderDashboardGrid();
     syncStatusesWithDatabase();
   }
 
-  reconcileWithDatabase();
+  loadCardsFromDatabase();
   setInterval(syncStatusesWithDatabase, 4000);
 </script>
 </body>
