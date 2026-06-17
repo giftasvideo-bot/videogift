@@ -346,7 +346,11 @@
         body: JSON.stringify({ ids: localRegistry })
       });
 
-      if (!response.ok) return;
+      if (!response.ok) {
+        console.warn(`Status sync returned ${response.status}`);
+        markStuckBadgesOffline();
+        return;
+      }
       const data = await response.json();
 
       localRegistry.forEach(id => {
@@ -355,6 +359,7 @@
         if (badge) {
           badge.textContent = remoteStatus.toUpperCase();
           badge.className = `status-badge status-${remoteStatus}`;
+          badge.style.opacity = '1';
         }
         // Show upload attempt count
         const countEl = document.getElementById(`upload-count-${id}`);
@@ -370,7 +375,22 @@
       });
     } catch (err) {
       console.warn('Status sync failed:', err);
+      markStuckBadgesOffline();
     }
+  }
+
+  // Surfaces a sync failure instead of leaving badges hung on "CHECKING..." forever.
+  // Only touches badges that are still mid-check, so a known-good status from a
+  // previous successful sync is never overwritten by a transient failure.
+  function markStuckBadgesOffline() {
+    localRegistry.forEach(id => {
+      const badge = document.getElementById(`badge-${id}`);
+      if (badge && badge.textContent === 'CHECKING...') {
+        badge.textContent = 'OFFLINE';
+        badge.className = 'status-badge status-pending';
+        badge.style.opacity = '0.6';
+      }
+    });
   }
 
   function renderDashboardGrid() {
