@@ -157,6 +157,51 @@
       border-color: var(--gold);
       background: #fffdf8;
     }
+
+    /* Upload attempt counter */
+    .attempt-counter {
+      margin-top: 20px;
+      padding: 12px 16px;
+      border-radius: 10px;
+      font-size: 0.85rem;
+      text-align: center;
+      line-height: 1.5;
+    }
+    .attempt-counter.has-attempts {
+      background: #fff8e1;
+      border: 1px solid #ffe082;
+      color: #7a6020;
+    }
+    .attempt-counter.one-left {
+      background: #fff3e0;
+      border: 1px solid #ffcc80;
+      color: #e65100;
+    }
+    .attempt-counter.no-attempts {
+      background: #ffebee;
+      border: 1px solid #ffcdd2;
+      color: #c62828;
+    }
+    .attempt-dots {
+      display: flex;
+      justify-content: center;
+      gap: 8px;
+      margin-top: 8px;
+    }
+    .attempt-dot {
+      width: 12px; height: 12px;
+      border-radius: 50%;
+      background: var(--cream);
+      border: 2px solid var(--gold);
+      transition: background 0.2s;
+    }
+    .attempt-dot.used {
+      background: var(--gold);
+    }
+    .attempt-dot.empty {
+      background: #fff;
+      border-color: #e0e0e0;
+    }
   </style>
 </head>
 <body>
@@ -214,10 +259,14 @@
     </div>
     <div class="progress-text" id="progress-text">Uploading: 0%</div>
   </div>
+
+  <!-- Upload attempt counter — shown below the form -->
+  <div class="attempt-counter" id="attempt-counter" style="display:none;"></div>
 </div>
 
 <script>
   const BACKEND_API_BASE = 'https://videogift-backend-3.onrender.com';
+  const MAX_UPLOADS = 3;
 
   const urlParams = new URLSearchParams(window.location.search);
   const giftId = urlParams.get('id');
@@ -240,7 +289,7 @@
 
       // Card not in DB at all — allow upload
       if (res.status === 404) {
-        showUploadForm();
+        showUploadForm(0);
         return;
       }
 
@@ -248,24 +297,31 @@
 
       const data = await res.json();
       const videoUrl = data.video_url || data.videoUrl;
+      const uploadCount = data.upload_count || 0;
+
+      if (uploadCount >= MAX_UPLOADS) {
+        // Hard limit reached — block completely
+        showLimitReached(uploadCount);
+        return;
+      }
 
       if (videoUrl) {
-        // ✅ Already has a video — block upload, show locked screen
-        showAlreadyUsed();
+        // Has a video but still has attempts — allow re-upload (change)
+        showUploadForm(uploadCount);
       } else {
-        // In DB but no video yet — allow upload
-        showUploadForm();
+        // No video yet — allow upload
+        showUploadForm(uploadCount);
       }
     } catch (err) {
-      // If server is sleeping or error — allow upload with warning
       console.warn('Card check failed, allowing upload:', err);
-      showUploadForm();
+      showUploadForm(0);
     }
   }
 
-  function showUploadForm() {
+  function showUploadForm(uploadCount) {
     document.getElementById('checking-screen').style.display = 'none';
     document.getElementById('upload-form').style.display = 'block';
+    renderAttemptCounter(uploadCount);
   }
 
   function showAlreadyUsed() {
@@ -273,6 +329,65 @@
     document.getElementById('already-used-screen').style.display = 'block';
     document.getElementById('used-card-id').textContent = giftId;
     document.getElementById('watch-redirect-btn').href = `index.html`;
+  }
+
+  function showLimitReached(uploadCount) {
+    document.getElementById('checking-screen').style.display = 'none';
+    // Re-use the already-used screen with a custom message
+    const screen = document.getElementById('already-used-screen');
+    screen.style.display = 'block';
+    screen.style.background = '#ffebee';
+    screen.style.borderColor = '#ffcdd2';
+    document.getElementById('used-card-id').textContent = giftId;
+    screen.querySelector('h2').textContent = 'Upload limit reached';
+    screen.querySelector('p').innerHTML =
+      `Card <strong>${giftId}</strong> has used all ${MAX_UPLOADS} upload attempts.<br>
+       Please contact support if you need assistance.`;
+    document.getElementById('watch-redirect-btn').href = `index.html`;
+    document.getElementById('watch-redirect-btn').textContent = '▶ Watch the Gift';
+    // Also show the counter at 3/3
+    renderAttemptCounter(uploadCount);
+  }
+
+  // Renders the dots + text counter below the form
+  function renderAttemptCounter(uploadCount) {
+    const counter = document.getElementById('attempt-counter');
+    const remaining = MAX_UPLOADS - uploadCount;
+
+    // Build dots
+    let dots = '';
+    for (let i = 0; i < MAX_UPLOADS; i++) {
+      if (i < uploadCount) {
+        dots += `<div class="attempt-dot used" title="Upload ${i + 1} used"></div>`;
+      } else {
+        dots += `<div class="attempt-dot empty" title="Upload slot ${i + 1} available"></div>`;
+      }
+    }
+
+    let cls = 'attempt-counter has-attempts';
+    let msg = '';
+
+    if (remaining <= 0) {
+      cls = 'attempt-counter no-attempts';
+      msg = `<strong>No upload attempts remaining.</strong><br>This card has been used ${uploadCount} of ${MAX_UPLOADS} times.`;
+    } else if (remaining === 1) {
+      cls = 'attempt-counter one-left';
+      msg = `⚠️ <strong>Last upload attempt!</strong> You have <strong>1 of ${MAX_UPLOADS}</strong> attempts left.<br>Once uploaded, this video cannot be changed again.`;
+    } else {
+      msg = `You have <strong>${remaining} of ${MAX_UPLOADS}</strong> upload attempts remaining.`;
+      if (uploadCount > 0) msg += `<br><small>You've already uploaded ${uploadCount} time${uploadCount > 1 ? 's' : ''}.</small>`;
+    }
+
+    counter.className = cls;
+    counter.innerHTML = `${msg}<div class="attempt-dots">${dots}</div>`;
+    counter.style.display = 'block';
+
+    // Disable submit button if no attempts left
+    const submitBtn = document.getElementById('submit-btn');
+    if (submitBtn && remaining <= 0) {
+      submitBtn.disabled = true;
+      submitBtn.textContent = '🚫 Upload Limit Reached';
+    }
   }
 
   function displayFileName() {
@@ -335,8 +450,30 @@
 
     xhr.onload = function () {
       if (xhr.status === 200) {
-        alert('🎉 Your video gift has been successfully uploaded!');
+        try {
+          const res = JSON.parse(xhr.responseText);
+          const newCount = res.upload_count || MAX_UPLOADS;
+          const remaining = MAX_UPLOADS - newCount;
+          renderAttemptCounter(newCount);
+          if (remaining <= 0) {
+            alert('🎉 Your video gift has been successfully uploaded!\n\n⚠️ This was your final upload attempt. The video is now locked.');
+          } else {
+            alert(`🎉 Your video gift has been successfully uploaded!\n\nYou have ${remaining} upload attempt${remaining !== 1 ? 's' : ''} remaining if you need to change it.`);
+          }
+        } catch(e) {
+          alert('🎉 Your video gift has been successfully uploaded!');
+        }
         window.location.href = 'index.html';
+      } else if (xhr.status === 403) {
+        // Server-side limit block
+        try {
+          const errRes = JSON.parse(xhr.responseText);
+          showLimitReached(errRes.upload_count || MAX_UPLOADS);
+          alert(`🚫 Upload limit reached. This card has already been used ${errRes.upload_count || MAX_UPLOADS} times.`);
+        } catch(e) {
+          alert('🚫 Upload limit reached for this card.');
+        }
+        resetFormUI();
       } else {
         try {
           const errRes = JSON.parse(xhr.responseText);
