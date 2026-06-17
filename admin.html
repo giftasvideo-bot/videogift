@@ -356,17 +356,6 @@
           badge.textContent = remoteStatus.toUpperCase();
           badge.className = `status-badge status-${remoteStatus}`;
         }
-        // Show upload attempt count
-        const countEl = document.getElementById(`upload-count-${id}`);
-        if (countEl && data.uploadCounts) {
-          const count = data.uploadCounts[id] || 0;
-          const MAX = 3;
-          const remaining = MAX - count;
-          let color = '#7a7060';
-          if (remaining === 0) color = '#c62828';
-          else if (remaining === 1) color = '#e65100';
-          countEl.innerHTML = `<span style="color:${color};">📤 ${count}/${MAX} uploads used</span>`;
-        }
       });
     } catch (err) {
       console.warn('Status sync failed:', err);
@@ -395,7 +384,6 @@
         <div class="qr-container" id="qr-container-${id}"></div>
         <div class="qr-id-label">${id}</div>
         <div class="status-badge status-pending" id="badge-${id}">CHECKING...</div>
-        <div id="upload-count-${id}" style="font-size:0.78rem; color:var(--muted); margin-bottom:10px; min-height:18px;"></div>
         <div class="card-actions" style="flex-wrap:wrap; gap:6px;">
           <button class="btn btn-secondary" onclick="copyWatchLink('${id}')">🔗 Link</button>
           <button class="btn btn-action-delete-video" id="delvid-${id}" onclick="deleteVideoOnly('${id}')">🎬 Delete Video</button>
@@ -468,10 +456,7 @@
           badge.textContent = 'PENDING';
           badge.className = 'status-badge status-pending';
         }
-        // Reset upload count display
-        const countEl = document.getElementById(`upload-count-${id}`);
-        if (countEl) countEl.innerHTML = `<span style="color:#7a7060;">📤 0/3 uploads used</span>`;
-        alert(`✅ Video deleted for ${id}.\nThe card is now ready to receive a new video (upload count reset to 0).`);
+        alert(`✅ Video deleted for ${id}.\nThe card is now ready to receive a new video.`);
       } else {
         const err = await response.json().catch(() => ({}));
         alert(`⚠️ Could not delete video: ${err.message || 'Server error'}`);
