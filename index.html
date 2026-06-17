@@ -218,7 +218,7 @@
       validateAndNavigate(code);
     }
 
-    // ── CORE FIX: validate against database before navigating ──
+    // ── Route based on gift status ──
     async function validateAndNavigate(rawText) {
       let giftId = rawText.trim();
 
@@ -242,10 +242,9 @@
       input.classList.remove('error');
 
       try {
-        const response = await fetch(`${https://videogift-backend-3.onrender.com}/api/gift/${encodeURIComponent(giftId)}`);
+        const response = await fetch(`${BACKEND_URL}/api/gift/${encodeURIComponent(giftId)}`);
 
         if (response.status === 404) {
-          // Code not found in database
           showMsg('error', '❌ Gift code <strong>' + giftId + '</strong> was not found. Please check the code and try again.');
           input.classList.add('error');
           goBtn.disabled = false;
@@ -258,11 +257,23 @@
           return;
         }
 
-        // ✅ Code is valid — navigate to watch.html
-        showMsg('success', '✅ Gift found! Opening...');
-        setTimeout(() => {
-          window.location.href = `watch.html?id=${encodeURIComponent(giftId)}`;
-        }, 600);
+        const data = await response.json();
+        const status = data.status || 'pending';
+        const hasVideo = !!data.video_url;
+
+        if (hasVideo || status === 'uploaded' || status === 'viewed') {
+          // ✅ Video exists — go to watch page
+          showMsg('success', '🎁 Gift found! Opening your video...');
+          setTimeout(() => {
+            window.location.href = `watch.html?id=${encodeURIComponent(giftId)}`;
+          }, 600);
+        } else {
+          // ⏳ No video yet — go to upload page (giver)
+          showMsg('success', '✅ Card found! Redirecting to upload...');
+          setTimeout(() => {
+            window.location.href = `upload.html?id=${encodeURIComponent(giftId)}`;
+          }, 600);
+        }
 
       } catch(err) {
         // Network/server down
