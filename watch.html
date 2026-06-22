@@ -163,8 +163,9 @@
     <!-- Unwrap screen -->
     <div id="unwrap-screen" class="state-panel" style="display:none;">
       <div class="envelope-box">
-        <h2 class="env-title">A gift awaits you</h2>
-        <p class="env-sub">Someone sent you a personalized video memory.</p>
+        <div style="font-size:3rem;margin-bottom:20px;">🎁</div>
+        <h2 class="env-title" id="sender-headline">A gift awaits you</h2>
+        <p class="env-sub" id="sender-sub">Someone sent you a personalized video memory.</p>
         <button class="ribbon-btn" onclick="revealGift()">✨ Unwrap Gift</button>
       </div>
     </div>
@@ -253,6 +254,14 @@
 
         // ✅ Video exists — show gift
         document.getElementById('loading-state').style.display = 'none';
+
+        // Show sender name if available
+        const senderName = (giftData.gifter_name || '').trim();
+        if (senderName) {
+          document.getElementById('sender-headline').textContent = senderName + ' has sent you a gift 💌';
+          document.getElementById('sender-sub').textContent = 'A personalized video memory made just for you.';
+        }
+
         document.getElementById('unwrap-screen').style.display = 'flex';
         markAsViewed(giftId);
 
