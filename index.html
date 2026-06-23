@@ -10,41 +10,69 @@
   <style>
     :root { --ink: #0d0d0d; --paper: #faf7f2; --gold: #c9933a; --gold-light: #e8b86d; --cream: #f0ead8; --muted: #7a7060; }
     * { margin: 0; padding: 0; box-sizing: border-box; }
-    body { background: var(--paper); color: var(--ink); font-family: 'DM Sans', sans-serif; min-height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 20px; }
-    .container { max-width: 480px; width: 100%; text-align: center; padding: 40px 24px; background: rgba(250,247,242,0.85); border: 1px solid rgba(201,147,58,0.15); border-radius: 24px; }
-    .logo-mark { font-family: 'Playfair Display', serif; font-size: 2rem; font-weight: 700; margin-bottom: 8px; }
-    .logo-sub { font-size: 0.8rem; text-transform: uppercase; letter-spacing: 3px; color: var(--gold); margin-bottom: 40px; }
-    .hero-title { font-family: 'Playfair Display', serif; font-size: 1.75rem; font-style: italic; margin-bottom: 12px; }
-    .hero-desc { font-size: 0.92rem; color: var(--muted); line-height: 1.65; margin-bottom: 30px; }
-    .instructions { text-align: left; margin-bottom: 30px; font-size: 0.85rem; color: var(--muted); }
-    .instructions h3 { color: var(--ink); margin-bottom: 10px; font-family: 'Playfair Display', serif; }
-    .instructions ul { list-style-position: inside; line-height: 1.8; margin-bottom: 10px; }
-    .cta-btn { width: 100%; padding: 16px 24px; background: var(--ink); color: #fff; border: none; border-radius: 12px; font-size: 1rem; font-family: 'DM Sans', sans-serif; cursor: pointer; transition: background 0.2s; }
+    body { background: var(--paper); color: var(--ink); font-family: 'DM Sans', sans-serif; min-height: 100vh; display: flex; flex-direction: column; align-items: center; padding: 20px; padding-top: 60px; }
+    
+    /* Top Announcement Banner */
+    .top-banner { position: fixed; top: 0; left: 0; width: 100%; background: #1a1226; color: #fff; z-index: 1000; display: flex; align-items: center; justify-content: center; padding: 10px 40px; font-size: 0.85rem; letter-spacing: 1px; border-bottom: 2px solid var(--gold); box-shadow: 0 2px 10px rgba(0,0,0,0.1); transition: transform 0.3s ease; }
+    .banner-text { font-weight: 400; text-align: center; }
+    .banner-text strong { color: var(--gold-light); font-weight: 500; }
+    .banner-close { position: absolute; right: 15px; background: none; border: none; color: rgba(255,255,255,0.6); font-size: 1.1rem; cursor: pointer; padding: 5px; transition: color 0.2s; }
+    .banner-close:hover { color: #fff; }
+    body.banner-hidden { padding-top: 20px; }
+    body.banner-hidden .top-banner { transform: translateY(-100%); }
+
+    /* Main Container layout */
+    .wrapper { max-width: 600px; width: 100%; display: flex; flex-direction: column; gap: 30px; margin-top: 20px; }
+    
+    .container { width: 100%; text-align: center; padding: 40px 24px; background: rgba(250,247,242,0.85); border: 1px solid rgba(201,147,58,0.15); border-radius: 24px; box-shadow: 0 4px 20px rgba(0,0,0,0.02); }
+    .logo-mark { font-family: 'Playfair Display', serif; font-size: 2.2rem; font-weight: 700; margin-bottom: 8px; }
+    .logo-sub { font-size: 0.8rem; text-transform: uppercase; letter-spacing: 3px; color: var(--gold); margin-bottom: 30px; }
+    
+    /* Content Card Blocks */
+    .content-card { background: #fff; border: 1px solid var(--cream); border-radius: 20px; padding: 30px 24px; text-align: left; }
+    .content-card h3 { font-family: 'Playfair Display', serif; font-size: 1.4rem; color: var(--ink); margin-bottom: 12px; display: flex; align-items: center; gap: 8px; }
+    .content-card p { font-size: 0.92rem; color: var(--muted); line-height: 1.65; margin-bottom: 15px; }
+    .content-card p:last-child { margin-bottom: 0; }
+
+    /* Instructions/Steps Layout */
+    .steps-list { list-style: none; }
+    .steps-list li { position: relative; padding-left: 30px; margin-bottom: 20px; font-size: 0.9rem; color: var(--muted); line-height: 1.6; }
+    .steps-list li:last-child { margin-bottom: 0; }
+    .steps-list li::before { content: attr(data-step); position: absolute; left: 0; top: 2px; width: 20px; height: 20px; background: var(--cream); color: var(--ink); border-radius: 50%; font-size: 0.75rem; font-weight: bold; display: flex; align-items: center; justify-content: center; }
+    .steps-list strong { color: var(--ink); display: block; margin-bottom: 4px; }
+    .img-placeholder { background: var(--paper); border: 1px dashed var(--gold); border-radius: 12px; padding: 10px; display: inline-block; margin-top: 10px; }
+
+    /* Postcard Gallery Grid */
+    .postcard-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-top: 15px; }
+    .postcard-item { background: var(--paper); border: 1px solid var(--cream); border-radius: 12px; overflow: hidden; text-align: center; padding: 12px; transition: transform 0.2s; }
+    .postcard-item:hover { transform: translateY(-2px); border-color: var(--gold); }
+    .postcard-thumb { width: 100%; height: 120px; background: #e6e0d3; border-radius: 8px; display: flex; align-items: center; justify-content: center; color: var(--muted); font-size: 0.8rem; margin-bottom: 8px; font-style: italic; }
+    .postcard-title { font-size: 0.8rem; font-weight: 500; color: var(--ink); }
+
+    .cta-btn { width: 100%; padding: 16px 24px; background: var(--ink); color: #fff; border: none; border-radius: 12px; font-size: 1rem; font-family: 'DM Sans', sans-serif; cursor: pointer; transition: background 0.2s; font-weight: 500; }
     .cta-btn:hover { background: #2a2a2a; }
 
-    /* Modal */
+    /* Footer styling */
+    .site-footer { text-align: center; margin-top: 40px; margin-bottom: 20px; padding-top: 20px; border-top: 1px solid var(--cream); width: 100%; max-width: 600px; font-size: 0.8rem; color: var(--muted); letter-spacing: 0.5px; }
+
+    /* Modal Styling */
     .modal-overlay { position: fixed; inset: 0; background: rgba(13,13,13,0.65); display: none; align-items: flex-end; justify-content: center; z-index: 200; }
     .modal-card { background: var(--paper); width: 100%; max-width: 480px; border-radius: 24px 24px 0 0; padding: 28px 24px 48px; position: relative; }
     .drag-handle { width: 40px; height: 4px; background: var(--cream); border-radius: 2px; margin: 0 auto 20px; }
     .modal-title { font-family: 'Playfair Display', serif; font-size: 1.2rem; margin-bottom: 16px; text-align: center; }
     .close-btn { position: absolute; top: 20px; right: 20px; background: var(--cream); border: none; width: 32px; height: 32px; border-radius: 50%; font-size: 1.1rem; cursor: pointer; color: var(--muted); }
 
-    /* Scanner */
+    /* Scanner Elements */
     .scanner-wrap { width: 100%; border-radius: 14px; overflow: hidden; background: #111; min-height: 260px; display: flex; align-items: center; justify-content: center; position: relative; }
     #qr-reader { width: 100% !important; border: none !important; }
-    #qr-reader__header_message { display: none !important; }
-    #qr-reader__status_span { display: none !important; }
-    #qr-reader__camera_permission_button, #qr-reader__camera_start_button {
-      background: var(--gold) !important; color: #fff !important; border: none !important;
-      padding: 10px 20px !important; border-radius: 8px !important;
-      font-family: 'DM Sans', sans-serif !important; cursor: pointer !important; margin: 8px !important;
-    }
+    #qr-reader__header_message, #qr-reader__status_span { display: none !important; }
+    #qr-reader__camera_permission_button, #qr-reader__camera_start_button { background: var(--gold) !important; color: #fff !important; border: none !important; padding: 10px 20px !important; border-radius: 8px !important; font-family: 'DM Sans', sans-serif !important; cursor: pointer !important; margin: 8px !important; }
     .scan-loading { position: absolute; display: flex; flex-direction: column; align-items: center; gap: 10px; color: rgba(255,255,255,0.5); font-size: 0.82rem; }
     .spin { width: 28px; height: 28px; border: 2px solid rgba(255,255,255,0.15); border-top-color: #c9933a; border-radius: 50%; animation: spin 0.8s linear infinite; }
     @keyframes spin { to { transform: rotate(360deg); } }
     .cam-fail { display: none; text-align: center; padding: 20px; color: rgba(255,255,255,0.4); font-size: 0.82rem; line-height: 1.6; }
 
-    /* Divider */
+    /* Multi-use Divider */
     .divider { display: flex; align-items: center; gap: 10px; margin: 18px 0; color: var(--muted); font-size: 0.78rem; text-transform: uppercase; letter-spacing: 1px; }
     .divider::before, .divider::after { content: ''; flex: 1; height: 1px; background: var(--cream); }
 
@@ -56,17 +84,7 @@
     .manual-btn:hover { background: var(--gold-light); }
     .manual-btn:disabled { background: var(--cream); color: var(--muted); cursor: not-allowed; }
 
-    /* Validation message box */
-    .msg-box {
-      display: none;
-      margin-top: 12px;
-      padding: 12px 16px;
-      border-radius: 10px;
-      font-size: 0.85rem;
-      line-height: 1.5;
-      text-align: center;
-      animation: fadeIn 0.2s ease;
-    }
+    .msg-box { display: none; margin-top: 12px; padding: 12px 16px; border-radius: 10px; font-size: 0.85rem; line-height: 1.5; text-align: center; animation: fadeIn 0.2s ease; }
     @keyframes fadeIn { from { opacity:0; transform:translateY(-4px); } to { opacity:1; transform:translateY(0); } }
     .msg-box.error   { background: #ffebee; border: 1px solid #ffcdd2; color: #c62828; }
     .msg-box.loading { background: #fff8e1; border: 1px solid #ffe082; color: #7a6020; }
@@ -75,33 +93,101 @@
 </head>
 <body>
 
-  <div class="container">
-    <div class="logo-mark">Forever 27</div>
-    <div class="logo-sub">Physical to Digital</div>
-   
-
-    <div class="instructions">
-      <h3>How it works:</h3>
-      <ul>
-        <li><strong>For Givers:</strong> Steps to send video</li><lo>
-1.	Scan the qrcode or enter the id number in text box and click Go button.
-          <p><img src="manual.png" width="146" height="127"></p></li><lo>
-        <strong>2.	Write your name(optional), Your message(optional) and select the video you want to send and click UPLOAD VIDEO GIFT button.  Make sure that once the video is uploaded you can’t change it. Only one video is allowed to upload.</strong></lo><p></p><strong>
-<lo>3.	After your video uploaded successfully a message will appear ‘🎉 Your video gift has been successfully uploaded!’ which shows the success of your video upload</lo><p></p>
-<lo>4.	Once you have finished give your present to your loved ones either in paper form (printed qr code) or send it digitally to ur loved once electronically.</lo>
-
-       <div> <li><strong>For Receivers:</strong> </li><lo>
-1.	Scan the qrcode or enter the id number in text box and click Go button
- </lo><p></p><lo>
-
-2.	The system play    back the video gift automatically</lo></strong>
-
-    </div>
-<div>
-    <button class="cta-btn" onclick="openModal()">✨ Scan QR Code</button>
+  <!-- Top Announcement Banner -->
+  <div class="top-banner" id="top-banner">
+    <div class="banner-text">✨ Welcome to <strong>Forever 27 Custom Crafts</strong> — Attach custom video gifts to your apparel!</div>
+    <button class="banner-close" onclick="dismissBanner()">✕</button>
   </div>
 
-  <!-- Modal -->
+  <div class="wrapper">
+    
+    <!-- Header Scanner Core -->
+    <div class="container">
+      <div class="logo-mark">Forever 27</div>
+      <div class="logo-sub">Physical to Digital</div>
+      <div>
+        <button class="cta-btn" onclick="openModal()">✨ Scan QR Code</button>
+      </div>
+    </div>
+
+    <!-- About Us Section -->
+    <div class="content-card">
+      <h3>🌿 About Us</h3>
+      <p>At <strong>Forever 27 Design and Crafts</strong>, we bridge the gap between tangible handcrafted design and digital storytelling[cite: 1]. Born from a passion for premium textiles and modern aesthetic details, we build functional ecosystems that make gifting unforgettable[cite: 1].</p>
+      <p>Our unique video-gift platform enables physical apparel, cards, and custom items to serve as safe keys to personal multimedia experiences, helping you deliver genuine warmth seamlessly across distances[cite: 1].</p>
+    </div>
+
+    <!-- Sample Postcards Section -->
+    <div class="content-card">
+      <h3>✉️ Sample Postcards</h3>
+      <p>Explore some of our signature visual prints. Each postcard layout comes with an integrated structural location for a unique QR scan token.</p>
+      <div class="postcard-grid">
+        <div class="postcard-item">
+          <div class="postcard-thumb">Minimalist Flora</div>
+          <div class="postcard-title">The Botanical Set</div>
+        </div>
+        <div class="postcard-item">
+          <div class="postcard-thumb">Habesha Gold Trim</div>
+          <div class="postcard-title">Cultural Heritage Classic</div>
+        </div>
+        <div class="postcard-item">
+          <div class="postcard-thumb">Geometric Lines</div>
+          <div class="postcard-title">Modern Abstract Mono</div>
+        </div>
+        <div class="postcard-item">
+          <div class="postcard-thumb">Celestial Butterfly</div>
+          <div class="postcard-title">Midnight Nocturne</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- How to Send Section -->
+    <div class="content-card">
+      <h3>🚀 How to Send</h3>
+      <ol class="steps-list">
+        <li data-step="1">
+          <strong>Initialize Token Identification</strong>
+          Scan the structural printed QR code with your camera or enter its alphanumeric index identifier key into the manual interface option block.
+          <div class="img-placeholder"><img src="manual.png" width="146" height="127" alt="Manual Illustration"></div>
+        </li>
+        <li data-step="2">
+          <strong>Attach Metadata &amp; Video Media</strong>
+          Provide an optional signature sender identity reference label, append an optional text statement, choose your target source media clip, and select the transmission submission link button. *Note: Data blocks finalize permanently directly post-submission.*
+        </li>
+        <li data-step="3">
+          <strong>Confirm Complete Status</strong>
+          A valid success notification panel layout text readout stating *“🎉 Your video gift has been successfully uploaded!”* confirms server-side persistence storage initialization.
+        </li>
+        <li data-step="4">
+          <strong>Hand Over Presentation</strong>
+          Deliver your material item directly to your specific recipient or share the physical print card details forward electronically.
+        </li>
+      </ol>
+    </div>
+
+    <!-- How to Receive Section -->
+    <div class="content-card">
+      <h3>🎁 How to Receive</h3>
+      <ol class="steps-list">
+        <li data-step="1">
+          <strong>Identify Visual Identifier</strong>
+          Examine the received physical piece context elements, look up the tag, and initiate standard capture via mobile reader or pass parameters via the home field submission input.
+        </li>
+        <li data-step="2">
+          <strong>Automatic Media Playback</strong>
+          The underlying validation pipeline resolves the target data context dynamically and directly surfaces the integrated personal video sequence automatically!
+        </li>
+      </ol>
+    </div>
+
+    <!-- Site Copyright Footer -->
+    <footer class="site-footer">
+      &copy; 2026 Forever 27 Design and Crafts. All Rights Reserved. Custom Tailored Experiences.
+    </footer>
+
+  </div>
+
+  <!-- Scan Execution Modal Overlay -->
   <div class="modal-overlay" id="scan-modal">
     <div class="modal-card">
       <div class="drag-handle"></div>
@@ -130,7 +216,6 @@
         <button class="manual-btn" id="go-btn" onclick="goWithCode()">Go</button>
       </div>
 
-      <!-- Validation feedback message -->
       <div class="msg-box" id="msg-box"></div>
     </div>
   </div>
@@ -140,6 +225,10 @@
     let qrScanner = null;
     let isScanning = false;
     let scanDone = false;
+
+    function dismissBanner() {
+      document.body.classList.add('banner-hidden');
+    }
 
     function openModal() {
       scanDone = false;
@@ -218,11 +307,9 @@
       validateAndNavigate(code);
     }
 
-    // ── Route based on gift status ──
     async function validateAndNavigate(rawText) {
       let giftId = rawText.trim();
 
-      // Extract ?id= if it's a full URL
       try {
         const url = new URL(rawText);
         const param = url.searchParams.get('id');
@@ -234,7 +321,6 @@
         return;
       }
 
-      // Show checking state
       showMsg('loading', '🔍 Checking gift code...');
       const goBtn = document.getElementById('go-btn');
       const input = document.getElementById('manual-code');
@@ -262,13 +348,11 @@
         const hasVideo = !!data.video_url;
 
         if (hasVideo || status === 'uploaded' || status === 'viewed') {
-          // ✅ Video exists — go to watch page
           showMsg('success', '🎁 Gift found! Opening your video...');
           setTimeout(() => {
             window.location.href = `watch.html?id=${encodeURIComponent(giftId)}`;
           }, 600);
         } else {
-          // ⏳ No video yet — go to upload page (giver)
           showMsg('success', '✅ Card found! Redirecting to upload...');
           setTimeout(() => {
             window.location.href = `upload.html?id=${encodeURIComponent(giftId)}`;
@@ -276,13 +360,11 @@
         }
 
       } catch(err) {
-        // Network/server down
         showMsg('error', '📡 Could not reach server. Please check your connection and try again.');
         goBtn.disabled = false;
       }
     }
 
-    // ── Message helpers ──
     function showMsg(type, html) {
       const box = document.getElementById('msg-box');
       box.className = `msg-box ${type}`;
@@ -299,7 +381,6 @@
       if (goBtn) goBtn.disabled = false;
     }
 
-    // Close on backdrop tap
     document.getElementById('scan-modal').addEventListener('click', function(e) {
       if (e.target === this) closeModal();
     });
