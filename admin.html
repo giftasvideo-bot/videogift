@@ -234,8 +234,7 @@
       ✅ QR codes now point to <strong>watch.html</strong> — the system automatically redirects to upload if no video exists yet, or plays the gift if a video is already uploaded.
     </div>
     <div class="form-group">
-      <input type="number" id="batch-count" value="1" min="1" max="100">
-      <input type="text" id="id-prefix" placeholder="Prefix (e.g. XMAS25, GIFT, LIVE)">
+      <input type="number" id="batch-count" value="1" min="1" max="100" placeholder="Quantity">
       <button class="btn" onclick="generateBatchCodes()">Generate Cards</button>
     </div>
   </div>
@@ -292,13 +291,26 @@
     syncStatusesWithDatabase();
   }
 
-  function generateRandomTokenString(length = 6) {
-    const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
-    let output = '';
-    for (let i = 0; i < length; i++) {
-      output += chars.charAt(Math.floor(Math.random() * chars.length));
-    }
-    return output;
+  // Returns next serial number based on existing registry cards
+  // Format: 000001-ABCD  (6-digit zero-padded serial + dash + 4 random uppercase letters)
+  function getNextSerial() {
+    let max = 0;
+    localRegistry.forEach(id => {
+      // Match leading 6-digit serial in IDs like "000001-ABCD"
+      const m = id.match(/^(\d{6})-/);
+      if (m) {
+        const n = parseInt(m[1], 10);
+        if (n > max) max = n;
+      }
+    });
+    return max + 1;
+  }
+
+  function generateSuffix(length = 4) {
+    const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ';
+    let out = '';
+    for (let i = 0; i < length; i++) out += chars.charAt(Math.floor(Math.random() * chars.length));
+    return out;
   }
 
   function buildWatchUrl(id) {
@@ -308,15 +320,18 @@
 
   async function generateBatchCodes() {
     const count = parseInt(document.getElementById('batch-count').value) || 1;
-    const prefix = document.getElementById('id-prefix').value.trim().toUpperCase();
-    const cleanPrefix = prefix ? `${prefix}-` : '';
 
+    let nextSerial = getNextSerial();
     const newCodes = [];
     for (let i = 0; i < count; i++) {
-      const targetId = `${cleanPrefix}${generateRandomTokenString()}`;
+      const serial = String(nextSerial).padStart(6, '0');
+      const suffix = generateSuffix(4);
+      const targetId = `${serial}-${suffix}`;
       if (!localRegistry.includes(targetId)) {
         newCodes.push(targetId);
+        nextSerial++;
       } else {
+        // Suffix collision (extremely rare) — retry same serial with new suffix
         i--;
       }
     }
