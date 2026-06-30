@@ -125,6 +125,27 @@
     .status-viewed { background: #e3f2fd; color: #1565c0; }
     .status-sealed { background: var(--success-bg); color: var(--success-text); }
 
+    .print-status-badge {
+      display: inline-block; padding: 3px 10px; border-radius: 6px;
+      font-size: 0.7rem; font-weight: 700; text-transform: uppercase;
+      letter-spacing: 0.05em; margin-bottom: 8px;
+    }
+    .print-status-yes { background: #e8f5e9; color: #2e7d32; }
+    .print-status-no  { background: #f5f5f5; color: #9e9e9e; }
+
+    .btn-print-toggle { background: #f5f5f5; color: #555; font-size: 0.82rem; }
+    .btn-print-toggle:hover { background: #e0e0e0; }
+    .btn-print-toggle.is-printed { background: #e8f5e9; color: #2e7d32; }
+    .btn-print-toggle.is-printed:hover { background: #c8e6c9; }
+
+    .filter-bar { display: flex; gap: 8px; margin-bottom: 16px; flex-wrap: wrap; align-items: center; }
+    .filter-btn {
+      padding: 6px 14px; border: 1px solid var(--cream); border-radius: 20px;
+      background: #fff; color: var(--muted); font-size: 0.8rem; cursor: pointer;
+      font-family: 'DM Sans', sans-serif; font-weight: 500; transition: all 0.15s;
+    }
+    .filter-btn.active { background: var(--gold); color: #fff; border-color: var(--gold); }
+
     .card-actions {
       display: flex;
       gap: 8px;
@@ -240,12 +261,17 @@
   </div>
 
   <div class="card-section">
-    <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px;">
+    <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; flex-wrap:wrap; gap:12px;">
       <h2>📋 Active Card Registry Collection</h2>
       <div style="display:flex;gap:10px;flex-wrap:wrap;">
         <button class="btn btn-secondary" onclick="purgeOrphanedStorage()" id="purge-btn">🧹 Purge Storage</button>
-        <button class="btn btn-secondary" onclick="window.print()">🖨️ Print All Cards</button>
+        <button class="btn btn-secondary" onclick="printAndMark()">🖨️ Print All Cards</button>
       </div>
+    </div>
+    <div class="filter-bar">
+      <button class="filter-btn active" id="filter-all" onclick="setFilter('all')">All <span class="filter-count" id="count-all"></span></button>
+      <button class="filter-btn" id="filter-no" onclick="setFilter('no')">🔴 Not Printed <span class="filter-count" id="count-no"></span></button>
+      <button class="filter-btn" id="filter-yes" onclick="setFilter('yes')">✅ Printed <span class="filter-count" id="count-yes"></span></button>
     </div>
     <div class="qr-grid" id="cards-grid-container"></div>
   </div>
@@ -408,6 +434,59 @@
     });
   }
 
+  // ── Printed-status tracking ─────────────────────────────────────────
+  // Stored locally as a simple { id: true } map so it persists across reloads.
+  const PRINTED_KEY = 'videogift_printed_ids';
+  let currentFilter = 'all';
+
+  function getPrintedMap() {
+    try { return JSON.parse(localStorage.getItem(PRINTED_KEY)) || {}; }
+    catch { return {}; }
+  }
+  function setPrintedMap(map) {
+    localStorage.setItem(PRINTED_KEY, JSON.stringify(map));
+  }
+  function isPrinted(id) {
+    return !!getPrintedMap()[id];
+  }
+  function togglePrinted(id) {
+    const map = getPrintedMap();
+    map[id] = !map[id];
+    if (!map[id]) delete map[id];
+    setPrintedMap(map);
+    renderDashboardGrid();
+  }
+  function markAllPrinted(ids) {
+    const map = getPrintedMap();
+    ids.forEach(id => { map[id] = true; });
+    setPrintedMap(map);
+  }
+  function printAndMark() {
+    window.print();
+    // afterprint fires once the print dialog closes (works in Chrome/Edge/Firefox)
+  }
+  window.addEventListener('afterprint', () => {
+    markAllPrinted(localRegistry);
+    renderDashboardGrid();
+  });
+
+  function setFilter(filter) {
+    currentFilter = filter;
+    ['all', 'no', 'yes'].forEach(f => {
+      document.getElementById(`filter-${f}`).classList.toggle('active', f === filter);
+    });
+    renderDashboardGrid();
+  }
+
+  function updateFilterCounts() {
+    const printedMap = getPrintedMap();
+    const printedCount = localRegistry.filter(id => printedMap[id]).length;
+    const notPrintedCount = localRegistry.length - printedCount;
+    document.getElementById('count-all').textContent = `(${localRegistry.length})`;
+    document.getElementById('count-no').textContent = `(${notPrintedCount})`;
+    document.getElementById('count-yes').textContent = `(${printedCount})`;
+  }
+
   function renderDashboardGrid() {
     const gridContainer = document.getElementById('cards-grid-container');
     const printArea = document.getElementById('print-area');
@@ -415,13 +494,27 @@
     gridContainer.innerHTML = '';
     printArea.innerHTML = '';
 
+    updateFilterCounts();
+
     if (localRegistry.length === 0) {
       gridContainer.innerHTML = `<div style="grid-column:1/-1; text-align:center; color:var(--muted); padding:40px;">No registered gift cards found. Generate some above!</div>`;
       return;
     }
 
-    localRegistry.forEach(id => {
+    const printedMap = getPrintedMap();
+    const visibleIds = localRegistry.filter(id => {
+      if (currentFilter === 'yes') return !!printedMap[id];
+      if (currentFilter === 'no') return !printedMap[id];
+      return true;
+    });
+
+    if (visibleIds.length === 0) {
+      gridContainer.innerHTML = `<div style="grid-column:1/-1; text-align:center; color:var(--muted); padding:40px;">No cards match this filter.</div>`;
+    }
+
+    visibleIds.forEach(id => {
       const targetWatchUrl = buildWatchUrl(id);
+      const printed = !!printedMap[id];
 
       const card = document.createElement('div');
       card.className = 'qr-card';
@@ -429,9 +522,11 @@
       card.innerHTML = `
         <div class="qr-container" id="qr-container-${id}"></div>
         <div class="qr-id-label">${id}</div>
+        <div class="print-status-badge ${printed ? 'print-status-yes' : 'print-status-no'}">${printed ? '✅ Printed' : '🔴 Not Printed'}</div>
         <div class="status-badge status-pending" id="badge-${id}">CHECKING...</div>
         <div id="upload-count-${id}" style="font-size:0.78rem; color:var(--muted); margin-bottom:10px; min-height:18px;"></div>
         <div class="card-actions" style="flex-wrap:wrap; gap:6px;">
+          <button class="btn btn-print-toggle ${printed ? 'is-printed' : ''}" onclick="togglePrinted('${id}')">${printed ? '✅ Printed' : '🖨️ Mark Printed'}</button>
           <button class="btn btn-secondary" onclick="copyWatchLink('${id}')">🔗 Link</button>
           <button class="btn btn-action-delete-video" id="delvid-${id}" onclick="deleteVideoOnly('${id}')">🎬 Delete Video</button>
           <button class="btn btn-action-delete" onclick="deleteCardRow('${id}')">🗑️ Card</button>
@@ -478,6 +573,9 @@
     }
 
     localRegistry = localRegistry.filter(item => item !== id);
+
+    const map = getPrintedMap();
+    if (map[id]) { delete map[id]; setPrintedMap(map); }
 
     const cardElement = document.getElementById(`card-${id}`);
     if (cardElement) cardElement.remove();
