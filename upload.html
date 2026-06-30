@@ -298,6 +298,13 @@
       const data = await res.json();
       const videoUrl = data.video_url || data.videoUrl;
       const uploadCount = data.upload_count || 0;
+      const status = data.status;
+
+      if (status === 'viewed') {
+        // Recipient has already watched it — lock changes permanently
+        showViewedLocked();
+        return;
+      }
 
       if (uploadCount >= MAX_UPLOADS) {
         // Hard limit reached — block completely
@@ -329,6 +336,22 @@
     document.getElementById('already-used-screen').style.display = 'block';
     document.getElementById('used-card-id').textContent = giftId;
     document.getElementById('watch-redirect-btn').href = `index.html`;
+  }
+
+  function showViewedLocked() {
+    const screen = document.getElementById('already-used-screen');
+    screen.style.display = 'block';
+    screen.style.background = '#e8f5e9';
+    screen.style.borderColor = '#a5d6a7';
+    document.getElementById('checking-screen').style.display = 'none';
+    document.getElementById('used-card-id').textContent = giftId;
+    screen.querySelector('.lock-icon').textContent = '💌';
+    screen.querySelector('h2').textContent = 'This gift has been opened';
+    screen.querySelector('p').innerHTML =
+      `Card <strong>${giftId}</strong> has already been watched by the recipient.<br>
+       To keep the moment intact, the video can no longer be changed.`;
+    document.getElementById('watch-redirect-btn').href = `index.html`;
+    document.getElementById('watch-redirect-btn').textContent = '▶ Watch It Again';
   }
 
   function showLimitReached(uploadCount) {
@@ -390,6 +413,8 @@
     }
   }
 
+  const MAX_FILE_SIZE_MB = 50;
+
   function displayFileName() {
     const fileInput = document.getElementById('video-input');
     const preview = document.getElementById('file-name-preview');
@@ -397,10 +422,39 @@
     const videoEl = document.getElementById('video-preview');
     const previewLabel = document.getElementById('video-preview-label');
     const dropzone = fileInput.closest('.file-dropzone');
+    const submitBtn = document.getElementById('submit-btn');
 
     if (fileInput.files && fileInput.files.length > 0) {
       const file = fileInput.files[0];
       const sizeMB = (file.size / (1024 * 1024)).toFixed(1);
+
+      // ── SIZE GUARD ──
+      if (file.size > MAX_FILE_SIZE_MB * 1024 * 1024) {
+        preview.textContent = '';
+        previewWrap.style.display = 'none';
+        dropzone.classList.remove('has-file');
+        fileInput.value = '';
+        previewLabel.textContent = '';
+        submitBtn.disabled = true;
+
+        // Show inline error
+        let sizeErr = document.getElementById('size-error-msg');
+        if (!sizeErr) {
+          sizeErr = document.createElement('div');
+          sizeErr.id = 'size-error-msg';
+          sizeErr.style.cssText = 'margin-top:10px;padding:12px 16px;background:#ffebee;border:1px solid #ffcdd2;border-radius:8px;color:#c62828;font-size:0.88rem;text-align:center;';
+          dropzone.parentNode.insertBefore(sizeErr, dropzone.nextSibling);
+        }
+        sizeErr.innerHTML = `⚠️ <strong>File too large (${sizeMB} MB).</strong><br>Maximum allowed size is <strong>${MAX_FILE_SIZE_MB} MB</strong>. Please compress your video and try again.`;
+        sizeErr.style.display = 'block';
+        return;
+      }
+
+      // Clear any previous size error
+      const sizeErr = document.getElementById('size-error-msg');
+      if (sizeErr) sizeErr.style.display = 'none';
+      submitBtn.disabled = false;
+
       preview.textContent = file.name;
       previewLabel.textContent = sizeMB + ' MB — scroll to review before uploading';
 
@@ -464,14 +518,26 @@
           alert('🎉 Your video gift has been successfully uploaded!');
         }
         window.location.href = 'index.html';
-      } else if (xhr.status === 403) {
-        // Server-side limit block
+      } else if (xhr.status === 413) {
         try {
           const errRes = JSON.parse(xhr.responseText);
-          showLimitReached(errRes.upload_count || MAX_UPLOADS);
-          alert(`🚫 Upload limit reached. This card has already been used ${errRes.upload_count || MAX_UPLOADS} times.`);
+          alert(`⚠️ ${errRes.error || `File too large. Maximum allowed size is ${MAX_FILE_SIZE_MB}MB.`}`);
+        } catch (e) {
+          alert(`⚠️ File too large. Maximum allowed size is ${MAX_FILE_SIZE_MB}MB. Please compress your video and try again.`);
+        }
+        resetFormUI();
+      } else if (xhr.status === 403) {
+        try {
+          const errRes = JSON.parse(xhr.responseText);
+          if (errRes.locked_reason === 'viewed') {
+            showViewedLocked();
+            alert('💌 This gift has already been watched by the recipient and can no longer be changed.');
+          } else {
+            showLimitReached(errRes.upload_count || MAX_UPLOADS);
+            alert(`🚫 Upload limit reached. This card has already been used ${errRes.upload_count || MAX_UPLOADS} times.`);
+          }
         } catch(e) {
-          alert('🚫 Upload limit reached for this card.');
+          alert('🚫 Upload is no longer available for this card.');
         }
         resetFormUI();
       } else {
