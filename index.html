@@ -49,6 +49,16 @@
     .postcard-item:hover { transform: translateY(-2px); border-color: var(--gold); }
     .postcard-thumb { width: 100%; height: 120px; background: #e6e0d3; border-radius: 8px; display: flex; align-items: center; justify-content: center; color: var(--muted); font-size: 0.8rem; margin-bottom: 8px; font-style: italic; }
     .postcard-title { font-size: 0.8rem; font-weight: 500; color: var(--ink); }
+    .postcard-item img { cursor: pointer; transition: transform 0.2s; border-radius: 8px; }
+    .postcard-item img:hover { transform: scale(1.03); }
+
+    /* Lightbox */
+    .lightbox-overlay { position: fixed; inset: 0; background: #0d0d0d; display: none; align-items: center; justify-content: center; z-index: 300; }
+    .lightbox-overlay.open { display: flex; }
+    .lightbox-content { position: relative; width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; }
+    .lightbox-content img { width: 100%; height: 100%; object-fit: contain; }
+    .lightbox-caption { position: fixed; bottom: 24px; left: 0; right: 0; text-align: center; color: #fff; font-family: 'Playfair Display', serif; font-size: 1.1rem; letter-spacing: 0.5px; text-shadow: 0 2px 8px rgba(0,0,0,0.6); }
+    .lightbox-close { position: fixed; top: 16px; right: 16px; background: rgba(255,255,255,0.15); border: none; width: 40px; height: 40px; border-radius: 50%; font-size: 1.2rem; cursor: pointer; color: #fff; backdrop-filter: blur(4px); }
 
     .cta-btn { width: 100%; padding: 16px 24px; background: var(--ink); color: #fff; border: none; border-radius: 12px; font-size: 1rem; font-family: 'DM Sans', sans-serif; cursor: pointer; transition: background 0.2s; font-weight: 500; }
     .cta-btn:hover { background: #2a2a2a; }
@@ -125,19 +135,19 @@
 
       <div class="postcard-grid">
         <div class="postcard-item">
-          <img src="birthday.jpg" width="124" height="137">
+          <img src="birthday.jpg" width="124" height="137" onclick="openLightbox('birthday.jpg','Birthday')">
           <div class="postcard-title">Birthday</div>
         </div>
         <div class="postcard-item">
-          <img src="graduation1.jpg" width="124" height="137">
+          <img src="graduation1.jpg" width="124" height="137" onclick="openLightbox('graduation1.jpg','Graduation')">
           <div class="postcard-title">Graduation</div>
         </div>
         <div class="postcard-item">
-          <img src="wedding.jpg" width="124" height="137">
+          <img src="wedding.jpg" width="124" height="137" onclick="openLightbox('wedding.jpg','Wedding')">
           <div class="postcard-title">Wedding</div>
         </div>
         <div class="postcard-item">
-          <img src="marry christmas.jpg" width="124" height="137">
+          <img src="marry christmas.jpg" width="124" height="137" onclick="openLightbox('marry christmas.jpg','Holiday')">
           <div class="postcard-title">Holiday</div>
         </div>
       </div>
@@ -209,6 +219,15 @@
 
   </div>
 
+  <!-- Postcard Lightbox -->
+  <div class="lightbox-overlay" id="lightbox-overlay" onclick="if(event.target===this) closeLightbox()">
+    <div class="lightbox-content">
+      <button class="lightbox-close" onclick="closeLightbox()">✕</button>
+      <img id="lightbox-img" src="" alt="">
+      <div class="lightbox-caption" id="lightbox-caption"></div>
+    </div>
+  </div>
+
   <!-- Scan Execution Modal Overlay -->
   <div class="modal-overlay" id="scan-modal">
     <div class="modal-card">
@@ -251,6 +270,21 @@
     function dismissBanner() {
       document.body.classList.add('banner-hidden');
     }
+
+    function openLightbox(src, title) {
+      document.getElementById('lightbox-img').src = src;
+      document.getElementById('lightbox-img').alt = title;
+      document.getElementById('lightbox-caption').textContent = title;
+      document.getElementById('lightbox-overlay').classList.add('open');
+    }
+
+    function closeLightbox() {
+      document.getElementById('lightbox-overlay').classList.remove('open');
+    }
+
+    document.addEventListener('keydown', function(e) {
+      if (e.key === 'Escape') closeLightbox();
+    });
 
     function openModal() {
       scanDone = false;
