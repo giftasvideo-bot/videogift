@@ -36,9 +36,10 @@
 
     /* Instructions/Steps Layout */
     .steps-list { list-style: none; }
-    .steps-list li { position: relative; padding-left: 30px; margin-bottom: 20px; font-size: 0.9rem; color: var(--muted); line-height: 1.6; }
+    .steps-list li { display: flex; align-items: flex-start; gap: 12px; margin-bottom: 20px; font-size: 0.9rem; color: var(--muted); line-height: 1.6; }
     .steps-list li:last-child { margin-bottom: 0; }
-    .steps-list li::before { content: attr(data-step); position: absolute; left: 0; top: 2px; width: 20px; height: 20px; background: var(--cream); color: var(--ink); border-radius: 50%; font-size: 0.75rem; font-weight: bold; display: flex; align-items: center; justify-content: center; }
+    .steps-list li::before { content: attr(data-step); flex-shrink: 0; margin-top: 2px; width: 20px; height: 20px; background: var(--cream); color: var(--ink); border-radius: 50%; font-size: 0.75rem; font-weight: bold; display: flex; align-items: center; justify-content: center; }
+    .steps-list .step-content { flex: 1; min-width: 0; }
     .steps-list strong { color: var(--ink); display: block; margin-bottom: 4px; }
     .img-placeholder { background: var(--paper); border: 1px dashed var(--gold); border-radius: 12px; padding: 10px; display: inline-block; margin-top: 10px; }
 
@@ -142,26 +143,34 @@
       <h3>🚀 How to Send</h3>
       <ol class="steps-list">
         <li data-step="1">
-          <div align="justify"><strong>Initialize Token Identification</strong>
-          Scan the structural printed QR code with your camera or enter its alphanumeric index identifier key into the manual interface option block.
-          </div>
-          <div class="img-placeholder">
-            <div align="justify"><img src="manual.png" width="146" height="127" alt="Manual Illustration"></div>
+          <div class="step-content">
+            <div align="justify"><strong>Initialize Token Identification</strong>
+            Scan the structural printed QR code with your camera or enter its alphanumeric index identifier key into the manual interface option block.
+            </div>
+            <div class="img-placeholder">
+              <div align="justify"><img src="manual.png" width="146" height="127" alt="Manual Illustration"></div>
+            </div>
           </div>
         </li>
         <li data-step="2">
-          <div align="justify"><strong>Attach Metadata &amp; Video Media</strong>
-          Provide an optional signature sender identity reference label, append an optional text statement, choose your target source media clip, and select the transmission submission link button. *Note: Data blocks finalize permanently directly post-submission.*
+          <div class="step-content">
+            <div align="justify"><strong>Attach Metadata &amp; Video Media</strong>
+            Provide an optional signature sender identity reference label, append an optional text statement, choose your target source media clip, and select the transmission submission link button. *Note: Data blocks finalize permanently directly post-submission.*
+            </div>
           </div>
         </li>
         <li data-step="3">
-          <div align="justify"><strong>Confirm Complete Status</strong>
-          A valid success notification panel layout text readout stating *“🎉 Your video gift has been successfully uploaded!”* confirms server-side persistence storage initialization.
+          <div class="step-content">
+            <div align="justify"><strong>Confirm Complete Status</strong>
+            A valid success notification panel layout text readout stating *“🎉 Your video gift has been successfully uploaded!”* confirms server-side persistence storage initialization.
+            </div>
           </div>
         </li>
         <li data-step="4">
-          <div align="justify"><strong>Hand Over Presentation</strong>
-          Deliver your material item directly to your specific recipient or share the physical print card details forward electronically.
+          <div class="step-content">
+            <div align="justify"><strong>Hand Over Presentation</strong>
+            Deliver your material item directly to your specific recipient or share the physical print card details forward electronically.
+            </div>
           </div>
         </li>
       </ol>
@@ -172,13 +181,17 @@
       <h3>🎁 How to Receive</h3>
       <ol class="steps-list">
         <li data-step="1">
-          <div align="justify"><strong>Identify Visual Identifier</strong>
-          Examine the received physical piece context elements, look up the tag, and initiate standard capture via mobile reader or pass parameters via the home field submission input.
+          <div class="step-content">
+            <div align="justify"><strong>Identify Visual Identifier</strong>
+            Examine the received physical piece context elements, look up the tag, and initiate standard capture via mobile reader or pass parameters via the home field submission input.
+            </div>
           </div>
         </li>
         <li data-step="2">
-          <div align="justify"><strong>Automatic Media Playback</strong>
-          The underlying validation pipeline resolves the target data context dynamically and directly surfaces the integrated personal video sequence automatically!
+          <div class="step-content">
+            <div align="justify"><strong>Automatic Media Playback</strong>
+            The underlying validation pipeline resolves the target data context dynamically and directly surfaces the integrated personal video sequence automatically!
+            </div>
           </div>
         </li>
       </ol>
