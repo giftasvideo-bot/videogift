@@ -106,7 +106,7 @@
 
   <!-- Top Announcement Banner -->
   <div class="top-banner" id="top-banner">
-    <div class="banner-text">✨ Welcome to <strong>Forever 27 Custom Crafts</strong> — Attach custom video gifts to your apparel!</div>
+    <div class="banner-text">✨ Welcome to <strong>Forever 27 Video Gifts</strong> — Attach custom video gifts to your apparel!</div>
     <button class="banner-close" onclick="dismissBanner()">✕</button>
   </div>
 
@@ -125,8 +125,9 @@
     
       <div class="content-card">
       <h3>🌿 About Us</h3>
-      <p align="justify">At <strong>Forever 27 Design </strong>, we bridge the gap between tangible handcrafted design and digital storytelling. Our signature service transforms physical postcards into interactive keepsakes; by scanning the custom QR code, you can easily upload a personal memorial video that helps express your deepest feelings and most meaningful memories.</p>
+      <p align="justify">At <strong>Forever 27 Video Gifts</strong>, we bridge the gap between tangible handcrafted design and digital storytelling. Our signature service transforms physical postcards into interactive keepsakes; by scanning the custom QR code, you can easily upload a personal memorial video that helps express your deepest feelings and most meaningful memories.</p>
       <p align="justify">Whether you are celebrating a special milestone or honoring a beautiful memory, our physical-to-digital ecosystem ensures your genuine warmth and heartfelt expressions are preserved securely and delivered seamlessly to your loved ones.</p>
+      <p align="justify">We offer our video-gift QR codes in two forms: as a <strong>standalone QR code sticker</strong> that you can paste onto any physical gift — flowers, a wrapped present, a mug, anything you'd like to attach a personal video to — or as one of our <strong>signature printed postcards</strong>, ready to write on and hand over as a complete keepsake on its own.</p>
     </div>
     <!-- Sample Postcards Section -->
     <div class="content-card">
@@ -214,7 +215,7 @@
 
     <!-- Site Copyright Footer -->
     <footer class="site-footer">
-      &copy; 2026 Forever 27 Design and Crafts. All Rights Reserved. Custom Tailored Experiences.
+      &copy; 2026 Forever 27 Video Gifts. All Rights Reserved. Memories That Last Forever.
     </footer>
 
   </div>
@@ -245,11 +246,6 @@
         </div>
         <div id="qr-reader"></div>
       </div>
-
-      <button type="button" id="switch-cam-btn" onclick="switchCamera()"
-        style="display:none; margin: 10px auto 0; background:none; border:1px solid var(--cream, #ddd); border-radius:8px; padding:8px 14px; font-family:'DM Sans',sans-serif; font-size:0.85rem; color:var(--muted,#7a7060); cursor:pointer;">
-        🔄 Feed looks dark? Try another camera
-      </button>
 
       <div class="divider">or enter code manually</div>
 
@@ -297,11 +293,8 @@
       document.getElementById('scan-modal').style.display = 'flex';
       document.getElementById('scan-loading').style.display = 'flex';
       document.getElementById('cam-fail').style.display = 'none';
-      document.getElementById('switch-cam-btn').style.display = 'none';
       document.getElementById('qr-reader').innerHTML = '';
       document.getElementById('manual-code').value = '';
-      cameraList = [];
-      cameraIndex = -1;
       setTimeout(startScanner, 400);
     }
 
@@ -309,70 +302,24 @@
       try { qrScanner = new Html5Qrcode('qr-reader'); }
       catch(e) { showCamFail(); return; }
 
-      // Prefer letting the browser/OS pick the correct rear lens via facingMode.
-      // This avoids the common bug where phones with multiple rear cameras
-      // (main, ultra-wide, macro, depth) get matched by label to the wrong
-      // one — which often shows a dark/black feed instead of erroring out.
-      qrScanner.start({ facingMode: { exact: 'environment' } }, { fps: 10, qrbox: { width: 220, height: 220 } }, onQRSuccess, () => {})
-        .then(() => { isScanning = true; document.getElementById('scan-loading').style.display = 'none'; showSwitchBtn(); })
-        .catch(() => tryFacingModeLoose());
-    }
-
-    function tryFacingModeLoose() {
-      qrScanner.start({ facingMode: 'environment' }, { fps: 10, qrbox: { width: 220, height: 220 } }, onQRSuccess, () => {})
-        .then(() => { isScanning = true; document.getElementById('scan-loading').style.display = 'none'; showSwitchBtn(); })
-        .catch(() => tryDeviceList());
-    }
-
-    function tryDeviceList() {
       Html5Qrcode.getCameras().then(cameras => {
         if (!cameras || cameras.length === 0) { showCamFail(); return; }
-        cameraList = cameras;
-        cameraIndex = cameras.findIndex(c =>
+        const cam = cameras.find(c =>
           c.label.toLowerCase().includes('back') ||
           c.label.toLowerCase().includes('rear') ||
           c.label.toLowerCase().includes('environment')
-        );
-        if (cameraIndex === -1) cameraIndex = cameras.length - 1;
+        ) || cameras[cameras.length - 1];
 
-        startWithDeviceIndex(cameraIndex);
-      }).catch(() => showCamFail());
+        qrScanner.start(cam.id, { fps: 10, qrbox: { width: 220, height: 220 } }, onQRSuccess, () => {})
+          .then(() => { isScanning = true; document.getElementById('scan-loading').style.display = 'none'; })
+          .catch(() => tryFacingMode());
+      }).catch(() => tryFacingMode());
     }
 
-    function startWithDeviceIndex(index) {
-      const cam = cameraList[index];
-      qrScanner.start(cam.id, { fps: 10, qrbox: { width: 220, height: 220 } }, onQRSuccess, () => {})
-        .then(() => { isScanning = true; document.getElementById('scan-loading').style.display = 'none'; showSwitchBtn(); })
+    function tryFacingMode() {
+      qrScanner.start({ facingMode: 'environment' }, { fps: 10, qrbox: { width: 220, height: 220 } }, onQRSuccess, () => {})
+        .then(() => { isScanning = true; document.getElementById('scan-loading').style.display = 'none'; })
         .catch(() => showCamFail());
-    }
-
-    let cameraList = [];
-    let cameraIndex = -1;
-
-    function showSwitchBtn() {
-      const btn = document.getElementById('switch-cam-btn');
-      if (btn) btn.style.display = 'inline-block';
-    }
-
-    function switchCamera() {
-      // Lets the person recover manually if the current lens shows a dark/
-      // unusable feed, by cycling to the next available camera.
-      stopScanner().then(() => {
-        document.getElementById('qr-reader').innerHTML = '';
-        try { qrScanner = new Html5Qrcode('qr-reader'); } catch(e) { showCamFail(); return; }
-
-        if (cameraList.length > 1) {
-          cameraIndex = (cameraIndex + 1) % cameraList.length;
-          startWithDeviceIndex(cameraIndex);
-        } else {
-          Html5Qrcode.getCameras().then(cameras => {
-            if (!cameras || cameras.length === 0) { showCamFail(); return; }
-            cameraList = cameras;
-            cameraIndex = (cameraIndex + 1) % cameras.length;
-            startWithDeviceIndex(cameraIndex);
-          }).catch(() => showCamFail());
-        }
-      });
     }
 
     function onQRSuccess(decodedText) {
@@ -388,7 +335,6 @@
       isScanning = false;
       document.getElementById('scan-loading').style.display = 'none';
       document.getElementById('cam-fail').style.display = 'block';
-      document.getElementById('switch-cam-btn').style.display = 'none';
       document.getElementById('qr-reader').innerHTML = '';
       setTimeout(() => document.getElementById('manual-code').focus(), 100);
     }
@@ -403,7 +349,6 @@
         qrScanner = null;
         document.getElementById('scan-modal').style.display = 'none';
         document.getElementById('qr-reader').innerHTML = '';
-        document.getElementById('switch-cam-btn').style.display = 'none';
         document.getElementById('manual-code').value = '';
         clearMsg();
       });
