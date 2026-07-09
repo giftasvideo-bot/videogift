@@ -246,6 +246,11 @@
         <div id="qr-reader"></div>
       </div>
 
+      <button type="button" id="switch-cam-btn" onclick="switchCamera()"
+        style="display:none; margin: 10px auto 0; background:none; border:1px solid var(--cream, #ddd); border-radius:8px; padding:8px 14px; font-family:'DM Sans',sans-serif; font-size:0.85rem; color:var(--muted,#7a7060); cursor:pointer;">
+        🔄 Feed looks dark? Try another camera
+      </button>
+
       <div class="divider">or enter code manually</div>
 
       <div class="manual-wrap">
@@ -292,8 +297,11 @@
       document.getElementById('scan-modal').style.display = 'flex';
       document.getElementById('scan-loading').style.display = 'flex';
       document.getElementById('cam-fail').style.display = 'none';
+      document.getElementById('switch-cam-btn').style.display = 'none';
       document.getElementById('qr-reader').innerHTML = '';
       document.getElementById('manual-code').value = '';
+      cameraList = [];
+      cameraIndex = -1;
       setTimeout(startScanner, 400);
     }
 
@@ -301,24 +309,70 @@
       try { qrScanner = new Html5Qrcode('qr-reader'); }
       catch(e) { showCamFail(); return; }
 
+      // Prefer letting the browser/OS pick the correct rear lens via facingMode.
+      // This avoids the common bug where phones with multiple rear cameras
+      // (main, ultra-wide, macro, depth) get matched by label to the wrong
+      // one — which often shows a dark/black feed instead of erroring out.
+      qrScanner.start({ facingMode: { exact: 'environment' } }, { fps: 10, qrbox: { width: 220, height: 220 } }, onQRSuccess, () => {})
+        .then(() => { isScanning = true; document.getElementById('scan-loading').style.display = 'none'; showSwitchBtn(); })
+        .catch(() => tryFacingModeLoose());
+    }
+
+    function tryFacingModeLoose() {
+      qrScanner.start({ facingMode: 'environment' }, { fps: 10, qrbox: { width: 220, height: 220 } }, onQRSuccess, () => {})
+        .then(() => { isScanning = true; document.getElementById('scan-loading').style.display = 'none'; showSwitchBtn(); })
+        .catch(() => tryDeviceList());
+    }
+
+    function tryDeviceList() {
       Html5Qrcode.getCameras().then(cameras => {
         if (!cameras || cameras.length === 0) { showCamFail(); return; }
-        const cam = cameras.find(c =>
+        cameraList = cameras;
+        cameraIndex = cameras.findIndex(c =>
           c.label.toLowerCase().includes('back') ||
           c.label.toLowerCase().includes('rear') ||
           c.label.toLowerCase().includes('environment')
-        ) || cameras[cameras.length - 1];
+        );
+        if (cameraIndex === -1) cameraIndex = cameras.length - 1;
 
-        qrScanner.start(cam.id, { fps: 10, qrbox: { width: 220, height: 220 } }, onQRSuccess, () => {})
-          .then(() => { isScanning = true; document.getElementById('scan-loading').style.display = 'none'; })
-          .catch(() => tryFacingMode());
-      }).catch(() => tryFacingMode());
+        startWithDeviceIndex(cameraIndex);
+      }).catch(() => showCamFail());
     }
 
-    function tryFacingMode() {
-      qrScanner.start({ facingMode: 'environment' }, { fps: 10, qrbox: { width: 220, height: 220 } }, onQRSuccess, () => {})
-        .then(() => { isScanning = true; document.getElementById('scan-loading').style.display = 'none'; })
+    function startWithDeviceIndex(index) {
+      const cam = cameraList[index];
+      qrScanner.start(cam.id, { fps: 10, qrbox: { width: 220, height: 220 } }, onQRSuccess, () => {})
+        .then(() => { isScanning = true; document.getElementById('scan-loading').style.display = 'none'; showSwitchBtn(); })
         .catch(() => showCamFail());
+    }
+
+    let cameraList = [];
+    let cameraIndex = -1;
+
+    function showSwitchBtn() {
+      const btn = document.getElementById('switch-cam-btn');
+      if (btn) btn.style.display = 'inline-block';
+    }
+
+    function switchCamera() {
+      // Lets the person recover manually if the current lens shows a dark/
+      // unusable feed, by cycling to the next available camera.
+      stopScanner().then(() => {
+        document.getElementById('qr-reader').innerHTML = '';
+        try { qrScanner = new Html5Qrcode('qr-reader'); } catch(e) { showCamFail(); return; }
+
+        if (cameraList.length > 1) {
+          cameraIndex = (cameraIndex + 1) % cameraList.length;
+          startWithDeviceIndex(cameraIndex);
+        } else {
+          Html5Qrcode.getCameras().then(cameras => {
+            if (!cameras || cameras.length === 0) { showCamFail(); return; }
+            cameraList = cameras;
+            cameraIndex = (cameraIndex + 1) % cameras.length;
+            startWithDeviceIndex(cameraIndex);
+          }).catch(() => showCamFail());
+        }
+      });
     }
 
     function onQRSuccess(decodedText) {
@@ -334,6 +388,7 @@
       isScanning = false;
       document.getElementById('scan-loading').style.display = 'none';
       document.getElementById('cam-fail').style.display = 'block';
+      document.getElementById('switch-cam-btn').style.display = 'none';
       document.getElementById('qr-reader').innerHTML = '';
       setTimeout(() => document.getElementById('manual-code').focus(), 100);
     }
@@ -348,6 +403,7 @@
         qrScanner = null;
         document.getElementById('scan-modal').style.display = 'none';
         document.getElementById('qr-reader').innerHTML = '';
+        document.getElementById('switch-cam-btn').style.display = 'none';
         document.getElementById('manual-code').value = '';
         clearMsg();
       });
