@@ -28,9 +28,31 @@ const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'forever27';
 
 // ── MULTER ──
 const MAX_FILE_SIZE_MB = 50;
+const ALLOWED_VIDEO_MIMETYPES = new Set([
+  'video/mp4',
+  'video/quicktime',   // .mov
+  'video/x-msvideo',   // .avi
+  'video/webm',
+  'video/3gpp',        // common on some Android phones
+  'video/x-matroska'   // .mkv
+]);
+const ALLOWED_VIDEO_EXTENSIONS = new Set(['mp4', 'mov', 'avi', 'webm', '3gp', 'mkv']);
+
 const upload = multer({
   storage: multer.memoryStorage(),
-  limits: { fileSize: MAX_FILE_SIZE_MB * 1024 * 1024 } // 50MB
+  limits: { fileSize: MAX_FILE_SIZE_MB * 1024 * 1024 }, // 50MB
+  fileFilter: (req, file, cb) => {
+    // Reject anything that isn't actually a video, even if the client-side
+    // <input accept="video/*"> was bypassed or the mimetype was spoofed.
+    const mimetypeOk = file.mimetype && file.mimetype.startsWith('video/');
+    const ext = (file.originalname.split('.').pop() || '').toLowerCase();
+    const extensionOk = ALLOWED_VIDEO_EXTENSIONS.has(ext);
+
+    if (!mimetypeOk || !extensionOk) {
+      return cb(new Error('INVALID_FILE_TYPE'));
+    }
+    cb(null, true);
+  }
 });
 
 // ── AUTH MIDDLEWARE ──
@@ -163,6 +185,11 @@ app.post('/api/upload', (req, res, next) => {
     if (err && err.code === 'LIMIT_FILE_SIZE') {
       return res.status(413).json({
         error: `Video file is too large. Maximum allowed size is ${MAX_FILE_SIZE_MB}MB. Please compress your video and try again.`
+      });
+    }
+    if (err && err.message === 'INVALID_FILE_TYPE') {
+      return res.status(400).json({
+        error: 'That file doesn\'t look like a supported video. Please upload an MP4, MOV, AVI, WEBM, 3GP, or MKV file.'
       });
     }
     if (err) return res.status(500).json({ error: err.message });
