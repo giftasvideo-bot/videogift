@@ -202,6 +202,55 @@
       background: #fff;
       border-color: #e0e0e0;
     }
+
+    /* ── Source tabs ── */
+    .source-tabs {
+      display: flex; gap: 8px; margin-bottom: 16px;
+    }
+    .source-tab {
+      flex: 1; padding: 10px 8px;
+      border: 2px solid var(--cream); border-radius: 8px;
+      background: var(--paper);
+      font-family: 'DM Sans', sans-serif; font-size: 0.85rem; font-weight: 500;
+      color: var(--muted); cursor: pointer; transition: all 0.2s; text-align: center;
+    }
+    .source-tab:hover { border-color: var(--gold); color: var(--ink); }
+    .source-tab.active { border-color: var(--gold); background: #fffdf5; color: var(--ink); }
+
+    /* ── Camera recorder panel ── */
+    #record-panel { display: none; }
+    .camera-preview-wrap {
+      border-radius: 10px; overflow: hidden; background: #111;
+      position: relative; margin-bottom: 12px;
+    }
+    .camera-preview-wrap video {
+      width: 100%; max-height: 260px; display: block; border-radius: 10px;
+    }
+    .rec-badge {
+      position: absolute; top: 10px; left: 12px;
+      background: #e53935; color: #fff; font-size: 0.72rem; font-weight: 700;
+      letter-spacing: 0.06em; padding: 3px 8px; border-radius: 20px;
+      display: none; align-items: center; gap: 5px;
+    }
+    .rec-badge::before {
+      content: ''; width: 7px; height: 7px; border-radius: 50%; background: #fff;
+      animation: blink 1s infinite; display: inline-block;
+    }
+    @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0} }
+    .rec-controls { display: flex; gap: 10px; margin-bottom: 10px; }
+    .rec-btn {
+      flex: 1; padding: 11px 8px; border: none; border-radius: 8px;
+      font-family: 'DM Sans', sans-serif; font-size: 0.9rem; font-weight: 500;
+      cursor: pointer; transition: opacity 0.2s, background 0.2s;
+    }
+    .rec-btn:disabled { opacity: 0.35; cursor: not-allowed; }
+    #btn-start-rec  { background: #e53935; color: #fff; }
+    #btn-stop-rec   { background: var(--ink); color: #fff; }
+    #btn-retake-rec { background: var(--cream); color: var(--ink); }
+    .rec-timer { text-align: center; font-size: 0.8rem; color: var(--muted); margin-bottom: 8px; min-height: 18px; }
+    .recorded-preview-wrap { display: none; border-radius: 10px; overflow: hidden; background: #000; margin-bottom: 10px; }
+    .recorded-preview-wrap video { width: 100%; max-height: 260px; display: block; }
+    .rec-ready-label { font-size: 0.78rem; color: var(--muted); text-align: center; margin-bottom: 4px; }
   </style>
 </head>
 <body>
@@ -239,16 +288,44 @@
       <textarea id="message-input" placeholder="Write a warm note to go along with your video gift..."></textarea>
     </div>
     <div class="form-group">
-      <label>Select Video File</label>
-      <div class="file-dropzone" onclick="document.getElementById('video-input').click()">
-        <span class="file-label-text">🎬 Click to choose a video file</span>
-        <input type="file" id="video-input" accept="video/*" onchange="displayFileName()" required />
-        <div id="file-name-preview" class="file-chosen-name"></div>
+      <label>Add Your Video</label>
+
+      <!-- Tabs -->
+      <div class="source-tabs">
+        <button type="button" class="source-tab active" id="tab-upload" onclick="switchTab('upload')">📁 Upload File</button>
+        <button type="button" class="source-tab" id="tab-record" onclick="switchTab('record')">🎥 Record Live</button>
       </div>
-      <div class="video-preview-wrap" id="video-preview-wrap">
-        <video id="video-preview" controls playsinline></video>
+
+      <!-- Upload panel -->
+      <div id="upload-panel">
+        <div class="file-dropzone" onclick="document.getElementById('video-input').click()">
+          <span class="file-label-text">🎬 Click to choose a video file</span>
+          <input type="file" id="video-input" accept="video/*" onchange="displayFileName()" />
+          <div id="file-name-preview" class="file-chosen-name"></div>
+        </div>
+        <div class="video-preview-wrap" id="video-preview-wrap">
+          <video id="video-preview" controls playsinline></video>
+        </div>
+        <div class="video-preview-label" id="video-preview-label"></div>
       </div>
-      <div class="video-preview-label" id="video-preview-label"></div>
+
+      <!-- Record panel -->
+      <div id="record-panel">
+        <div class="camera-preview-wrap">
+          <video id="camera-feed" autoplay muted playsinline></video>
+          <span class="rec-badge" id="rec-badge">REC</span>
+        </div>
+        <div class="rec-timer" id="rec-timer"></div>
+        <div class="rec-controls">
+          <button type="button" class="rec-btn" id="btn-start-rec"  onclick="startRecording()">⏺ Start Recording</button>
+          <button type="button" class="rec-btn" id="btn-stop-rec"   onclick="stopRecording()"  disabled>⏹ Stop</button>
+          <button type="button" class="rec-btn" id="btn-retake-rec" onclick="retakeRecording()" style="display:none">↩ Retake</button>
+        </div>
+        <div class="recorded-preview-wrap" id="recorded-preview-wrap">
+          <video id="recorded-preview" controls playsinline></video>
+        </div>
+        <div class="rec-ready-label" id="rec-ready-label"></div>
+      </div>
     </div>
     <button type="submit" id="submit-btn" class="btn">Upload Video Gift</button>
   </form>
@@ -475,13 +552,27 @@
     const progressText = document.getElementById('progress-text');
     const submitBtn = document.getElementById('submit-btn');
 
-    if (!fileInput.files || fileInput.files.length === 0) {
-      alert('Please select a video file first.');
-      return;
+    // Determine source: recorded blob or file input
+    const activeTab = document.getElementById('tab-record').classList.contains('active') ? 'record' : 'upload';
+    let videoFile = null;
+
+    if (activeTab === 'record') {
+      if (!recordedBlob) {
+        alert('Please record a video first.');
+        return;
+      }
+      const ext = recordedBlob.type.includes('mp4') ? 'mp4' : 'webm';
+      videoFile = new File([recordedBlob], `recorded-gift.${ext}`, { type: recordedBlob.type });
+    } else {
+      if (!fileInput.files || fileInput.files.length === 0) {
+        alert('Please select a video file first.');
+        return;
+      }
+      videoFile = fileInput.files[0];
     }
 
     const payload = new FormData();
-    payload.append('video', fileInput.files[0]);
+    payload.append('video', videoFile);
     payload.append('giftId', giftId);
     payload.append('message', document.getElementById('message-input').value.trim());
     payload.append('gifterName', document.getElementById('gifter-name-input').value.trim());
@@ -557,6 +648,150 @@
     };
 
     xhr.send(payload);
+  }
+
+
+  // ══════════════════════════════════════
+  // TAB SWITCHING
+  // ══════════════════════════════════════
+  let recordedBlob = null;
+  let cameraStream = null;
+  let mediaRecorder = null;
+  let recordedChunks = [];
+  let recTimerInterval = null;
+  let recSeconds = 0;
+
+  function switchTab(tab) {
+    const uploadPanel = document.getElementById('upload-panel');
+    const recordPanel = document.getElementById('record-panel');
+    const tabUpload   = document.getElementById('tab-upload');
+    const tabRecord   = document.getElementById('tab-record');
+    const submitBtn   = document.getElementById('submit-btn');
+
+    if (tab === 'upload') {
+      uploadPanel.style.display = 'block';
+      recordPanel.style.display = 'none';
+      tabUpload.classList.add('active');
+      tabRecord.classList.remove('active');
+      // Stop camera if running
+      stopCameraStream();
+      // Re-evaluate submit based on file
+      const fileInput = document.getElementById('video-input');
+      submitBtn.disabled = !(fileInput.files && fileInput.files.length > 0);
+    } else {
+      uploadPanel.style.display = 'none';
+      recordPanel.style.display = 'block';
+      tabUpload.classList.remove('active');
+      tabRecord.classList.add('active');
+      submitBtn.disabled = !recordedBlob;
+      initCamera();
+    }
+  }
+
+  // ══════════════════════════════════════
+  // CAMERA
+  // ══════════════════════════════════════
+  async function initCamera() {
+    const feed = document.getElementById('camera-feed');
+    try {
+      cameraStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+      feed.srcObject = cameraStream;
+    } catch (err) {
+      alert('Could not access your camera/microphone.\nPlease allow camera access and try again.\n\n(' + err.message + ')');
+      switchTab('upload');
+    }
+  }
+
+  function stopCameraStream() {
+    if (cameraStream) {
+      cameraStream.getTracks().forEach(t => t.stop());
+      cameraStream = null;
+    }
+    if (recTimerInterval) { clearInterval(recTimerInterval); recTimerInterval = null; }
+    document.getElementById('rec-badge').style.display = 'none';
+    document.getElementById('rec-timer').textContent = '';
+  }
+
+  function startRecording() {
+    if (!cameraStream) return;
+    recordedChunks = [];
+    recordedBlob = null;
+
+    // Pick a supported MIME type
+    const mimeType = ['video/webm;codecs=vp9,opus','video/webm;codecs=vp8,opus','video/webm','video/mp4']
+      .find(m => MediaRecorder.isTypeSupported(m)) || '';
+
+    mediaRecorder = new MediaRecorder(cameraStream, mimeType ? { mimeType } : {});
+    mediaRecorder.ondataavailable = e => { if (e.data.size > 0) recordedChunks.push(e.data); };
+    mediaRecorder.onstop = finalizeRecording;
+    mediaRecorder.start(250);
+
+    // UI
+    document.getElementById('btn-start-rec').disabled  = true;
+    document.getElementById('btn-stop-rec').disabled   = false;
+    document.getElementById('btn-retake-rec').style.display = 'none';
+    document.getElementById('rec-badge').style.display = 'flex';
+    document.getElementById('recorded-preview-wrap').style.display = 'none';
+    document.getElementById('rec-ready-label').textContent = '';
+    document.getElementById('submit-btn').disabled = true;
+
+    // Timer
+    recSeconds = 0;
+    document.getElementById('rec-timer').textContent = '00:00';
+    recTimerInterval = setInterval(() => {
+      recSeconds++;
+      const m = String(Math.floor(recSeconds / 60)).padStart(2, '0');
+      const s = String(recSeconds % 60).padStart(2, '0');
+      document.getElementById('rec-timer').textContent = m + ':' + s;
+    }, 1000);
+  }
+
+  function stopRecording() {
+    if (mediaRecorder && mediaRecorder.state !== 'inactive') mediaRecorder.stop();
+    clearInterval(recTimerInterval);
+    document.getElementById('rec-badge').style.display = 'none';
+    document.getElementById('btn-stop-rec').disabled = true;
+  }
+
+  function finalizeRecording() {
+    const ext  = (mediaRecorder.mimeType || 'video/webm').includes('mp4') ? 'mp4' : 'webm';
+    const mime = mediaRecorder.mimeType || 'video/webm';
+    recordedBlob = new Blob(recordedChunks, { type: mime });
+
+    // Size guard
+    if (recordedBlob.size > MAX_FILE_SIZE_MB * 1024 * 1024) {
+      const sizeMB = (recordedBlob.size / (1024 * 1024)).toFixed(1);
+      alert(`⚠️ Recording is too large (${sizeMB} MB).\nMaximum is ${MAX_FILE_SIZE_MB} MB.\nPlease record a shorter video.`);
+      recordedBlob = null;
+      retakeRecording();
+      return;
+    }
+
+    // Show playback preview
+    const url = URL.createObjectURL(recordedBlob);
+    const previewVid = document.getElementById('recorded-preview');
+    previewVid.src = url;
+    document.getElementById('recorded-preview-wrap').style.display = 'block';
+    const sizeMB = (recordedBlob.size / (1024 * 1024)).toFixed(1);
+    document.getElementById('rec-ready-label').textContent =
+      `✅ Recording ready (${sizeMB} MB) — review above, then submit.`;
+
+    document.getElementById('btn-retake-rec').style.display = 'block';
+    document.getElementById('btn-start-rec').disabled = false;
+    document.getElementById('submit-btn').disabled = false;
+  }
+
+  function retakeRecording() {
+    recordedBlob = null;
+    recordedChunks = [];
+    document.getElementById('recorded-preview-wrap').style.display = 'none';
+    document.getElementById('recorded-preview').src = '';
+    document.getElementById('rec-ready-label').textContent = '';
+    document.getElementById('btn-retake-rec').style.display = 'none';
+    document.getElementById('btn-start-rec').disabled = false;
+    document.getElementById('btn-stop-rec').disabled = true;
+    document.getElementById('rec-timer').textContent = '';
+    document.getElementById('submit-btn').disabled = true;
   }
 
   function resetFormUI() {
