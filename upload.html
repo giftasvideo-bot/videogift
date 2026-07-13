@@ -202,6 +202,124 @@
       background: #fff;
       border-color: #e0e0e0;
     }
+
+    /* Upload mode toggle */
+    .mode-toggle {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 12px;
+    }
+    .mode-btn {
+      flex: 1;
+      padding: 10px 8px;
+      border: 1px solid var(--cream);
+      background: var(--paper);
+      color: var(--muted);
+      border-radius: 8px;
+      font-family: 'DM Sans', sans-serif;
+      font-size: 0.85rem;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .mode-btn.active {
+      background: var(--gold);
+      color: #fff;
+      border-color: var(--gold);
+    }
+
+    /* Selfie recording panel */
+    .record-panel {
+      display: none;
+      border: 2px dashed var(--cream);
+      border-radius: 8px;
+      padding: 16px;
+      background: var(--paper);
+      text-align: center;
+    }
+    .record-video-wrap {
+      position: relative;
+      width: 100%;
+      max-width: 320px;
+      margin: 0 auto;
+      border-radius: 10px;
+      overflow: hidden;
+      background: #000;
+    }
+    .record-video-wrap video {
+      width: 100%;
+      display: block;
+      max-height: 320px;
+      background: #000;
+      /* mirror the live camera preview like a selfie cam */
+      transform: scaleX(-1);
+    }
+    .record-video-wrap.playback video { transform: none; }
+    .rec-indicator {
+      position: absolute;
+      top: 10px; left: 10px;
+      display: none;
+      align-items: center;
+      gap: 6px;
+      background: rgba(0,0,0,0.55);
+      color: #fff;
+      padding: 4px 10px;
+      border-radius: 20px;
+      font-size: 0.75rem;
+      font-family: 'DM Sans', sans-serif;
+    }
+    .rec-indicator.live { display: flex; }
+    .rec-dot {
+      width: 8px; height: 8px;
+      border-radius: 50%;
+      background: #e53935;
+      animation: pulse 1s infinite;
+    }
+    @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.3; } }
+    .record-controls {
+      margin-top: 12px;
+      display: flex;
+      gap: 10px;
+      justify-content: center;
+      flex-wrap: wrap;
+    }
+    .record-controls button {
+      padding: 10px 18px;
+      border: none;
+      border-radius: 8px;
+      font-family: 'DM Sans', sans-serif;
+      font-size: 0.85rem;
+      font-weight: 500;
+      cursor: pointer;
+      transition: background-color 0.2s;
+    }
+    #start-record-btn { background: var(--gold); color: #fff; }
+    #start-record-btn:hover { background: var(--gold-light); }
+    #stop-record-btn { background: #e53935; color: #fff; }
+    #stop-record-btn:hover { background: #ef5350; }
+    #retake-record-btn { background: var(--cream); color: var(--ink); }
+    #retake-record-btn:hover { background: var(--gold-light); color: #fff; }
+    .record-hint {
+      font-size: 0.8rem;
+      color: var(--muted);
+      margin-top: 10px;
+    }
+    .record-timer {
+      font-family: monospace;
+      font-size: 0.85rem;
+      color: var(--muted);
+      margin-top: 8px;
+    }
+    .record-error {
+      margin-top: 10px;
+      padding: 10px 14px;
+      background: #ffebee;
+      border: 1px solid #ffcdd2;
+      border-radius: 8px;
+      color: #c62828;
+      font-size: 0.82rem;
+      display: none;
+    }
   </style>
 </head>
 <body>
@@ -239,18 +357,41 @@
       <textarea id="message-input" placeholder="Write a warm note to go along with your video gift..."></textarea>
     </div>
     <div class="form-group">
-      <label>Select Video File</label>
-      <div class="file-dropzone" onclick="document.getElementById('video-input').click()">
+      <label>Add Your Video</label>
+      <div class="mode-toggle">
+        <button type="button" id="mode-file-btn" class="mode-btn active" onclick="setUploadMode('file')">📁 Upload a File</button>
+        <button type="button" id="mode-record-btn" class="mode-btn" onclick="setUploadMode('record')">🤳 Record a Selfie Video</button>
+      </div>
+
+      <!-- File picker mode -->
+      <div class="file-dropzone" id="file-dropzone" onclick="document.getElementById('video-input').click()">
         <span class="file-label-text">🎬 Click to choose a video file</span>
-        <input type="file" id="video-input" accept="video/*" onchange="displayFileName()" required />
+        <input type="file" id="video-input" accept="video/*" onchange="displayFileName()" />
         <div id="file-name-preview" class="file-chosen-name"></div>
       </div>
       <div class="video-preview-wrap" id="video-preview-wrap">
         <video id="video-preview" controls playsinline></video>
       </div>
       <div class="video-preview-label" id="video-preview-label"></div>
+
+      <!-- Selfie recording mode -->
+      <div class="record-panel" id="record-panel">
+        <div class="record-video-wrap" id="record-video-wrap">
+          <span class="rec-indicator" id="rec-indicator"><span class="rec-dot"></span> REC</span>
+          <video id="record-video" autoplay muted playsinline></video>
+        </div>
+        <div class="record-timer" id="record-timer" style="display:none;">00:00</div>
+        <div class="record-controls">
+          <button type="button" id="enable-camera-btn" onclick="enableCamera()">🎥 Enable Camera</button>
+          <button type="button" id="start-record-btn" style="display:none;" onclick="startRecording()">⏺ Start Recording</button>
+          <button type="button" id="stop-record-btn" style="display:none;" onclick="stopRecording()">⏹ Stop</button>
+          <button type="button" id="retake-record-btn" style="display:none;" onclick="retakeRecording()">↺ Retake</button>
+        </div>
+        <div class="record-hint" id="record-hint">Tap "Enable Camera" to grant access, then record a short selfie video message.</div>
+        <div class="record-error" id="record-error"></div>
+      </div>
     </div>
-    <button type="submit" id="submit-btn" class="btn">Upload Video Gift</button>
+    <button type="submit" id="submit-btn" class="btn" disabled>Upload Video Gift</button>
   </form>
 
   <div class="progress-container" id="progress-container">
@@ -267,6 +408,16 @@
 <script>
   const BACKEND_API_BASE = 'https://videogift-backend-3.onrender.com';
   const MAX_UPLOADS = 3;
+
+  // Shared state for whichever source (file picker or selfie recording) provides the video
+  let uploadMode = 'file'; // 'file' | 'record'
+  let selectedVideoFile = null; // File/Blob to actually submit
+  let cameraStream = null;
+  let mediaRecorder = null;
+  let recordedChunks = [];
+  let recordTimerInterval = null;
+  let recordSeconds = 0;
+  const MAX_RECORD_SECONDS = 90; // safety cap on selfie recording length
 
   const urlParams = new URLSearchParams(window.location.search);
   const giftId = urlParams.get('id');
@@ -436,6 +587,7 @@
         fileInput.value = '';
         previewLabel.textContent = '';
         submitBtn.disabled = true;
+        selectedVideoFile = null;
 
         // Show inline error
         let sizeErr = document.getElementById('size-error-msg');
@@ -463,25 +615,204 @@
       videoEl.src = objectUrl;
       previewWrap.style.display = 'block';
       dropzone.classList.add('has-file');
+
+      selectedVideoFile = file;
     }
+  }
+
+  // ─────────────────────────────────────────
+  // Upload mode toggle (file picker vs selfie recording)
+  // ─────────────────────────────────────────
+  function setUploadMode(mode) {
+    uploadMode = mode;
+    selectedVideoFile = null;
+    document.getElementById('submit-btn').disabled = true;
+
+    document.getElementById('mode-file-btn').classList.toggle('active', mode === 'file');
+    document.getElementById('mode-record-btn').classList.toggle('active', mode === 'record');
+
+    document.getElementById('file-dropzone').style.display = mode === 'file' ? 'block' : 'none';
+    document.getElementById('video-preview-wrap').style.display = 'none';
+    document.getElementById('video-preview-label').textContent = '';
+    document.getElementById('video-input').value = '';
+
+    document.getElementById('record-panel').style.display = mode === 'record' ? 'block' : 'none';
+
+    if (mode === 'file') {
+      stopCamera();
+    }
+  }
+
+  // ─────────────────────────────────────────
+  // Selfie recording via getUserMedia + MediaRecorder
+  // ─────────────────────────────────────────
+  async function enableCamera() {
+    const errBox = document.getElementById('record-error');
+    errBox.style.display = 'none';
+
+    try {
+      cameraStream = await navigator.mediaDevices.getUserMedia({
+        video: { facingMode: 'user' },
+        audio: true
+      });
+    } catch (err) {
+      errBox.textContent = '⚠️ Could not access your camera/microphone. Please allow camera permission in your browser settings, or switch to "Upload a File" instead.';
+      errBox.style.display = 'block';
+      return;
+    }
+
+    const videoEl = document.getElementById('record-video');
+    videoEl.srcObject = cameraStream;
+    document.getElementById('record-video-wrap').classList.remove('playback');
+
+    document.getElementById('enable-camera-btn').style.display = 'none';
+    document.getElementById('start-record-btn').style.display = 'inline-block';
+    document.getElementById('record-hint').textContent = 'When you\'re ready, tap "Start Recording" and say your message.';
+  }
+
+  function pickSupportedMimeType() {
+    const candidates = [
+      'video/webm;codecs=vp9,opus',
+      'video/webm;codecs=vp8,opus',
+      'video/webm',
+      'video/mp4'
+    ];
+    for (const type of candidates) {
+      if (window.MediaRecorder && MediaRecorder.isTypeSupported && MediaRecorder.isTypeSupported(type)) {
+        return type;
+      }
+    }
+    return '';
+  }
+
+  function startRecording() {
+    if (!cameraStream) return;
+    recordedChunks = [];
+    const mimeType = pickSupportedMimeType();
+
+    try {
+      mediaRecorder = mimeType
+        ? new MediaRecorder(cameraStream, { mimeType })
+        : new MediaRecorder(cameraStream);
+    } catch (err) {
+      const errBox = document.getElementById('record-error');
+      errBox.textContent = '⚠️ Recording isn\'t supported in this browser. Please switch to "Upload a File" instead.';
+      errBox.style.display = 'block';
+      return;
+    }
+
+    mediaRecorder.ondataavailable = (e) => {
+      if (e.data && e.data.size > 0) recordedChunks.push(e.data);
+    };
+    mediaRecorder.onstop = onRecordingStopped;
+    mediaRecorder.start();
+
+    recordSeconds = 0;
+    updateRecordTimer();
+    document.getElementById('record-timer').style.display = 'block';
+    recordTimerInterval = setInterval(() => {
+      recordSeconds++;
+      updateRecordTimer();
+      if (recordSeconds >= MAX_RECORD_SECONDS) stopRecording();
+    }, 1000);
+
+    document.getElementById('rec-indicator').classList.add('live');
+    document.getElementById('start-record-btn').style.display = 'none';
+    document.getElementById('stop-record-btn').style.display = 'inline-block';
+    document.getElementById('record-hint').textContent = 'Recording... tap "Stop" when you\'re done.';
+  }
+
+  function updateRecordTimer() {
+    const m = String(Math.floor(recordSeconds / 60)).padStart(2, '0');
+    const s = String(recordSeconds % 60).padStart(2, '0');
+    document.getElementById('record-timer').textContent = `${m}:${s}`;
+  }
+
+  function stopRecording() {
+    if (mediaRecorder && mediaRecorder.state !== 'inactive') {
+      mediaRecorder.stop();
+    }
+    clearInterval(recordTimerInterval);
+    document.getElementById('rec-indicator').classList.remove('live');
+    document.getElementById('stop-record-btn').style.display = 'none';
+  }
+
+  function onRecordingStopped() {
+    const mimeType = (mediaRecorder && mediaRecorder.mimeType) || 'video/webm';
+    const blob = new Blob(recordedChunks, { type: mimeType });
+    const ext = mimeType.includes('mp4') ? 'mp4' : 'webm';
+    selectedVideoFile = new File([blob], `selfie-${giftId || 'gift'}.${ext}`, { type: mimeType });
+
+    const sizeMB = (selectedVideoFile.size / (1024 * 1024)).toFixed(1);
+    if (selectedVideoFile.size > MAX_FILE_SIZE_MB * 1024 * 1024) {
+      const errBox = document.getElementById('record-error');
+      errBox.innerHTML = `⚠️ <strong>Recording too large (${sizeMB} MB).</strong> Maximum allowed size is <strong>${MAX_FILE_SIZE_MB} MB</strong>. Try recording a shorter message.`;
+      errBox.style.display = 'block';
+      selectedVideoFile = null;
+      document.getElementById('submit-btn').disabled = true;
+    } else {
+      document.getElementById('submit-btn').disabled = false;
+    }
+
+    // Stop the live camera feed and switch preview to playback of the recording
+    stopCamera();
+    const videoEl = document.getElementById('record-video');
+    videoEl.srcObject = null;
+    videoEl.src = URL.createObjectURL(blob);
+    videoEl.controls = true;
+    videoEl.muted = false;
+    videoEl.play().catch(() => {});
+    document.getElementById('record-video-wrap').classList.add('playback');
+
+    document.getElementById('record-timer').style.display = 'none';
+    document.getElementById('retake-record-btn').style.display = 'inline-block';
+    document.getElementById('record-hint').textContent = selectedVideoFile
+      ? `Recorded ${sizeMB} MB — scroll to review before uploading.`
+      : 'Please retake a shorter recording.';
+  }
+
+  function retakeRecording() {
+    selectedVideoFile = null;
+    document.getElementById('submit-btn').disabled = true;
+    document.getElementById('record-error').style.display = 'none';
+    document.getElementById('retake-record-btn').style.display = 'none';
+
+    const videoEl = document.getElementById('record-video');
+    videoEl.controls = false;
+    videoEl.muted = true;
+    videoEl.removeAttribute('src');
+    document.getElementById('record-video-wrap').classList.remove('playback');
+
+    enableCamera();
+  }
+
+  function stopCamera() {
+    if (cameraStream) {
+      cameraStream.getTracks().forEach(track => track.stop());
+      cameraStream = null;
+    }
+    document.getElementById('enable-camera-btn').style.display = 'inline-block';
+    document.getElementById('start-record-btn').style.display = 'none';
+    document.getElementById('stop-record-btn').style.display = 'none';
   }
 
   async function handleFormSubmit(event) {
     event.preventDefault();
 
-    const fileInput = document.getElementById('video-input');
     const progressContainer = document.getElementById('progress-container');
     const progressBar = document.getElementById('progress-bar');
     const progressText = document.getElementById('progress-text');
     const submitBtn = document.getElementById('submit-btn');
 
-    if (!fileInput.files || fileInput.files.length === 0) {
-      alert('Please select a video file first.');
+    if (!selectedVideoFile) {
+      alert(uploadMode === 'record'
+        ? 'Please record a selfie video first.'
+        : 'Please select a video file first.');
       return;
     }
 
     const payload = new FormData();
-    payload.append('video', fileInput.files[0]);
+    payload.append('video', selectedVideoFile, selectedVideoFile.name);
     payload.append('giftId', giftId);
     payload.append('message', document.getElementById('message-input').value.trim());
     payload.append('gifterName', document.getElementById('gifter-name-input').value.trim());
