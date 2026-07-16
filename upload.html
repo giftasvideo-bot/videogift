@@ -321,6 +321,65 @@
       display: none;
     }
 
+    /* How it works panel */
+    .how-it-works {
+      margin-bottom: 28px;
+      border: 1px solid var(--cream);
+      border-radius: 10px;
+      background: var(--paper);
+      overflow: hidden;
+    }
+    .how-it-works summary {
+      list-style: none;
+      cursor: pointer;
+      padding: 14px 16px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 0.9rem;
+      font-weight: 500;
+      color: var(--ink);
+    }
+    .how-it-works summary::-webkit-details-marker { display: none; }
+    .how-it-works summary .chevron {
+      transition: transform 0.2s;
+      color: var(--gold);
+    }
+    .how-it-works[open] summary .chevron { transform: rotate(90deg); }
+    .how-it-works-body {
+      padding: 0 16px 16px;
+    }
+    .how-it-works-steps {
+      list-style: none;
+      counter-reset: step;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+    .how-it-works-steps li {
+      counter-increment: step;
+      display: flex;
+      gap: 12px;
+      align-items: flex-start;
+      font-size: 0.85rem;
+      color: var(--muted);
+      line-height: 1.5;
+    }
+    .how-it-works-steps li::before {
+      content: counter(step);
+      flex-shrink: 0;
+      width: 22px; height: 22px;
+      border-radius: 50%;
+      background: var(--gold);
+      color: #fff;
+      font-size: 0.75rem;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .how-it-works-steps li strong { color: var(--ink); }
+
     /* Language Toggle */
     .lang-toggle { position: fixed; top: 16px; right: 16px; z-index: 500; background: #fff; border: 1px solid var(--gold); border-radius: 20px; padding: 7px 8px; font-size: 0.78rem; cursor: pointer; color: var(--ink); box-shadow: 0 2px 8px rgba(0,0,0,0.08); font-family: 'DM Sans', sans-serif; display: flex; align-items: center; gap: 2px; }
     .lang-toggle span { padding: 3px 9px; border-radius: 14px; transition: background 0.2s, color 0.2s; }
@@ -349,6 +408,26 @@
     <p class="subtitle" data-i18n="seal_subtitle">Upload a video to connect it to your physical card.</p>
     <div><span data-i18n="card_id_label">Card ID:</span> <span id="status-badge" data-i18n="detecting">Detecting...</span></div>
   </div>
+
+  <!-- How it works -->
+  <details class="how-it-works" id="how-it-works">
+    <summary>
+      <span data-i18n="how_it_works_title">📖 How to send your gift</span>
+      <span class="chevron">▶</span>
+    </summary>
+    <div class="how-it-works-body">
+      <ol class="how-it-works-steps">
+        <li data-i18n-html data-i18n="how_step_1"><strong>Get your card ready.</strong> Every physical card has its own QR code linking to this page.</li>
+        <li data-i18n-html data-i18n="how_step_2"><strong>Open this page.</strong> You got here by scanning your card's QR code (or its link).</li>
+        <li data-i18n-html data-i18n="how_step_3"><strong>Add your details.</strong> Enter your name and a personal message — both optional.</li>
+        <li data-i18n-html data-i18n="how_step_4"><strong>Choose how to add your video.</strong> Pick "Upload a File" or "Record a Selfie Video."</li>
+        <li data-i18n-html data-i18n="how_step_5"><strong>Add your video.</strong> Upload the file, or record your selfie video right here.</li>
+        <li data-i18n-html data-i18n="how_step_6"><strong>Review it.</strong> Preview your video before sending to make sure it's right.</li>
+        <li data-i18n-html data-i18n="how_step_7"><strong>Tap "Upload Video Gift."</strong> Your video is sent and linked to this card.</li>
+        <li data-i18n-html data-i18n="how_step_8"><strong>Hand over the card.</strong> The physical card is now the key — give it to your recipient so they can watch it.</li>
+      </ol>
+    </div>
+  </details>
 
   <!-- Checking state -->
   <div class="checking-screen" id="checking-screen">
@@ -414,7 +493,6 @@
 
   <div class="progress-container" id="progress-container">
     <div class="progress-bar-wrapper">
-
       <div class="progress-bar" id="progress-bar"></div>
     </div>
     <div class="progress-text" id="progress-text" data-i18n="uploading_0">Uploading: 0%</div>
@@ -432,6 +510,15 @@
   const translations = {
     en: {
       logo_html: 'Word<span>Gift</span>',
+      how_it_works_title: '📖 How to send your gift',
+      how_step_1: '<strong>Get your card ready.</strong> Every physical card has its own QR code linking to this page.',
+      how_step_2: '<strong>Open this page.</strong> You got here by scanning your card\'s QR code (or its link).',
+      how_step_3: '<strong>Add your details.</strong> Enter your name and a personal message — both optional.',
+      how_step_4: '<strong>Choose how to add your video.</strong> Pick "Upload a File" or "Record a Selfie Video."',
+      how_step_5: '<strong>Add your video.</strong> Upload the file, or record your selfie video right here.',
+      how_step_6: '<strong>Review it.</strong> Preview your video before sending to make sure it\'s right.',
+      how_step_7: '<strong>Tap "Upload Video Gift."</strong> Your video is sent and linked to this card.',
+      how_step_8: '<strong>Hand over the card.</strong> The physical card is now the key — give it to your recipient so they can watch it.',
       seal_title: 'Seal Your Gift',
       seal_subtitle: 'Upload a video to connect it to your physical card.',
       card_id_label: 'Card ID:',
@@ -498,6 +585,15 @@
     },
     am: {
       logo_html: 'የቃል <span>ስጦታ</span>',
+      how_it_works_title: '📖 ስጦታዎን እንዴት እንደሚልኩ',
+      how_step_1: '<strong>ካርድዎን ያዘጋጁ።</strong> እያንዳንዱ አካላዊ ካርድ ወደዚህ ገጽ የሚያገናኝ የራሱ QR ኮድ አለው።',
+      how_step_2: '<strong>ይህን ገጽ ይክፈቱ።</strong> የካርድዎን QR ኮድ (ወይም አገናኙን) በመቃኘት እዚህ ደርሰዋል።',
+      how_step_3: '<strong>ዝርዝሮችዎን ያክሉ።</strong> ስምዎን እና የግል መልእክት ያስገቡ — ሁለቱም አማራጭ ናቸው።',
+      how_step_4: '<strong>ቪዲዮዎን እንዴት እንደሚያክሉ ይምረጡ።</strong> "ፋይል ይጫኑ" ወይም "የሴልፊ ቪዲዮ ይቅረጹ" የሚለውን ይምረጡ።',
+      how_step_5: '<strong>ቪዲዮዎን ያክሉ።</strong> ፋይሉን ይጫኑ፣ ወይም እዚህ ላይ የሴልፊ ቪዲዮዎን ይቅረጹ።',
+      how_step_6: '<strong>ይገምግሙት።</strong> ትክክል መሆኑን ለማረጋገጥ ከመላክዎ በፊት ቪዲዮዎን ይመልከቱ።',
+      how_step_7: '<strong>"የቪዲዮ ስጦታ ይጫኑ" የሚለውን ይጫኑ።</strong> ቪዲዮዎ ይላካል እና ከዚህ ካርድ ጋር ይያያዛል።',
+      how_step_8: '<strong>ካርዱን ያስረክቡ።</strong> አካላዊ ካርዱ አሁን ቁልፉ ነው — ተቀባዩ እንዲመለከተው ያስረክቡት።',
       seal_title: 'ስጦታዎን ያሽጉ',
       seal_subtitle: 'ከአካላዊ ካርድዎ ጋር ለማገናኘት ቪዲዮ ይጫኑ።',
       card_id_label: 'የካርድ መለያ:',
