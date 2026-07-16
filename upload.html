@@ -344,7 +344,7 @@
 
 <div class="upload-container">
   <div class="header">
-    <div class="logo">Word<span>Gift</span></div>
+    <div class="logo" data-i18n="logo_html" data-i18n-html>Word<span>Gift</span></div>
     <h1 data-i18n="seal_title">Seal Your Gift</h1>
     <p class="subtitle" data-i18n="seal_subtitle">Upload a video to connect it to your physical card.</p>
     <div><span data-i18n="card_id_label">Card ID:</span> <span id="status-badge" data-i18n="detecting">Detecting...</span></div>
@@ -395,7 +395,7 @@
       <!-- Selfie recording mode -->
       <div class="record-panel" id="record-panel">
         <div class="record-video-wrap" id="record-video-wrap">
-          <span class="rec-indicator" id="rec-indicator"><span class="rec-dot"></span> REC</span>
+          <span class="rec-indicator" id="rec-indicator"><span class="rec-dot"></span> <span id="rec-indicator-text" data-i18n="rec_label">REC</span></span>
           <video id="record-video" autoplay muted playsinline></video>
         </div>
         <div class="record-timer" id="record-timer" style="display:none;">00:00</div>
@@ -414,6 +414,7 @@
 
   <div class="progress-container" id="progress-container">
     <div class="progress-bar-wrapper">
+
       <div class="progress-bar" id="progress-bar"></div>
     </div>
     <div class="progress-text" id="progress-text" data-i18n="uploading_0">Uploading: 0%</div>
@@ -430,6 +431,7 @@
   // ---------- Language / i18n ----------
   const translations = {
     en: {
+      logo_html: 'Word<span>Gift</span>',
       seal_title: 'Seal Your Gift',
       seal_subtitle: 'Upload a video to connect it to your physical card.',
       card_id_label: 'Card ID:',
@@ -450,6 +452,9 @@
       start_recording: '⏺ Start Recording',
       stop_btn: '⏹ Stop',
       retake_btn: '↺ Retake',
+      rec_label: 'REC',
+      dot_used_title: (n) => `Upload ${n} used`,
+      dot_empty_title: (n) => `Upload slot ${n} available`,
       record_hint_default: 'Tap "Enable Camera" to grant access, then record a short selfie video message.',
       record_hint_ready: 'When you\'re ready, tap "Start Recording" and say your message.',
       record_hint_recording: 'Recording... tap "Stop" when you\'re done.',
@@ -492,6 +497,7 @@
       alert_network_error: 'Network error. Please make sure your connection is stable.'
     },
     am: {
+      logo_html: 'የቃል <span>ስጦታ</span>',
       seal_title: 'ስጦታዎን ያሽጉ',
       seal_subtitle: 'ከአካላዊ ካርድዎ ጋር ለማገናኘት ቪዲዮ ይጫኑ።',
       card_id_label: 'የካርድ መለያ:',
@@ -512,6 +518,9 @@
       start_recording: '⏺ መቅረጽ ይጀምሩ',
       stop_btn: '⏹ ያቁሙ',
       retake_btn: '↺ እንደገና ይቅረጹ',
+      rec_label: 'እየተቀረጸ',
+      dot_used_title: (n) => `መጫኛ ${n} ጥቅም ላይ ውሏል`,
+      dot_empty_title: (n) => `የመጫኛ ቦታ ${n} ይገኛል`,
       record_hint_default: 'ፍቃድ ለመስጠት "ካሜራ ያንቁ" የሚለውን ይጫኑ፣ ከዚያም አጭር የሴልፊ ቪዲዮ መልእክት ይቅረጹ።',
       record_hint_ready: 'ዝግጁ ሲሆኑ "መቅረጽ ይጀምሩ" የሚለውን ይጫኑ እና መልእክትዎን ይናገሩ።',
       record_hint_recording: 'በመቅረጽ ላይ... ሲጨርሱ "ያቁሙ" የሚለውን ይጫኑ።',
@@ -733,9 +742,9 @@
     let dots = '';
     for (let i = 0; i < MAX_UPLOADS; i++) {
       if (i < uploadCount) {
-        dots += `<div class="attempt-dot used" title="Upload ${i + 1} used"></div>`;
+        dots += `<div class="attempt-dot used" title="${dict.dot_used_title(i + 1)}"></div>`;
       } else {
-        dots += `<div class="attempt-dot empty" title="Upload slot ${i + 1} available"></div>`;
+        dots += `<div class="attempt-dot empty" title="${dict.dot_empty_title(i + 1)}"></div>`;
       }
     }
 
