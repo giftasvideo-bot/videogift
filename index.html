@@ -3,9 +3,9 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Forever 27 | Scan Your Gift</title>
+  <title>WordGift | Scan Your Gift</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,700;1,400&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,700;1,400&family=DM+Sans:wght@300;400;500&family=Noto+Sans+Ethiopic:wght@400;500;700&display=swap" rel="stylesheet">
   <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
   <style>
     :root { --ink: #0d0d0d; --paper: #faf7f2; --gold: #c9933a; --gold-light: #e8b86d; --cream: #f0ead8; --muted: #7a7060; }
@@ -26,6 +26,7 @@
     
     .container { width: 100%; text-align: center; padding: 40px 24px; background: rgba(250,247,242,0.85); border: 1px solid rgba(201,147,58,0.15); border-radius: 24px; box-shadow: 0 4px 20px rgba(0,0,0,0.02); }
     .logo-mark { font-family: 'Playfair Display', serif; font-size: 2.2rem; font-weight: 700; margin-bottom: 8px; }
+    .logo-mark span { color: var(--gold); font-style: italic; }
     .logo-sub { font-size: 0.8rem; text-transform: uppercase; letter-spacing: 3px; color: var(--gold); margin-bottom: 30px; }
     
     /* Content Card Blocks */
@@ -100,67 +101,87 @@
     .msg-box.error   { background: #ffebee; border: 1px solid #ffcdd2; color: #c62828; }
     .msg-box.loading { background: #fff8e1; border: 1px solid #ffe082; color: #7a6020; }
     .msg-box.success { background: #e8f5e9; border: 1px solid #a5d6a7; color: #2e7d32; }
+
+    /* Language Toggle */
+    .lang-toggle { position: fixed; top: 66px; right: 16px; z-index: 500; background: #fff; border: 1px solid var(--gold); border-radius: 20px; padding: 7px 8px; font-size: 0.78rem; cursor: pointer; color: var(--ink); box-shadow: 0 2px 8px rgba(0,0,0,0.08); font-family: 'DM Sans', sans-serif; display: flex; align-items: center; gap: 2px; transition: top 0.3s ease; }
+    body.banner-hidden .lang-toggle { top: 16px; }
+    .lang-toggle span { padding: 3px 9px; border-radius: 14px; transition: background 0.2s, color 0.2s; }
+    .lang-toggle span.active { background: var(--ink); color: #fff; }
+
+    /* Amharic font overrides (Playfair/DM Sans don't cover Ethiopic script) */
+    body.lang-am { font-family: 'Noto Sans Ethiopic', 'DM Sans', sans-serif; }
+    body.lang-am .logo-mark,
+    body.lang-am .content-card h3,
+    body.lang-am .modal-title,
+    body.lang-am .lightbox-caption { font-family: 'Noto Sans Ethiopic', serif; }
+    body.lang-am .lang-toggle { font-family: 'Noto Sans Ethiopic', 'DM Sans', sans-serif; }
   </style>
 </head>
 <body>
 
   <!-- Top Announcement Banner -->
   <div class="top-banner" id="top-banner">
-    <div class="banner-text">✨ Welcome to <strong>Forever 27 Video Gifts</strong> — Attach custom video gifts to your apparel!</div>
+    <div class="banner-text" data-i18n="banner_text" data-i18n-html="1">✨ Welcome to <strong>WordGift</strong> — Attach custom video gifts to your apparel!</div>
     <button class="banner-close" onclick="dismissBanner()">✕</button>
+  </div>
+
+  <!-- Language Toggle -->
+  <div class="lang-toggle" id="lang-toggle">
+    <span id="lang-en" onclick="setLang('en')">EN</span>
+    <span id="lang-am" onclick="setLang('am')">አማ</span>
   </div>
 
   <div class="wrapper">
     
     <!-- Header Scanner Core -->
     <div class="container">
-      <div class="logo-mark">Forever 27</div>
-      <div class="logo-sub">Physical to Digital</div>
+      <div class="logo-mark">Word<span>Gift</span></div>
+      <div class="logo-sub" data-i18n="logo_sub">Physical to Digital</div>
       <div>
-        <button class="cta-btn" onclick="openModal()">✨ Scan QR Code</button>
+        <button class="cta-btn" onclick="openModal()" data-i18n="cta_scan">✨ Scan QR Code</button>
       </div>
     </div>
 
     <!-- About Us Section -->
     
       <div class="content-card">
-      <h3>🌿 About Us</h3>
-      <p align="justify">At <strong>Forever 27 Video Gifts</strong>, we bridge the gap between tangible handcrafted design and digital storytelling. Our signature service transforms physical postcards into interactive keepsakes; by scanning the custom QR code, you can easily upload a personal memorial video that helps express your deepest feelings and most meaningful memories.</p>
-      <p align="justify">Whether you are celebrating a special milestone or honoring a beautiful memory, our physical-to-digital ecosystem ensures your genuine warmth and heartfelt expressions are preserved securely and delivered seamlessly to your loved ones.</p>
-      <p align="justify">We offer our video-gift QR codes in two forms: as a <strong>standalone QR code sticker</strong> that you can paste onto any physical gift — flowers, a wrapped present, a mug, anything you'd like to attach a personal video to — or as one of our <strong>signature printed postcards</strong>, ready to write on and hand over as a complete keepsake on its own.</p>
+      <h3 data-i18n="about_title">🌿 About Us</h3>
+      <p align="justify" data-i18n="about_p1" data-i18n-html="1">At <strong>WordGift</strong>, we bridge the gap between tangible handcrafted design and digital storytelling. Our signature service transforms physical postcards into interactive keepsakes; by scanning the custom QR code, you can easily upload a personal memorial video that helps express your deepest feelings and most meaningful memories.</p>
+      <p align="justify" data-i18n="about_p2">Whether you are celebrating a special milestone or honoring a beautiful memory, our physical-to-digital ecosystem ensures your genuine warmth and heartfelt expressions are preserved securely and delivered seamlessly to your loved ones.</p>
+      <p align="justify" data-i18n="about_p3" data-i18n-html="1">We offer our video-gift QR codes in two forms: as a <strong>standalone QR code sticker</strong> that you can paste onto any physical gift — flowers, a wrapped present, a mug, anything you'd like to attach a personal video to — or as one of our <strong>signature printed postcards</strong>, ready to write on and hand over as a complete keepsake on its own.</p>
     </div>
     <!-- Sample Postcards Section -->
     <div class="content-card">
-      <h3>✉️ Sample Postcards</h3>
-      <p align="justify">Explore some of our signature visual prints. Each postcard layout comes with an integrated structural location for a unique QR scan token.</p>
+      <h3 data-i18n="postcards_title">✉️ Sample Postcards</h3>
+      <p align="justify" data-i18n="postcards_desc">Explore some of our signature visual prints. Each postcard layout comes with an integrated structural location for a unique QR scan token.</p>
 
       <div class="postcard-grid">
         <div class="postcard-item">
           <img src="birthday.jpg" width="124" height="137" onclick="openLightbox('birthday.jpg','Birthday')">
-          <div class="postcard-title">Birthday</div>
+          <div class="postcard-title" data-i18n="postcard_birthday">Birthday</div>
         </div>
         <div class="postcard-item">
           <img src="graduation1.jpg" width="124" height="137" onclick="openLightbox('graduation1.jpg','Graduation')">
-          <div class="postcard-title">Graduation</div>
+          <div class="postcard-title" data-i18n="postcard_graduation">Graduation</div>
         </div>
         <div class="postcard-item">
           <img src="wedding.jpg" width="124" height="137" onclick="openLightbox('wedding.jpg','Wedding')">
-          <div class="postcard-title">Wedding</div>
+          <div class="postcard-title" data-i18n="postcard_wedding">Wedding</div>
         </div>
         <div class="postcard-item">
           <img src="marry christmas.jpg" width="124" height="137" onclick="openLightbox('marry christmas.jpg','Holiday')">
-          <div class="postcard-title">Holiday</div>
+          <div class="postcard-title" data-i18n="postcard_holiday">Holiday</div>
         </div>
       </div>
     </div>
 
     <!-- How to Send Section -->
  <div class="content-card">
-      <h3>🚀 How to Send</h3>
+      <h3 data-i18n="send_title">🚀 How to Send</h3>
       <ol class="steps-list">
         <li data-step="1">
           <div class="step-content">
-            <div align="justify"><strong>Initialize Token Identification</strong>
+            <div align="justify" data-i18n="send_step1" data-i18n-html="1"><strong>Initialize Token Identification</strong>
             Scan the structural printed QR code with your camera or enter its alphanumeric index identifier key into the manual interface option block.
             </div>
             <div class="img-placeholder">
@@ -170,21 +191,21 @@
         </li>
         <li data-step="2">
           <div class="step-content">
-            <div align="justify"><strong>Attach Metadata &amp; Video Media</strong>
+            <div align="justify" data-i18n="send_step2" data-i18n-html="1"><strong>Attach Metadata &amp; Video Media</strong>
             Provide an optional signature sender identity reference label, append an optional text statement, choose your target source media clip, and select the transmission submission link button. *Note: Data blocks finalize permanently directly post-submission.*
             </div>
           </div>
         </li>
         <li data-step="3">
           <div class="step-content">
-            <div align="justify"><strong>Confirm Complete Status</strong>
+            <div align="justify" data-i18n="send_step3" data-i18n-html="1"><strong>Confirm Complete Status</strong>
             A valid success notification panel layout text readout stating *“🎉 Your video gift has been successfully uploaded!”* confirms server-side persistence storage initialization.
             </div>
           </div>
         </li>
         <li data-step="4">
           <div class="step-content">
-            <div align="justify"><strong>Hand Over Presentation</strong>
+            <div align="justify" data-i18n="send_step4" data-i18n-html="1"><strong>Hand Over Presentation</strong>
             Deliver your material item directly to your specific recipient or share the physical print card details forward electronically.
             </div>
           </div>
@@ -194,18 +215,18 @@
 
     <!-- How to Receive Section -->
  <div class="content-card">
-      <h3>🎁 How to Receive</h3>
+      <h3 data-i18n="receive_title">🎁 How to Receive</h3>
       <ol class="steps-list">
         <li data-step="1">
           <div class="step-content">
-            <div align="justify"><strong>Identify Visual Identifier</strong>
+            <div align="justify" data-i18n="receive_step1" data-i18n-html="1"><strong>Identify Visual Identifier</strong>
             Examine the received physical piece context elements, look up the tag, and initiate standard capture via mobile reader or pass parameters via the home field submission input.
             </div>
           </div>
         </li>
         <li data-step="2">
           <div class="step-content">
-            <div align="justify"><strong>Automatic Media Playback</strong>
+            <div align="justify" data-i18n="receive_step2" data-i18n-html="1"><strong>Automatic Media Playback</strong>
             The underlying validation pipeline resolves the target data context dynamically and directly surfaces the integrated personal video sequence automatically!
             </div>
           </div>
@@ -214,8 +235,8 @@
     </div>
 
     <!-- Site Copyright Footer -->
-    <footer class="site-footer">
-      &copy; 2026 Forever 27 Video Gifts. All Rights Reserved. Memories That Last Forever.
+    <footer class="site-footer" data-i18n="footer_text">
+      &copy; 2026 WordGift. All Rights Reserved. Memories That Last Forever.
     </footer>
 
   </div>
@@ -234,28 +255,29 @@
     <div class="modal-card">
       <div class="drag-handle"></div>
       <button class="close-btn" onclick="closeModal()">✕</button>
-      <div class="modal-title">Point camera at QR code</div>
+      <div class="modal-title" data-i18n="modal_title">Point camera at QR code</div>
 
       <div class="scanner-wrap" id="scanner-wrap">
         <div class="scan-loading" id="scan-loading">
           <div class="spin"></div>
-          <span>Starting camera...</span>
+          <span data-i18n="scan_starting">Starting camera...</span>
         </div>
-        <div class="cam-fail" id="cam-fail">
+        <div class="cam-fail" id="cam-fail" data-i18n="cam_fail" data-i18n-html="1">
           📷 Camera unavailable.<br>Enter your code below.
         </div>
         <div id="qr-reader"></div>
       </div>
 
-      <div class="divider">or enter code manually</div>
+      <div class="divider" data-i18n="divider_text">or enter code manually</div>
 
       <div class="manual-wrap">
         <input type="text" id="manual-code" class="manual-input"
-          placeholder="e.g. GIFT-A1B2C3"
+          placeholder="e.g. 000001-AAAP"
           autocomplete="off"
-          oninput="clearMsg()"
+          maxlength="11"
+          oninput="formatManualCode(this); clearMsg()"
           onkeydown="if(event.key==='Enter') goWithCode()" />
-        <button class="manual-btn" id="go-btn" onclick="goWithCode()">Go</button>
+        <button class="manual-btn" id="go-btn" onclick="goWithCode()" data-i18n="go_btn">Go</button>
       </div>
 
       <div class="msg-box" id="msg-box"></div>
@@ -268,8 +290,138 @@
     let isScanning = false;
     let scanDone = false;
 
+    // ---------- Language / i18n ----------
+    const translations = {
+      en: {
+        banner_text: '✨ Welcome to <strong>WordGift</strong> — Attach custom video gifts to your apparel!',
+        logo_sub: 'Physical to Digital',
+        cta_scan: '✨ Scan QR Code',
+        about_title: '🌿 About Us',
+        about_p1: 'At <strong>WordGift</strong>, we bridge the gap between tangible handcrafted design and digital storytelling. Our signature service transforms physical postcards into interactive keepsakes; by scanning the custom QR code, you can easily upload a personal memorial video that helps express your deepest feelings and most meaningful memories.',
+        about_p2: 'Whether you are celebrating a special milestone or honoring a beautiful memory, our physical-to-digital ecosystem ensures your genuine warmth and heartfelt expressions are preserved securely and delivered seamlessly to your loved ones.',
+        about_p3: "We offer our video-gift QR codes in two forms: as a <strong>standalone QR code sticker</strong> that you can paste onto any physical gift — flowers, a wrapped present, a mug, anything you'd like to attach a personal video to — or as one of our <strong>signature printed postcards</strong>, ready to write on and hand over as a complete keepsake on its own.",
+        postcards_title: '✉️ Sample Postcards',
+        postcards_desc: 'Explore some of our signature visual prints. Each postcard layout comes with an integrated structural location for a unique QR scan token.',
+        postcard_birthday: 'Birthday',
+        postcard_graduation: 'Graduation',
+        postcard_wedding: 'Wedding',
+        postcard_holiday: 'Holiday',
+        send_title: '🚀 How to Send',
+        send_step1: '<strong>Initialize Token Identification</strong>Scan the structural printed QR code with your camera or enter its alphanumeric index identifier key into the manual interface option block.',
+        send_step2: '<strong>Attach Metadata &amp; Video Media</strong>Provide an optional signature sender identity reference label, append an optional text statement, choose your target source media clip, and select the transmission submission link button. *Note: Data blocks finalize permanently directly post-submission.*',
+        send_step3: '<strong>Confirm Complete Status</strong>A valid success notification panel layout text readout stating *“🎉 Your video gift has been successfully uploaded!”* confirms server-side persistence storage initialization.',
+        send_step4: '<strong>Hand Over Presentation</strong>Deliver your material item directly to your specific recipient or share the physical print card details forward electronically.',
+        receive_title: '🎁 How to Receive',
+        receive_step1: '<strong>Identify Visual Identifier</strong>Examine the received physical piece context elements, look up the tag, and initiate standard capture via mobile reader or pass parameters via the home field submission input.',
+        receive_step2: '<strong>Automatic Media Playback</strong>The underlying validation pipeline resolves the target data context dynamically and directly surfaces the integrated personal video sequence automatically!',
+        footer_text: '&copy; 2026 WordGift. All Rights Reserved. Memories That Last Forever.',
+        modal_title: 'Point camera at QR code',
+        scan_starting: 'Starting camera...',
+        cam_fail: '📷 Camera unavailable.<br>Enter your code below.',
+        divider_text: 'or enter code manually',
+        manual_placeholder: 'e.g. 000001-AAAP',
+        go_btn: 'Go',
+        msg_no_code: '⚠️ Please enter a gift code first.',
+        msg_invalid_code: '⚠️ Invalid code. Please try again.',
+        msg_checking: '🔍 Checking gift code...',
+        msg_not_found: (id) => `❌ Gift code <strong>${id}</strong> was not found. Please check the code and try again.`,
+        msg_server_error: '⚠️ Server error. Please try again in a moment.',
+        msg_found_opening: '🎁 Gift found! Opening your video...',
+        msg_found_redirect: '✅ Card found! Redirecting to upload...',
+        msg_connection_error: '📡 Could not reach server. Please check your connection and try again.'
+      },
+      am: {
+        banner_text: '✨ ወደ <strong>WordGift</strong> እንኳን በደህና መጡ — ብጁ የቪዲዮ ስጦታዎችን በአልባሳትዎ ላይ ያያይዙ!',
+        logo_sub: 'ከአካላዊ ወደ ዲጂታል',
+        cta_scan: '✨ QR ኮድ ይቃኙ',
+        about_title: '🌿 ስለ እኛ',
+        about_p1: '<strong>WordGift</strong> ላይ፣ በእጅ የተሰሩ አካላዊ ንድፎችን ከዲጂታል ታሪክ አተራረክ ጋር እናገናኛለን። የእኛ ልዩ አገልግሎት አካላዊ ፖስትካርዶችን ወደ መስተጋብራዊ መታሰቢያዎች ይለውጣል፤ ብጁውን QR ኮድ በመቃኘት፣ ጥልቅ ስሜቶችዎንና ትርጉም ያላቸው ትዝታዎችዎን የሚገልጽ የግል መታሰቢያ ቪዲዮ በቀላሉ መጫን ይችላሉ።',
+        about_p2: 'ልዩ አጋጣሚን እያከበሩ ወይም ውብ ትዝታን እያሰቡ ቢሆኑም፣ የእኛ ከአካላዊ-ወደ-ዲጂታል ስርዓት እውነተኛ ሙቀትዎና ከልብ የመነጨ አገላለጾችዎ በደህንነት ተጠብቀው ለሚወዷቸው ሰዎች በተቀላጠፈ ሁኔታ እንዲደርሱ ያረጋግጣል።',
+        about_p3: 'የቪዲዮ ስጦታ QR ኮዶቻችንን በሁለት አይነት እናቀርባለን፦ በማንኛውም አካላዊ ስጦታ ላይ — አበባዎች፣ የታሸገ ስጦታ፣ ማግ፣ የግል ቪዲዮ ማያያዝ በሚፈልጉት ማንኛውም ነገር ላይ — መለጠፍ የሚችሉት <strong>ራሱን የቻለ የQR ኮድ ስቲከር</strong>፣ ወይም ራሱ እንደ ሙሉ መታሰቢያ ተጽፎ ሊሰጥ ዝግጁ የሆነው ከእኛ <strong>ልዩ የታተሙ ፖስትካርዶች</strong> አንዱ።',
+        postcards_title: '✉️ ናሙና ፖስትካርዶች',
+        postcards_desc: 'ከልዩ የእይታ ህትመቶቻችን አንዳንዶቹን ይመልከቱ። እያንዳንዱ የፖስትካርድ አቀማመጥ ለልዩ QR ቅኝት ቶከን የተዋቀረ የተዋሃደ ቦታ አለው።',
+        postcard_birthday: 'የልደት ቀን',
+        postcard_graduation: 'ምረቃ',
+        postcard_wedding: 'ሰርግ',
+        postcard_holiday: 'በዓል',
+        send_title: '🚀 እንዴት እንደሚላክ',
+        send_step1: '<strong>የቶከን መለያ ጅምር</strong>የተዋቀረውን የታተመ QR ኮድ በካሜራዎ ይቃኙ ወይም የፊደላት እና ቁጥር መለያ ቁልፉን በእጅ ግቤት አማራጭ ውስጥ ያስገቡ።',
+        send_step2: '<strong>ተጨማሪ መረጃ እና ቪዲዮ ያያይዙ</strong>አማራጭ የላኪ ስም መለያ ምልክት ያቅርቡ፣ አማራጭ የጽሁፍ መልእክት ያክሉ፣ የሚፈልጉትን የቪዲዮ ክሊፕ ይምረጡ፣ እና የመላኪያ አገናኝ አዝራሩን ይጫኑ። *ማስታወሻ፦ የመረጃ ብሎኮች ከቀረቡ በኋላ በቋሚነት ይጠናቀቃሉ።*',
+        send_step3: '<strong>የተጠናቀቀ ሁኔታን ያረጋግጡ</strong>“🎉 የቪዲዮ ስጦታዎ በተሳካ ሁኔታ ተጭኗል!” የሚል ትክክለኛ የስኬት ማሳወቂያ ጽሁፍ በአገልጋይ በኩል የመረጃ ማከማቻ ማስጀመሩን ያረጋግጣል።',
+        send_step4: '<strong>እጅ ላይ ማስረከብ</strong>እቃዎን በቀጥታ ለተቀባዩ ያድርሱ ወይም የታተመውን ካርድ ዝርዝሮች በኤሌክትሮኒክ መንገድ ያጋሩ።',
+        receive_title: '🎁 እንዴት እንደሚቀበሉ',
+        receive_step1: '<strong>የእይታ መለያን ይለዩ</strong>የተቀበሉትን አካላዊ እቃ ገፅታዎች ይመልከቱ፣ መለያውን ያግኙ፣ እና በሞባይል አንባቢ በኩል መደበኛ ቅኝት ይጀምሩ ወይም መለኪያዎችን በመነሻ ገፅ ግቤት ውስጥ ያስገቡ።',
+        receive_step2: '<strong>ራስ-ሰር የቪዲዮ ማጫወት</strong>የመሰረታዊ ማረጋገጫ ስርዓቱ የታለመውን መረጃ በራስ-ሰር ይፈታል እና የተካተተውን የግል ቪዲዮ በራስ-ሰር በቀጥታ ያሳያል!',
+        footer_text: '&copy; 2026 WordGift። መብቱ በህግ የተጠበቀ ነው። ለዘላለም የሚዘልቁ ትዝታዎች።',
+        modal_title: 'ካሜራውን ወደ QR ኮድ ያመልክቱ',
+        scan_starting: 'ካሜራ በመጀመር ላይ...',
+        cam_fail: '📷 ካሜራ አይገኝም።<br>ኮድዎን ከታች ያስገቡ።',
+        divider_text: 'ወይም ኮድ በእጅ ያስገቡ',
+        manual_placeholder: 'ለምሳሌ 000001-AAAP',
+        go_btn: 'ይሂዱ',
+        msg_no_code: '⚠️ እባክዎ መጀመሪያ የስጦታ ኮድ ያስገቡ።',
+        msg_invalid_code: '⚠️ ልክ ያልሆነ ኮድ። እባክዎ እንደገና ይሞክሩ።',
+        msg_checking: '🔍 የስጦታ ኮድ በመፈተሽ ላይ...',
+        msg_not_found: (id) => `❌ የስጦታ ኮድ <strong>${id}</strong> አልተገኘም። እባክዎ ኮዱን በማረጋገጥ እንደገና ይሞክሩ።`,
+        msg_server_error: '⚠️ የአገልጋይ ስህተት። እባክዎ ትንሽ ቆይተው እንደገና ይሞክሩ።',
+        msg_found_opening: '🎁 ስጦታ ተገኝቷል! ቪዲዮዎ በመከፈት ላይ...',
+        msg_found_redirect: '✅ ካርድ ተገኝቷል! ወደ መጫኛ በማዘዋወር ላይ...',
+        msg_connection_error: '📡 ወደ አገልጋይ መድረስ አልተቻለም። እባክዎ ግንኙነትዎን በማረጋገጥ እንደገና ይሞክሩ።'
+      }
+    };
+
+    let currentLang = localStorage.getItem('f27_lang') || 'en';
+
+    function applyTranslations() {
+      const dict = translations[currentLang];
+      document.querySelectorAll('[data-i18n]').forEach(el => {
+        const key = el.getAttribute('data-i18n');
+        const val = dict[key];
+        if (val === undefined) return;
+        if (el.hasAttribute('data-i18n-html')) el.innerHTML = val;
+        else el.textContent = val;
+      });
+      document.getElementById('manual-code').placeholder = dict.manual_placeholder;
+      document.documentElement.lang = currentLang;
+      document.body.classList.toggle('lang-am', currentLang === 'am');
+      document.getElementById('lang-en').classList.toggle('active', currentLang === 'en');
+      document.getElementById('lang-am').classList.toggle('active', currentLang === 'am');
+    }
+
+    function setLang(lang) {
+      currentLang = lang;
+      localStorage.setItem('f27_lang', lang);
+      applyTranslations();
+    }
+
+    document.addEventListener('DOMContentLoaded', applyTranslations);
+    // ---------- End language / i18n ----------
+
     function dismissBanner() {
       document.body.classList.add('banner-hidden');
+    }
+
+    // Auto-formats manual gift-code entry into the required NNNNNN-AAAA pattern
+    // (6 digits, a dash, then up to 4 letters) as the person types or pastes.
+    function formatManualCode(el) {
+      const raw = el.value.toUpperCase();
+      let digits = '';
+      let letters = '';
+
+      for (const ch of raw) {
+        if (/[0-9]/.test(ch) && digits.length < 6) {
+          digits += ch;
+        } else if (/[A-Z]/.test(ch) && digits.length === 6 && letters.length < 4) {
+          letters += ch;
+        }
+      }
+
+      let formatted = digits;
+      if (digits.length === 6 && (letters.length > 0 || raw.trim().endsWith('-'))) {
+        formatted += '-' + letters;
+      }
+
+      el.value = formatted;
     }
 
     function openLightbox(src, title) {
@@ -358,7 +510,7 @@
       const code = document.getElementById('manual-code').value.trim();
       if (!code) {
         document.getElementById('manual-code').focus();
-        showMsg('error', '⚠️ Please enter a gift code first.');
+        showMsg('error', translations[currentLang].msg_no_code);
         return;
       }
       validateAndNavigate(code);
@@ -374,11 +526,11 @@
       } catch(e) {}
 
       if (!giftId) {
-        showMsg('error', '⚠️ Invalid code. Please try again.');
+        showMsg('error', translations[currentLang].msg_invalid_code);
         return;
       }
 
-      showMsg('loading', '🔍 Checking gift code...');
+      showMsg('loading', translations[currentLang].msg_checking);
       const goBtn = document.getElementById('go-btn');
       const input = document.getElementById('manual-code');
       goBtn.disabled = true;
@@ -388,14 +540,14 @@
         const response = await fetch(`${BACKEND_URL}/api/gift/${encodeURIComponent(giftId)}`);
 
         if (response.status === 404) {
-          showMsg('error', '❌ Gift code <strong>' + giftId + '</strong> was not found. Please check the code and try again.');
+          showMsg('error', translations[currentLang].msg_not_found(giftId));
           input.classList.add('error');
           goBtn.disabled = false;
           return;
         }
 
         if (!response.ok) {
-          showMsg('error', '⚠️ Server error. Please try again in a moment.');
+          showMsg('error', translations[currentLang].msg_server_error);
           goBtn.disabled = false;
           return;
         }
@@ -405,19 +557,19 @@
         const hasVideo = !!data.video_url;
 
         if (hasVideo || status === 'uploaded' || status === 'viewed') {
-          showMsg('success', '🎁 Gift found! Opening your video...');
+          showMsg('success', translations[currentLang].msg_found_opening);
           setTimeout(() => {
             window.location.href = `watch.html?id=${encodeURIComponent(giftId)}`;
           }, 600);
         } else {
-          showMsg('success', '✅ Card found! Redirecting to upload...');
+          showMsg('success', translations[currentLang].msg_found_redirect);
           setTimeout(() => {
             window.location.href = `upload.html?id=${encodeURIComponent(giftId)}`;
           }, 600);
         }
 
       } catch(err) {
-        showMsg('error', '📡 Could not reach server. Please check your connection and try again.');
+        showMsg('error', translations[currentLang].msg_connection_error);
         goBtn.disabled = false;
       }
     }

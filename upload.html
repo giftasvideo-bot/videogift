@@ -3,9 +3,9 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Forever 27 | Attach Your Video Gift</title>
+  <title>WordGift | Attach Your Video Gift</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,700;1,400&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,700;1,400&family=DM+Sans:wght@300;400;500&family=Noto+Sans+Ethiopic:wght@400;500;700&display=swap" rel="stylesheet">
   <style>
     :root {
       --ink: #0d0d0d;
@@ -320,22 +320,40 @@
       font-size: 0.82rem;
       display: none;
     }
+
+    /* Language Toggle */
+    .lang-toggle { position: fixed; top: 16px; right: 16px; z-index: 500; background: #fff; border: 1px solid var(--gold); border-radius: 20px; padding: 7px 8px; font-size: 0.78rem; cursor: pointer; color: var(--ink); box-shadow: 0 2px 8px rgba(0,0,0,0.08); font-family: 'DM Sans', sans-serif; display: flex; align-items: center; gap: 2px; }
+    .lang-toggle span { padding: 3px 9px; border-radius: 14px; transition: background 0.2s, color 0.2s; }
+    .lang-toggle span.active { background: var(--ink); color: #fff; }
+
+    /* Amharic font overrides (Playfair/DM Sans don't cover Ethiopic script) */
+    body.lang-am { font-family: 'Noto Sans Ethiopic', 'DM Sans', sans-serif; }
+    body.lang-am .logo,
+    body.lang-am h1,
+    body.lang-am .already-used h2 { font-family: 'Noto Sans Ethiopic', serif; }
+    body.lang-am .lang-toggle { font-family: 'Noto Sans Ethiopic', 'DM Sans', sans-serif; }
   </style>
 </head>
 <body>
 
+<!-- Language Toggle -->
+<div class="lang-toggle" id="lang-toggle">
+  <span id="lang-en" onclick="setLang('en')">EN</span>
+  <span id="lang-am" onclick="setLang('am')">አማ</span>
+</div>
+
 <div class="upload-container">
   <div class="header">
-    <div class="logo">Forever<span>27</span></div>
-    <h1>Seal Your Gift</h1>
-    <p class="subtitle">Upload a video to connect it to your physical card.</p>
-    <div>Card ID: <span id="status-badge">Detecting...</span></div>
+    <div class="logo">Word<span>Gift</span></div>
+    <h1 data-i18n="seal_title">Seal Your Gift</h1>
+    <p class="subtitle" data-i18n="seal_subtitle">Upload a video to connect it to your physical card.</p>
+    <div><span data-i18n="card_id_label">Card ID:</span> <span id="status-badge" data-i18n="detecting">Detecting...</span></div>
   </div>
 
   <!-- Checking state -->
   <div class="checking-screen" id="checking-screen">
     <div class="spinner"></div>
-    <p>Verifying card status...</p>
+    <p data-i18n="verifying">Verifying card status...</p>
   </div>
 
   <!-- Already used state -->
@@ -349,23 +367,23 @@
   <!-- Upload form -->
   <form id="upload-form" style="display:none;" onsubmit="handleFormSubmit(event)">
     <div class="form-group">
-      <label for="gifter-name-input">Your Name (Optional)</label>
-      <input type="text" id="gifter-name-input" placeholder="e.g. Mum, The Johnson Family, Sarah ♥" style="width:100%;padding:12px 16px;border:1px solid var(--cream);border-radius:8px;font-family:'DM Sans',sans-serif;font-size:0.95rem;background:var(--paper);outline:none;transition:border-color 0.2s;" onfocus="this.style.borderColor='var(--gold)'" onblur="this.style.borderColor='var(--cream)'" />
+      <label for="gifter-name-input" data-i18n="your_name_label">Your Name (Optional)</label>
+      <input type="text" id="gifter-name-input" placeholder="e.g. Mum, The Johnson Family, Sarah ♥" data-i18n-placeholder="your_name_placeholder" style="width:100%;padding:12px 16px;border:1px solid var(--cream);border-radius:8px;font-family:'DM Sans',sans-serif;font-size:0.95rem;background:var(--paper);outline:none;transition:border-color 0.2s;" onfocus="this.style.borderColor='var(--gold)'" onblur="this.style.borderColor='var(--cream)'" />
     </div>
     <div class="form-group">
-      <label for="message-input">Personal Message (Optional)</label>
-      <textarea id="message-input" placeholder="Write a warm note to go along with your video gift..."></textarea>
+      <label for="message-input" data-i18n="message_label">Personal Message (Optional)</label>
+      <textarea id="message-input" placeholder="Write a warm note to go along with your video gift..." data-i18n-placeholder="message_placeholder"></textarea>
     </div>
     <div class="form-group">
-      <label>Add Your Video</label>
+      <label data-i18n="add_video_label">Add Your Video</label>
       <div class="mode-toggle">
-        <button type="button" id="mode-file-btn" class="mode-btn active" onclick="setUploadMode('file')">📁 Upload a File</button>
-        <button type="button" id="mode-record-btn" class="mode-btn" onclick="setUploadMode('record')">🤳 Record a Selfie Video</button>
+        <button type="button" id="mode-file-btn" class="mode-btn active" onclick="setUploadMode('file')" data-i18n="mode_file">📁 Upload a File</button>
+        <button type="button" id="mode-record-btn" class="mode-btn" onclick="setUploadMode('record')" data-i18n="mode_record">🤳 Record a Selfie Video</button>
       </div>
 
       <!-- File picker mode -->
       <div class="file-dropzone" id="file-dropzone" onclick="document.getElementById('video-input').click()">
-        <span class="file-label-text">🎬 Click to choose a video file</span>
+        <span class="file-label-text" data-i18n="click_choose_file">🎬 Click to choose a video file</span>
         <input type="file" id="video-input" accept="video/*" onchange="displayFileName()" />
         <div id="file-name-preview" class="file-chosen-name"></div>
       </div>
@@ -382,23 +400,23 @@
         </div>
         <div class="record-timer" id="record-timer" style="display:none;">00:00</div>
         <div class="record-controls">
-          <button type="button" id="enable-camera-btn" onclick="enableCamera()">🎥 Enable Camera</button>
-          <button type="button" id="start-record-btn" style="display:none;" onclick="startRecording()">⏺ Start Recording</button>
-          <button type="button" id="stop-record-btn" style="display:none;" onclick="stopRecording()">⏹ Stop</button>
-          <button type="button" id="retake-record-btn" style="display:none;" onclick="retakeRecording()">↺ Retake</button>
+          <button type="button" id="enable-camera-btn" onclick="enableCamera()" data-i18n="enable_camera">🎥 Enable Camera</button>
+          <button type="button" id="start-record-btn" style="display:none;" onclick="startRecording()" data-i18n="start_recording">⏺ Start Recording</button>
+          <button type="button" id="stop-record-btn" style="display:none;" onclick="stopRecording()" data-i18n="stop_btn">⏹ Stop</button>
+          <button type="button" id="retake-record-btn" style="display:none;" onclick="retakeRecording()" data-i18n="retake_btn">↺ Retake</button>
         </div>
-        <div class="record-hint" id="record-hint">Tap "Enable Camera" to grant access, then record a short selfie video message.</div>
+        <div class="record-hint" id="record-hint" data-i18n="record_hint_default">Tap "Enable Camera" to grant access, then record a short selfie video message.</div>
         <div class="record-error" id="record-error"></div>
       </div>
     </div>
-    <button type="submit" id="submit-btn" class="btn" disabled>Upload Video Gift</button>
+    <button type="submit" id="submit-btn" class="btn" disabled data-i18n="upload_video_gift">Upload Video Gift</button>
   </form>
 
   <div class="progress-container" id="progress-container">
     <div class="progress-bar-wrapper">
       <div class="progress-bar" id="progress-bar"></div>
     </div>
-    <div class="progress-text" id="progress-text">Uploading: 0%</div>
+    <div class="progress-text" id="progress-text" data-i18n="uploading_0">Uploading: 0%</div>
   </div>
 
   <!-- Upload attempt counter — shown below the form -->
@@ -408,6 +426,169 @@
 <script>
   const BACKEND_API_BASE = 'https://videogift-backend-3.onrender.com';
   const MAX_UPLOADS = 3;
+
+  // ---------- Language / i18n ----------
+  const translations = {
+    en: {
+      seal_title: 'Seal Your Gift',
+      seal_subtitle: 'Upload a video to connect it to your physical card.',
+      card_id_label: 'Card ID:',
+      detecting: 'Detecting...',
+      verifying: 'Verifying card status...',
+      sealed_title: 'This gift has already been sealed',
+      sealed_desc: 'A video has already been attached to card <strong id="used-card-id"></strong>.<br>Each card can only hold one gift.',
+      watch_instead: '▶ Watch the Gift Instead',
+      your_name_label: 'Your Name (Optional)',
+      your_name_placeholder: 'e.g. Mum, The Johnson Family, Sarah ♥',
+      message_label: 'Personal Message (Optional)',
+      message_placeholder: 'Write a warm note to go along with your video gift...',
+      add_video_label: 'Add Your Video',
+      mode_file: '📁 Upload a File',
+      mode_record: '🤳 Record a Selfie Video',
+      click_choose_file: '🎬 Click to choose a video file',
+      enable_camera: '🎥 Enable Camera',
+      start_recording: '⏺ Start Recording',
+      stop_btn: '⏹ Stop',
+      retake_btn: '↺ Retake',
+      record_hint_default: 'Tap "Enable Camera" to grant access, then record a short selfie video message.',
+      record_hint_ready: 'When you\'re ready, tap "Start Recording" and say your message.',
+      record_hint_recording: 'Recording... tap "Stop" when you\'re done.',
+      record_hint_recorded: (mb) => `Recorded ${mb} MB — scroll to review before uploading.`,
+      record_hint_retake: 'Please retake a shorter recording.',
+      upload_video_gift: 'Upload Video Gift',
+      uploading_0: 'Uploading: 0%',
+      uploading_pct: (p) => `Uploading: ${p}%`,
+      uploading_text: 'Uploading...',
+      upload_limit_reached_btn: '🚫 Upload Limit Reached',
+      missing_id_badge: 'MISSING ID',
+      missing_id_alert: 'Error: This link is missing a Card ID. Please scan the QR code again.',
+      scroll_review: (mb) => `${mb} MB — scroll to review before uploading`,
+      file_too_large_inline: (mb, max) => `⚠️ <strong>File too large (${mb} MB).</strong><br>Maximum allowed size is <strong>${max} MB</strong>. Please compress your video and try again.`,
+      recording_too_large: (mb, max) => `⚠️ <strong>Recording too large (${mb} MB).</strong> Maximum allowed size is <strong>${max} MB</strong>. Try recording a shorter message.`,
+      camera_error: '⚠️ Could not access your camera/microphone. Please allow camera permission in your browser settings, or switch to "Upload a File" instead.',
+      recorder_unsupported: '⚠️ Recording isn\'t supported in this browser. Please switch to "Upload a File" instead.',
+      opened_title: 'This gift has been opened',
+      opened_desc: (id) => `Card <strong>${id}</strong> has already been watched by the recipient.<br>To keep the moment intact, the video can no longer be changed.`,
+      watch_again_btn: '▶ Watch It Again',
+      limit_title: 'Upload limit reached',
+      limit_desc: (id, max) => `Card <strong>${id}</strong> has used all ${max} upload attempts.<br>Please contact support if you need assistance.`,
+      watch_gift_btn: '▶ Watch the Gift',
+      no_attempts_left: (count) => `<strong>No upload attempts remaining.</strong><br>This card has been used ${count} of ${MAX_UPLOADS} times.`,
+      one_attempt_left: `⚠️ <strong>Last upload attempt!</strong> You have <strong>1 of ${MAX_UPLOADS}</strong> attempts left.<br>Once uploaded, this video cannot be changed again.`,
+      attempts_remaining: (remaining) => `You have <strong>${remaining} of ${MAX_UPLOADS}</strong> upload attempts remaining.`,
+      already_uploaded: (count) => `<br><small>You've already uploaded ${count} time${count > 1 ? 's' : ''}.</small>`,
+      alert_record_first: 'Please record a selfie video first.',
+      alert_select_first: 'Please select a video file first.',
+      alert_success_final: '🎉 Your video gift has been successfully uploaded!\n\n⚠️ This was your final upload attempt. The video is now locked.',
+      alert_success_remaining: (remaining) => `🎉 Your video gift has been successfully uploaded!\n\nYou have ${remaining} upload attempt${remaining !== 1 ? 's' : ''} remaining if you need to change it.`,
+      alert_success_generic: '🎉 Your video gift has been successfully uploaded!',
+      alert_too_large: (max) => `⚠️ File too large. Maximum allowed size is ${max}MB.`,
+      alert_too_large_generic: (max) => `⚠️ File too large. Maximum allowed size is ${max}MB. Please compress your video and try again.`,
+      alert_watched_locked: '💌 This gift has already been watched by the recipient and can no longer be changed.',
+      alert_limit_reached: (count) => `🚫 Upload limit reached. This card has already been used ${count} times.`,
+      alert_no_longer_available: '🚫 Upload is no longer available for this card.',
+      alert_upload_failed: (err) => `Upload Failed: ${err || 'Server error.'}`,
+      alert_upload_failed_status: (status) => `Upload Failed. Status: ${status}`,
+      alert_network_error: 'Network error. Please make sure your connection is stable.'
+    },
+    am: {
+      seal_title: 'ስጦታዎን ያሽጉ',
+      seal_subtitle: 'ከአካላዊ ካርድዎ ጋር ለማገናኘት ቪዲዮ ይጫኑ።',
+      card_id_label: 'የካርድ መለያ:',
+      detecting: 'በመለየት ላይ...',
+      verifying: 'የካርድ ሁኔታን በማረጋገጥ ላይ...',
+      sealed_title: 'ይህ ስጦታ ቀድሞውኑ ታሽጓል',
+      sealed_desc: 'ቪዲዮ ቀድሞውኑ ከካርድ <strong id="used-card-id"></strong> ጋር ተያይዟል።<br>እያንዳንዱ ካርድ አንድ ስጦታ ብቻ ሊይዝ ይችላል።',
+      watch_instead: '▶ በምትኩ ስጦታውን ይመልከቱ',
+      your_name_label: 'ስምዎ (አማራጭ)',
+      your_name_placeholder: 'ለምሳሌ እማማ፣ የጆንሰን ቤተሰብ፣ ሳራ ♥',
+      message_label: 'የግል መልእክት (አማራጭ)',
+      message_placeholder: 'ከቪዲዮ ስጦታዎ ጋር የሚሄድ ሞቅ ያለ ማስታወሻ ይጻፉ...',
+      add_video_label: 'ቪዲዮዎን ያክሉ',
+      mode_file: '📁 ፋይል ይጫኑ',
+      mode_record: '🤳 የሴልፊ ቪዲዮ ይቅረጹ',
+      click_choose_file: '🎬 የቪዲዮ ፋይል ለመምረጥ ይጫኑ',
+      enable_camera: '🎥 ካሜራ ያንቁ',
+      start_recording: '⏺ መቅረጽ ይጀምሩ',
+      stop_btn: '⏹ ያቁሙ',
+      retake_btn: '↺ እንደገና ይቅረጹ',
+      record_hint_default: 'ፍቃድ ለመስጠት "ካሜራ ያንቁ" የሚለውን ይጫኑ፣ ከዚያም አጭር የሴልፊ ቪዲዮ መልእክት ይቅረጹ።',
+      record_hint_ready: 'ዝግጁ ሲሆኑ "መቅረጽ ይጀምሩ" የሚለውን ይጫኑ እና መልእክትዎን ይናገሩ።',
+      record_hint_recording: 'በመቅረጽ ላይ... ሲጨርሱ "ያቁሙ" የሚለውን ይጫኑ።',
+      record_hint_recorded: (mb) => `${mb} ሜባ ተቀርጿል — ከመጫንዎ በፊት ለመገምገም ወደታች ይሸብልሉ።`,
+      record_hint_retake: 'እባክዎ አጭር ቀረጻ እንደገና ይቅረጹ።',
+      upload_video_gift: 'የቪዲዮ ስጦታ ይጫኑ',
+      uploading_0: 'በመጫን ላይ: 0%',
+      uploading_pct: (p) => `በመጫን ላይ: ${p}%`,
+      uploading_text: 'በመጫን ላይ...',
+      upload_limit_reached_btn: '🚫 የመጫኛ ገደብ ደርሷል',
+      missing_id_badge: 'መለያ ጠፍቷል',
+      missing_id_alert: 'ስህተት፦ ይህ አገናኝ የካርድ መለያ የለውም። እባክዎ QR ኮዱን እንደገና ይቃኙ።',
+      scroll_review: (mb) => `${mb} ሜባ — ከመጫንዎ በፊት ለመገምገም ወደታች ይሸብልሉ`,
+      file_too_large_inline: (mb, max) => `⚠️ <strong>ፋይሉ በጣም ትልቅ ነው (${mb} ሜባ)።</strong><br>ከፍተኛ የተፈቀደ መጠን <strong>${max} ሜባ</strong> ነው። እባክዎ ቪዲዮዎን ጨምቀው እንደገና ይሞክሩ።`,
+      recording_too_large: (mb, max) => `⚠️ <strong>ቀረጻው በጣም ትልቅ ነው (${mb} ሜባ)።</strong> ከፍተኛ የተፈቀደ መጠን <strong>${max} ሜባ</strong> ነው። አጭር መልእክት ለመቅረጽ ይሞክሩ።`,
+      camera_error: '⚠️ ካሜራ/ማይክሮፎንዎን ማግኘት አልተቻለም። እባክዎ በአሳሽዎ ቅንብሮች ውስጥ የካሜራ ፍቃድ ይፍቀዱ፣ ወይም ይልቁን "ፋይል ይጫኑ" የሚለውን ይጠቀሙ።',
+      recorder_unsupported: '⚠️ ቀረጻ በዚህ አሳሽ አይደገፍም። እባክዎ ይልቁን "ፋይል ይጫኑ" የሚለውን ይጠቀሙ።',
+      opened_title: 'ይህ ስጦታ ተከፍቷል',
+      opened_desc: (id) => `ካርድ <strong>${id}</strong> ቀድሞውኑ በተቀባዩ ታይቷል።<br>ቅፅበቱን ያልተነካ ለማድረግ፣ ቪዲዮው ከዚህ በኋላ ሊቀየር አይችልም።`,
+      watch_again_btn: '▶ እንደገና ይመልከቱ',
+      limit_title: 'የመጫኛ ገደብ ደርሷል',
+      limit_desc: (id, max) => `ካርድ <strong>${id}</strong> ሁሉንም ${max} የመጫኛ ሙከራዎች ተጠቅሟል።<br>እርዳታ ከፈለጉ እባክዎ ድጋፍን ያግኙ።`,
+      watch_gift_btn: '▶ ስጦታውን ይመልከቱ',
+      no_attempts_left: (count) => `<strong>ምንም የመጫኛ ሙከራዎች አልቀሩም።</strong><br>ይህ ካርድ ${count} ከ ${MAX_UPLOADS} ጊዜ ጥቅም ላይ ውሏል።`,
+      one_attempt_left: `⚠️ <strong>የመጨረሻ የመጫኛ ሙከራ!</strong> <strong>1 ከ ${MAX_UPLOADS}</strong> ሙከራዎች ቀርተዋል።<br>ከተጫነ በኋላ ይህ ቪዲዮ እንደገና ሊቀየር አይችልም።`,
+      attempts_remaining: (remaining) => `<strong>${remaining} ከ ${MAX_UPLOADS}</strong> የመጫኛ ሙከራዎች ቀርተውዎታል።`,
+      already_uploaded: (count) => `<br><small>ቀድሞውኑ ${count} ጊዜ ጭነዋል።</small>`,
+      alert_record_first: 'እባክዎ መጀመሪያ የሴልፊ ቪዲዮ ይቅረጹ።',
+      alert_select_first: 'እባክዎ መጀመሪያ የቪዲዮ ፋይል ይምረጡ።',
+      alert_success_final: '🎉 የቪዲዮ ስጦታዎ በተሳካ ሁኔታ ተጭኗል!\n\n⚠️ ይህ የመጨረሻ የመጫኛ ሙከራዎ ነበር። ቪዲዮው አሁን ተቆልፏል።',
+      alert_success_remaining: (remaining) => `🎉 የቪዲዮ ስጦታዎ በተሳካ ሁኔታ ተጭኗል!\n\nለውጥ ካስፈለገዎት ${remaining} የመጫኛ ሙከራ${remaining !== 1 ? 'ዎች' : ''} ቀርተውዎታል።`,
+      alert_success_generic: '🎉 የቪዲዮ ስጦታዎ በተሳካ ሁኔታ ተጭኗል!',
+      alert_too_large: (max) => `⚠️ ፋይሉ በጣም ትልቅ ነው። ከፍተኛ የተፈቀደ መጠን ${max}ሜባ ነው።`,
+      alert_too_large_generic: (max) => `⚠️ ፋይሉ በጣም ትልቅ ነው። ከፍተኛ የተፈቀደ መጠን ${max}ሜባ ነው። እባክዎ ቪዲዮዎን ጨምቀው እንደገና ይሞክሩ።`,
+      alert_watched_locked: '💌 ይህ ስጦታ ቀድሞውኑ በተቀባዩ ታይቷል እና ከዚህ በኋላ ሊቀየር አይችልም።',
+      alert_limit_reached: (count) => `🚫 የመጫኛ ገደብ ደርሷል። ይህ ካርድ ${count} ጊዜ ጥቅም ላይ ውሏል።`,
+      alert_no_longer_available: '🚫 ለዚህ ካርድ መጫን ከዚህ በኋላ አይገኝም።',
+      alert_upload_failed: (err) => `መጫን አልተሳካም፦ ${err || 'የአገልጋይ ስህተት።'}`,
+      alert_upload_failed_status: (status) => `መጫን አልተሳካም። ሁኔታ: ${status}`,
+      alert_network_error: 'የግንኙነት ስህተት። እባክዎ ግንኙነትዎ የተረጋጋ መሆኑን ያረጋግጡ።'
+    }
+  };
+
+  let currentLang = localStorage.getItem('f27_lang') || 'en';
+
+  function applyTranslations() {
+    const dict = translations[currentLang];
+    document.querySelectorAll('[data-i18n]').forEach(el => {
+      const key = el.getAttribute('data-i18n');
+      const val = dict[key];
+      if (val === undefined || typeof val === 'function') return;
+      if (el.hasAttribute('data-i18n-html')) el.innerHTML = val;
+      else el.textContent = val;
+    });
+    document.querySelectorAll('[data-i18n-placeholder]').forEach(el => {
+      const key = el.getAttribute('data-i18n-placeholder');
+      const val = dict[key];
+      if (val !== undefined) el.placeholder = val;
+    });
+    document.documentElement.lang = currentLang;
+    document.body.classList.toggle('lang-am', currentLang === 'am');
+    document.getElementById('lang-en').classList.toggle('active', currentLang === 'en');
+    document.getElementById('lang-am').classList.toggle('active', currentLang === 'am');
+
+    // Re-render dynamically-generated content in the new language, if present
+    if (typeof renderLockedTexts === 'function') renderLockedTexts();
+    if (typeof lastUploadCount !== 'undefined' && lastUploadCount !== null) renderAttemptCounter(lastUploadCount);
+  }
+
+  function setLang(lang) {
+    currentLang = lang;
+    localStorage.setItem('f27_lang', lang);
+    applyTranslations();
+  }
+
+  document.addEventListener('DOMContentLoaded', applyTranslations);
+  // ---------- End language / i18n ----------
 
   // Shared state for whichever source (file picker or selfie recording) provides the video
   let uploadMode = 'file'; // 'file' | 'record'
@@ -424,11 +605,11 @@
   const badge = document.getElementById('status-badge');
 
   if (!giftId) {
-    badge.textContent = 'MISSING ID';
+    badge.textContent = translations[currentLang].missing_id_badge;
     badge.style.background = '#ffebee';
     badge.style.color = '#c62828';
     document.getElementById('checking-screen').style.display = 'none';
-    alert('Error: This link is missing a Card ID. Please scan the QR code again.');
+    alert(translations[currentLang].missing_id_alert);
   } else {
     badge.textContent = giftId.toUpperCase();
     checkCardStatus();
@@ -485,9 +666,12 @@
   function showAlreadyUsed() {
     document.getElementById('checking-screen').style.display = 'none';
     document.getElementById('already-used-screen').style.display = 'block';
-    document.getElementById('used-card-id').textContent = giftId;
-    document.getElementById('watch-redirect-btn').href = `index.html`;
+    lockedState = 'sealed';
+    renderLockedTexts();
   }
+
+  let lockedState = null; // null | 'sealed' | 'viewed' | 'limit'
+  let lastUploadCount = null;
 
   function showViewedLocked() {
     const screen = document.getElementById('already-used-screen');
@@ -495,14 +679,9 @@
     screen.style.background = '#e8f5e9';
     screen.style.borderColor = '#a5d6a7';
     document.getElementById('checking-screen').style.display = 'none';
-    document.getElementById('used-card-id').textContent = giftId;
     screen.querySelector('.lock-icon').textContent = '💌';
-    screen.querySelector('h2').textContent = 'This gift has been opened';
-    screen.querySelector('p').innerHTML =
-      `Card <strong>${giftId}</strong> has already been watched by the recipient.<br>
-       To keep the moment intact, the video can no longer be changed.`;
-    document.getElementById('watch-redirect-btn').href = `index.html`;
-    document.getElementById('watch-redirect-btn').textContent = '▶ Watch It Again';
+    lockedState = 'viewed';
+    renderLockedTexts();
   }
 
   function showLimitReached(uploadCount) {
@@ -512,19 +691,41 @@
     screen.style.display = 'block';
     screen.style.background = '#ffebee';
     screen.style.borderColor = '#ffcdd2';
-    document.getElementById('used-card-id').textContent = giftId;
-    screen.querySelector('h2').textContent = 'Upload limit reached';
-    screen.querySelector('p').innerHTML =
-      `Card <strong>${giftId}</strong> has used all ${MAX_UPLOADS} upload attempts.<br>
-       Please contact support if you need assistance.`;
-    document.getElementById('watch-redirect-btn').href = `index.html`;
-    document.getElementById('watch-redirect-btn').textContent = '▶ Watch the Gift';
+    lockedState = 'limit';
+    renderLockedTexts();
     // Also show the counter at 3/3
     renderAttemptCounter(uploadCount);
   }
 
+  // Re-renders the already-used-screen text for whichever locked state is active,
+  // in the current language. Called both when a state is first shown and on language switch.
+  function renderLockedTexts() {
+    if (!lockedState) return;
+    const dict = translations[currentLang];
+    const screen = document.getElementById('already-used-screen');
+    document.getElementById('used-card-id').textContent = giftId;
+    document.getElementById('watch-redirect-btn').href = `index.html`;
+
+    if (lockedState === 'sealed') {
+      screen.querySelector('h2').textContent = dict.sealed_title;
+      screen.querySelector('p').innerHTML = dict.sealed_desc;
+      document.getElementById('used-card-id').textContent = giftId;
+      document.getElementById('watch-redirect-btn').textContent = dict.watch_instead;
+    } else if (lockedState === 'viewed') {
+      screen.querySelector('h2').textContent = dict.opened_title;
+      screen.querySelector('p').innerHTML = dict.opened_desc(giftId);
+      document.getElementById('watch-redirect-btn').textContent = dict.watch_again_btn;
+    } else if (lockedState === 'limit') {
+      screen.querySelector('h2').textContent = dict.limit_title;
+      screen.querySelector('p').innerHTML = dict.limit_desc(giftId, MAX_UPLOADS);
+      document.getElementById('watch-redirect-btn').textContent = dict.watch_gift_btn;
+    }
+  }
+
   // Renders the dots + text counter below the form
   function renderAttemptCounter(uploadCount) {
+    lastUploadCount = uploadCount;
+    const dict = translations[currentLang];
     const counter = document.getElementById('attempt-counter');
     const remaining = MAX_UPLOADS - uploadCount;
 
@@ -543,13 +744,13 @@
 
     if (remaining <= 0) {
       cls = 'attempt-counter no-attempts';
-      msg = `<strong>No upload attempts remaining.</strong><br>This card has been used ${uploadCount} of ${MAX_UPLOADS} times.`;
+      msg = dict.no_attempts_left(uploadCount);
     } else if (remaining === 1) {
       cls = 'attempt-counter one-left';
-      msg = `⚠️ <strong>Last upload attempt!</strong> You have <strong>1 of ${MAX_UPLOADS}</strong> attempts left.<br>Once uploaded, this video cannot be changed again.`;
+      msg = dict.one_attempt_left;
     } else {
-      msg = `You have <strong>${remaining} of ${MAX_UPLOADS}</strong> upload attempts remaining.`;
-      if (uploadCount > 0) msg += `<br><small>You've already uploaded ${uploadCount} time${uploadCount > 1 ? 's' : ''}.</small>`;
+      msg = dict.attempts_remaining(remaining);
+      if (uploadCount > 0) msg += dict.already_uploaded(uploadCount);
     }
 
     counter.className = cls;
@@ -560,7 +761,8 @@
     const submitBtn = document.getElementById('submit-btn');
     if (submitBtn && remaining <= 0) {
       submitBtn.disabled = true;
-      submitBtn.textContent = '🚫 Upload Limit Reached';
+      submitBtn.textContent = dict.upload_limit_reached_btn;
+      submitBtn.removeAttribute('data-i18n');
     }
   }
 
@@ -597,7 +799,7 @@
           sizeErr.style.cssText = 'margin-top:10px;padding:12px 16px;background:#ffebee;border:1px solid #ffcdd2;border-radius:8px;color:#c62828;font-size:0.88rem;text-align:center;';
           dropzone.parentNode.insertBefore(sizeErr, dropzone.nextSibling);
         }
-        sizeErr.innerHTML = `⚠️ <strong>File too large (${sizeMB} MB).</strong><br>Maximum allowed size is <strong>${MAX_FILE_SIZE_MB} MB</strong>. Please compress your video and try again.`;
+        sizeErr.innerHTML = translations[currentLang].file_too_large_inline(sizeMB, MAX_FILE_SIZE_MB);
         sizeErr.style.display = 'block';
         return;
       }
@@ -608,7 +810,7 @@
       submitBtn.disabled = false;
 
       preview.textContent = file.name;
-      previewLabel.textContent = sizeMB + ' MB — scroll to review before uploading';
+      previewLabel.textContent = translations[currentLang].scroll_review(sizeMB);
 
       // Show video preview
       const objectUrl = URL.createObjectURL(file);
@@ -656,7 +858,7 @@
         audio: true
       });
     } catch (err) {
-      errBox.textContent = '⚠️ Could not access your camera/microphone. Please allow camera permission in your browser settings, or switch to "Upload a File" instead.';
+      errBox.textContent = translations[currentLang].camera_error;
       errBox.style.display = 'block';
       return;
     }
@@ -667,7 +869,7 @@
 
     document.getElementById('enable-camera-btn').style.display = 'none';
     document.getElementById('start-record-btn').style.display = 'inline-block';
-    document.getElementById('record-hint').textContent = 'When you\'re ready, tap "Start Recording" and say your message.';
+    document.getElementById('record-hint').textContent = translations[currentLang].record_hint_ready;
   }
 
   function pickSupportedMimeType() {
@@ -696,7 +898,7 @@
         : new MediaRecorder(cameraStream);
     } catch (err) {
       const errBox = document.getElementById('record-error');
-      errBox.textContent = '⚠️ Recording isn\'t supported in this browser. Please switch to "Upload a File" instead.';
+      errBox.textContent = translations[currentLang].recorder_unsupported;
       errBox.style.display = 'block';
       return;
     }
@@ -719,7 +921,7 @@
     document.getElementById('rec-indicator').classList.add('live');
     document.getElementById('start-record-btn').style.display = 'none';
     document.getElementById('stop-record-btn').style.display = 'inline-block';
-    document.getElementById('record-hint').textContent = 'Recording... tap "Stop" when you\'re done.';
+    document.getElementById('record-hint').textContent = translations[currentLang].record_hint_recording;
   }
 
   function updateRecordTimer() {
@@ -746,7 +948,7 @@
     const sizeMB = (selectedVideoFile.size / (1024 * 1024)).toFixed(1);
     if (selectedVideoFile.size > MAX_FILE_SIZE_MB * 1024 * 1024) {
       const errBox = document.getElementById('record-error');
-      errBox.innerHTML = `⚠️ <strong>Recording too large (${sizeMB} MB).</strong> Maximum allowed size is <strong>${MAX_FILE_SIZE_MB} MB</strong>. Try recording a shorter message.`;
+      errBox.innerHTML = translations[currentLang].recording_too_large(sizeMB, MAX_FILE_SIZE_MB);
       errBox.style.display = 'block';
       selectedVideoFile = null;
       document.getElementById('submit-btn').disabled = true;
@@ -767,8 +969,8 @@
     document.getElementById('record-timer').style.display = 'none';
     document.getElementById('retake-record-btn').style.display = 'inline-block';
     document.getElementById('record-hint').textContent = selectedVideoFile
-      ? `Recorded ${sizeMB} MB — scroll to review before uploading.`
-      : 'Please retake a shorter recording.';
+      ? translations[currentLang].record_hint_recorded(sizeMB)
+      : translations[currentLang].record_hint_retake;
   }
 
   function retakeRecording() {
@@ -803,11 +1005,12 @@
     const progressBar = document.getElementById('progress-bar');
     const progressText = document.getElementById('progress-text');
     const submitBtn = document.getElementById('submit-btn');
+    const dict = translations[currentLang];
 
     if (!selectedVideoFile) {
       alert(uploadMode === 'record'
-        ? 'Please record a selfie video first.'
-        : 'Please select a video file first.');
+        ? dict.alert_record_first
+        : dict.alert_select_first);
       return;
     }
 
@@ -819,7 +1022,7 @@
 
     progressContainer.style.display = 'block';
     submitBtn.disabled = true;
-    submitBtn.textContent = 'Uploading...';
+    submitBtn.textContent = dict.uploading_text;
 
     const xhr = new XMLHttpRequest();
 
@@ -827,13 +1030,14 @@
       if (e.lengthComputable) {
         const percent = Math.round((e.loaded / e.total) * 100);
         progressBar.style.width = percent + '%';
-        progressText.textContent = `Uploading: ${percent}%`;
+        progressText.textContent = translations[currentLang].uploading_pct(percent);
       }
     });
 
     xhr.open('POST', `${BACKEND_API_BASE}/api/upload`, true);
 
     xhr.onload = function () {
+      const dict = translations[currentLang];
       if (xhr.status === 200) {
         try {
           const res = JSON.parse(xhr.responseText);
@@ -841,20 +1045,20 @@
           const remaining = MAX_UPLOADS - newCount;
           renderAttemptCounter(newCount);
           if (remaining <= 0) {
-            alert('🎉 Your video gift has been successfully uploaded!\n\n⚠️ This was your final upload attempt. The video is now locked.');
+            alert(dict.alert_success_final);
           } else {
-            alert(`🎉 Your video gift has been successfully uploaded!\n\nYou have ${remaining} upload attempt${remaining !== 1 ? 's' : ''} remaining if you need to change it.`);
+            alert(dict.alert_success_remaining(remaining));
           }
         } catch(e) {
-          alert('🎉 Your video gift has been successfully uploaded!');
+          alert(dict.alert_success_generic);
         }
         window.location.href = 'index.html';
       } else if (xhr.status === 413) {
         try {
           const errRes = JSON.parse(xhr.responseText);
-          alert(`⚠️ ${errRes.error || `File too large. Maximum allowed size is ${MAX_FILE_SIZE_MB}MB.`}`);
+          alert(`⚠️ ${errRes.error || dict.alert_too_large(MAX_FILE_SIZE_MB)}`);
         } catch (e) {
-          alert(`⚠️ File too large. Maximum allowed size is ${MAX_FILE_SIZE_MB}MB. Please compress your video and try again.`);
+          alert(dict.alert_too_large_generic(MAX_FILE_SIZE_MB));
         }
         resetFormUI();
       } else if (xhr.status === 403) {
@@ -862,28 +1066,28 @@
           const errRes = JSON.parse(xhr.responseText);
           if (errRes.locked_reason === 'viewed') {
             showViewedLocked();
-            alert('💌 This gift has already been watched by the recipient and can no longer be changed.');
+            alert(dict.alert_watched_locked);
           } else {
             showLimitReached(errRes.upload_count || MAX_UPLOADS);
-            alert(`🚫 Upload limit reached. This card has already been used ${errRes.upload_count || MAX_UPLOADS} times.`);
+            alert(dict.alert_limit_reached(errRes.upload_count || MAX_UPLOADS));
           }
         } catch(e) {
-          alert('🚫 Upload is no longer available for this card.');
+          alert(dict.alert_no_longer_available);
         }
         resetFormUI();
       } else {
         try {
           const errRes = JSON.parse(xhr.responseText);
-          alert(`Upload Failed: ${errRes.error || 'Server error.'}`);
+          alert(dict.alert_upload_failed(errRes.error));
         } catch (e) {
-          alert(`Upload Failed. Status: ${xhr.status}`);
+          alert(dict.alert_upload_failed_status(xhr.status));
         }
         resetFormUI();
       }
     };
 
     xhr.onerror = function () {
-      alert('Network error. Please make sure your connection is stable.');
+      alert(translations[currentLang].alert_network_error);
       resetFormUI();
     };
 
@@ -893,7 +1097,7 @@
   function resetFormUI() {
     const submitBtn = document.getElementById('submit-btn');
     submitBtn.disabled = false;
-    submitBtn.textContent = 'Upload Video Gift';
+    submitBtn.textContent = translations[currentLang].upload_video_gift;
     document.getElementById('progress-container').style.display = 'none';
   }
 </script>
