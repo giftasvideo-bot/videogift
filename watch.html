@@ -3,9 +3,9 @@
 <head>
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Forever 27 | Your Gift Awaits</title>
+  <title>WordGift | Your Gift Awaits</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,700;1,400&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,700;1,400&family=DM+Sans:wght@300;400;500&family=Noto+Sans+Ethiopic:wght@400;500;700&display=swap" rel="stylesheet">
   <style>
     :root {
       --ink: #0d0d0d;
@@ -37,6 +37,7 @@
     }
     header { text-align: center; margin-bottom: 40px; }
     .logo { font-family: 'Playfair Display', serif; font-size: 1.5rem; font-weight: 700; letter-spacing: -0.5px; margin-bottom: 4px; }
+    .logo span { color: var(--gold); font-style: italic; }
     .tagline { font-size: 0.7rem; text-transform: uppercase; letter-spacing: 2px; color: var(--gold); }
 
     .state-panel { width: 100%; display: flex; flex-direction: column; align-items: center; text-align: center; }
@@ -145,28 +146,47 @@
       transition: width 0.2s;
       border-radius: 8px;
     }
+
+    /* Language Toggle */
+    .lang-toggle { position: fixed; top: 16px; right: 16px; z-index: 500; background: rgba(255,255,255,0.08); border: 1px solid var(--gold); border-radius: 20px; padding: 7px 8px; font-size: 0.78rem; cursor: pointer; color: #fff; box-shadow: 0 2px 8px rgba(0,0,0,0.3); font-family: 'DM Sans', sans-serif; display: flex; align-items: center; gap: 2px; backdrop-filter: blur(4px); }
+    .lang-toggle span { padding: 3px 9px; border-radius: 14px; transition: background 0.2s, color 0.2s; }
+    .lang-toggle span.active { background: var(--gold); color: #1a1226; }
+
+    /* Amharic font overrides (Playfair/DM Sans don't cover Ethiopic script) */
+    body.lang-am { font-family: 'Noto Sans Ethiopic', 'DM Sans', sans-serif; }
+    body.lang-am .logo,
+    body.lang-am .env-title,
+    body.lang-am .error-box h3,
+    body.lang-am .letter-text { font-family: 'Noto Sans Ethiopic', serif; }
+    body.lang-am .lang-toggle { font-family: 'Noto Sans Ethiopic', 'DM Sans', sans-serif; }
   </style>
 </head>
 <body>
+  <!-- Language Toggle -->
+  <div class="lang-toggle" id="lang-toggle">
+    <span id="lang-en" onclick="setLang('en')">EN</span>
+    <span id="lang-am" onclick="setLang('am')">አማ</span>
+  </div>
+
   <div class="app-wrap">
     <header>
-      <div class="logo">Forever 27</div>
-      <div class="tagline">Digital Keepsake</div>
+      <div class="logo">Word<span>Gift</span></div>
+      <div class="tagline" data-i18n="tagline">Digital Keepsake</div>
     </header>
 
     <!-- Loading -->
     <div id="loading-state" class="state-panel">
       <div class="spinner"></div>
-      <p class="status-msg">Connecting to media vault...</p>
+      <p class="status-msg" data-i18n="connecting">Connecting to media vault...</p>
     </div>
 
     <!-- Unwrap screen -->
     <div id="unwrap-screen" class="state-panel" style="display:none;">
       <div class="envelope-box">
         <div style="font-size:3rem;margin-bottom:20px;">🎁</div>
-        <h2 class="env-title" id="sender-headline">A gift awaits you</h2>
-        <p class="env-sub" id="sender-sub">Someone sent you a personalized video memory.</p>
-        <button class="ribbon-btn" onclick="revealGift()">✨ Unwrap Gift</button>
+        <h2 class="env-title" id="sender-headline" data-i18n="gift_awaits">A gift awaits you</h2>
+        <p class="env-sub" id="sender-sub" data-i18n="gift_awaits_sub">Someone sent you a personalized video memory.</p>
+        <button class="ribbon-btn" onclick="revealGift()" data-i18n="unwrap_btn">✨ Unwrap Gift</button>
       </div>
     </div>
 
@@ -183,10 +203,10 @@
         </div>
 
         <div class="action-row">
-          <button class="secondary-btn" id="download-btn" onclick="downloadVideo()">
+          <button class="secondary-btn" id="download-btn" onclick="downloadVideo()" data-i18n="save_video">
             ⬇ Save Video
           </button>
-          <a href="index.html" class="secondary-btn">🏠 Home</a>
+          <a href="index.html" class="secondary-btn" data-i18n="home_btn">🏠 Home</a>
         </div>
 
         <!-- Download progress bar -->
@@ -195,7 +215,7 @@
         </div>
 
         <!-- Mobile hint -->
-        <p class="download-hint" id="download-hint">
+        <p class="download-hint" id="download-hint" data-i18n="download_hint">
           Tap "Save Video" to download · On iPhone, long-press the video → Save to Photos
         </p>
       </div>
@@ -205,9 +225,9 @@
     <div id="not-found-state" class="state-panel" style="display:none;">
       <div class="error-box">
         <span class="error-icon" id="error-icon">⚠️</span>
-        <h3 id="error-title">Something went wrong</h3>
+        <h3 id="error-title" data-i18n="error_default_title">Something went wrong</h3>
         <p id="error-message"></p>
-        <button class="retry-btn" onclick="location.reload()">Try Again</button>
+        <button class="retry-btn" onclick="location.reload()" data-i18n="try_again">Try Again</button>
       </div>
     </div>
   </div>
@@ -217,11 +237,119 @@
     let giftId = '';
     let giftData = null;
 
+    // ---------- Language / i18n ----------
+    const translations = {
+      en: {
+        tagline: 'Digital Keepsake',
+        connecting: 'Connecting to media vault...',
+        gift_awaits: 'A gift awaits you',
+        gift_awaits_sub: 'Someone sent you a personalized video memory.',
+        unwrap_btn: '✨ Unwrap Gift',
+        save_video: '⬇ Save Video',
+        home_btn: '🏠 Home',
+        download_hint: 'Tap "Save Video" to download · On iPhone, long-press the video → Save to Photos',
+        error_default_title: 'Something went wrong',
+        try_again: 'Try Again',
+        sender_headline: (name) => `${name} has sent you a gift 💌`,
+        sender_sub_personalized: 'A personalized video memory made just for you.',
+        uploaded_prefix: 'Uploaded ',
+        invalid_link_title: 'Invalid Link',
+        invalid_link_msg: 'This link is missing a gift ID. Please scan the QR card again.',
+        waking_title: 'Server is waking up...',
+        waking_msg: 'The server is starting from sleep. Please wait 30 seconds and tap Try Again.',
+        connection_failed_title: 'Connection Failed',
+        connection_failed_msg: 'Could not reach the server. Check your internet connection and try again.',
+        downloading: '⏳ Downloading...',
+        saved: '✅ Saved!',
+        ios_hint: 'Opening video — long-press it then tap "Save to Photos" 📱',
+        fallback_hint: 'Video opened in new tab — long-press to save it 📱',
+        date_locale: 'en-US'
+      },
+      am: {
+        tagline: 'ዲጂታል መታሰቢያ',
+        connecting: 'ከመረጃ ማከማቻ ጋር በመገናኘት ላይ...',
+        gift_awaits: 'ስጦታ እየጠበቀዎት ነው',
+        gift_awaits_sub: 'አንድ ሰው ለእርስዎ የግል የቪዲዮ ትዝታ ልኮልዎታል።',
+        unwrap_btn: '✨ ስጦታውን ይክፈቱ',
+        save_video: '⬇ ቪዲዮ ያስቀምጡ',
+        home_btn: '🏠 መነሻ',
+        download_hint: 'ለማውረድ "ቪዲዮ ያስቀምጡ" የሚለውን ይጫኑ · በአይፎን ላይ ቪዲዮውን ተጭነው ይያዙ ← ወደ ፎቶዎች ያስቀምጡ',
+        error_default_title: 'የሆነ ችግር ተፈጥሯል',
+        try_again: 'እንደገና ይሞክሩ',
+        sender_headline: (name) => `${name} ስጦታ ልኮልዎታል 💌`,
+        sender_sub_personalized: 'ለእርስዎ ብቻ የተዘጋጀ የግል የቪዲዮ ትዝታ።',
+        uploaded_prefix: 'የተጫነው ',
+        invalid_link_title: 'ልክ ያልሆነ አገናኝ',
+        invalid_link_msg: 'ይህ አገናኝ የስጦታ መለያ የለውም። እባክዎ QR ካርዱን እንደገና ይቃኙ።',
+        waking_title: 'አገልጋይ በመንቃት ላይ...',
+        waking_msg: 'አገልጋዩ ከእንቅልፍ በመነሳት ላይ ነው። እባክዎ 30 ሰከንድ ይጠብቁና "እንደገና ይሞክሩ" ይጫኑ።',
+        connection_failed_title: 'ግንኙነት አልተሳካም',
+        connection_failed_msg: 'ወደ አገልጋይ መድረስ አልተቻለም። የኢንተርኔት ግንኙነትዎን በማረጋገጥ እንደገና ይሞክሩ።',
+        downloading: '⏳ በማውረድ ላይ...',
+        saved: '✅ ተቀምጧል!',
+        ios_hint: 'ቪዲዮ በመክፈት ላይ — ተጭነው ይያዙት ከዚያም "ወደ ፎቶዎች ያስቀምጡ" የሚለውን ይጫኑ 📱',
+        fallback_hint: 'ቪዲዮ በአዲስ ትር ተከፍቷል — ለማስቀመጥ ተጭነው ይያዙት 📱',
+        date_locale: 'am-ET'
+      }
+    };
+
+    let currentLang = localStorage.getItem('f27_lang') || 'en';
+
+    function applyTranslations() {
+      const dict = translations[currentLang];
+      document.querySelectorAll('[data-i18n]').forEach(el => {
+        const key = el.getAttribute('data-i18n');
+        const val = dict[key];
+        if (val === undefined || typeof val === 'function') return;
+        el.textContent = val;
+      });
+      document.documentElement.lang = currentLang;
+      document.body.classList.toggle('lang-am', currentLang === 'am');
+      document.getElementById('lang-en').classList.toggle('active', currentLang === 'en');
+      document.getElementById('lang-am').classList.toggle('active', currentLang === 'am');
+
+      // Re-render any dynamically-set text in the new language
+      refreshDynamicText();
+    }
+
+    function setLang(lang) {
+      currentLang = lang;
+      localStorage.setItem('f27_lang', lang);
+      applyTranslations();
+    }
+
+    // Tracks state so language switches can re-render dynamic (JS-set) content correctly
+    let dynamicState = { errorKey: null, senderName: null, giftRevealed: false, createdAt: null };
+
+    function refreshDynamicText() {
+      const dict = translations[currentLang];
+
+      if (dynamicState.errorKey) {
+        document.getElementById('error-title').textContent = dict[dynamicState.errorKey + '_title'];
+        document.getElementById('error-message').textContent = dict[dynamicState.errorKey + '_msg'];
+      }
+
+      if (dynamicState.senderName) {
+        document.getElementById('sender-headline').textContent = dict.sender_headline(dynamicState.senderName);
+        document.getElementById('sender-sub').textContent = dict.sender_sub_personalized;
+      }
+
+      if (dynamicState.giftRevealed && dynamicState.createdAt) {
+        document.getElementById('gift-sent-at').textContent =
+          dict.uploaded_prefix + new Date(dynamicState.createdAt).toLocaleDateString(dict.date_locale, {
+            year: 'numeric', month: 'long', day: 'numeric'
+          });
+      }
+    }
+
+    document.addEventListener('DOMContentLoaded', applyTranslations);
+    // ---------- End language / i18n ----------
+
     document.addEventListener("DOMContentLoaded", () => {
       const urlParams = new URLSearchParams(window.location.search);
       giftId = urlParams.get('id');
       if (!giftId) {
-        showError('⚠️', 'Invalid Link', 'This link is missing a gift ID. Please scan the QR card again.');
+        showError('invalid_link', '⚠️');
         return;
       }
       fetchGiftDetails();
@@ -258,8 +386,10 @@
         // Show sender name if available
         const senderName = (giftData.gifter_name || '').trim();
         if (senderName) {
-          document.getElementById('sender-headline').textContent = senderName + ' has sent you a gift 💌';
-          document.getElementById('sender-sub').textContent = 'A personalized video memory made just for you.';
+          dynamicState.senderName = senderName;
+          const dict = translations[currentLang];
+          document.getElementById('sender-headline').textContent = dict.sender_headline(senderName);
+          document.getElementById('sender-sub').textContent = dict.sender_sub_personalized;
         }
 
         document.getElementById('unwrap-screen').style.display = 'flex';
@@ -268,9 +398,9 @@
       } catch (error) {
         clearTimeout(timeout);
         if (error.name === 'AbortError') {
-          showError('🕐', 'Server is waking up...', 'The server is starting from sleep. Please wait 30 seconds and tap Try Again.');
+          showError('waking', '🕐');
         } else {
-          showError('📡', 'Connection Failed', 'Could not reach the server. Check your internet connection and try again.');
+          showError('connection_failed', '📡');
         }
       }
     }
@@ -287,9 +417,12 @@
       video.play().catch(() => {});
 
       if (giftData.message && giftData.message.trim() !== '') {
+        dynamicState.giftRevealed = true;
+        dynamicState.createdAt = createdAt;
+        const dict = translations[currentLang];
         document.getElementById('gift-message-text').textContent = giftData.message;
         document.getElementById('gift-sent-at').textContent =
-          'Uploaded ' + new Date(createdAt).toLocaleDateString('en-US', {
+          dict.uploaded_prefix + new Date(createdAt).toLocaleDateString(dict.date_locale, {
             year: 'numeric', month: 'long', day: 'numeric'
           });
         document.getElementById('gift-note').style.display = 'block';
@@ -309,14 +442,14 @@
       // Detect iOS — blob download doesn't work on iOS Safari, open in new tab instead
       const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
       if (isIOS) {
-        hint.textContent = 'Opening video — long-press it then tap "Save to Photos" 📱';
+        hint.textContent = translations[currentLang].ios_hint;
         hint.style.color = 'rgba(201,147,58,0.8)';
         window.open(videoUrl, '_blank');
         return;
       }
 
       try {
-        btn.textContent = '⏳ Downloading...';
+        btn.textContent = translations[currentLang].downloading;
         btn.disabled = true;
         progressWrap.style.display = 'block';
         progressBar.style.width = '0%';
@@ -354,7 +487,7 @@
 
         const a = document.createElement('a');
         a.href = blobUrl;
-        a.download = `forever27-gift-${giftId}.mp4`;
+        a.download = `wordgift-${giftId}.mp4`;
         document.body.appendChild(a);
         a.click();
         document.body.removeChild(a);
@@ -365,9 +498,9 @@
           progressBar.style.width = '0%';
         }, 3000);
 
-        btn.textContent = '✅ Saved!';
+        btn.textContent = translations[currentLang].saved;
         setTimeout(() => {
-          btn.textContent = '⬇ Save Video';
+          btn.textContent = translations[currentLang].save_video;
           btn.disabled = false;
         }, 3000);
 
@@ -375,21 +508,23 @@
         console.error('Download failed, opening in new tab:', err);
         // Fallback: open in new tab
         window.open(videoUrl, '_blank');
-        hint.textContent = 'Video opened in new tab — long-press to save it 📱';
+        hint.textContent = translations[currentLang].fallback_hint;
         hint.style.color = 'rgba(201,147,58,0.8)';
-        btn.textContent = '⬇ Save Video';
+        btn.textContent = translations[currentLang].save_video;
         btn.disabled = false;
         progressWrap.style.display = 'none';
       }
     }
 
-    function showError(icon, title, message) {
+    function showError(errorKey, icon) {
+      dynamicState.errorKey = errorKey;
+      const dict = translations[currentLang];
       document.getElementById('loading-state').style.display = 'none';
       document.getElementById('unwrap-screen').style.display = 'none';
       document.getElementById('gift-state').style.display = 'none';
       document.getElementById('error-icon').textContent = icon;
-      document.getElementById('error-title').textContent = title;
-      document.getElementById('error-message').textContent = message;
+      document.getElementById('error-title').textContent = dict[errorKey + '_title'];
+      document.getElementById('error-message').textContent = dict[errorKey + '_msg'];
       document.getElementById('not-found-state').style.display = 'flex';
     }
 
