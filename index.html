@@ -66,6 +66,13 @@
     .lightbox-content img { width: 100%; height: 100%; object-fit: contain; }
     .lightbox-caption { position: fixed; bottom: 24px; left: 0; right: 0; text-align: center; color: #fff; font-family: 'Playfair Display', serif; font-size: 1.1rem; letter-spacing: 0.5px; text-shadow: 0 2px 8px rgba(0,0,0,0.6); }
     .lightbox-close { position: fixed; top: 16px; right: 16px; background: rgba(255,255,255,0.15); border: none; width: 40px; height: 40px; border-radius: 50%; font-size: 1.2rem; cursor: pointer; color: #fff; backdrop-filter: blur(4px); }
+    .lightbox-nav { position: fixed; top: 50%; transform: translateY(-50%); background: rgba(255,255,255,0.15); border: none; width: 48px; height: 48px; border-radius: 50%; font-size: 1.6rem; line-height: 1; cursor: pointer; color: #fff; backdrop-filter: blur(4px); display: flex; align-items: center; justify-content: center; }
+    .lightbox-nav:hover { background: rgba(255,255,255,0.28); }
+    .lightbox-prev { left: 16px; }
+    .lightbox-next { right: 16px; }
+    .lightbox-dots { position: fixed; bottom: 60px; left: 0; right: 0; display: flex; justify-content: center; gap: 8px; }
+    .lightbox-dot { width: 8px; height: 8px; border-radius: 50%; background: rgba(255,255,255,0.35); cursor: pointer; transition: background 0.2s, transform 0.2s; }
+    .lightbox-dot.active { background: var(--gold-light); transform: scale(1.25); }
 
     .cta-btn { width: 100%; padding: 16px 24px; background: var(--ink); color: #fff; border: none; border-radius: 12px; font-size: 1rem; font-family: 'DM Sans', sans-serif; cursor: pointer; transition: background 0.2s; font-weight: 500; }
     .cta-btn:hover { background: #2a2a2a; }
@@ -169,19 +176,19 @@
 
       <div class="postcard-grid">
         <div class="postcard-item">
-          <img src="birthday.jpg" width="124" height="137" onclick="openLightbox('birthday.jpg','Birthday')">
+          <img src="birthday.jpg" width="124" height="137" onclick="openLightbox(['birthday.jpg'],'Birthday')">
           <div class="postcard-title" data-i18n="postcard_birthday">Birthday</div>
         </div>
         <div class="postcard-item">
-          <img src="graduation1.jpg" width="124" height="137" onclick="openLightbox('graduation1.jpg','Graduation')">
+          <img src="graduation1.jpg" width="124" height="137" onclick="openLightbox(['graduation1.jpg'],'Graduation')">
           <div class="postcard-title" data-i18n="postcard_graduation">Graduation</div>
         </div>
         <div class="postcard-item">
-          <img src="wedding.jpg" width="124" height="137" onclick="openLightbox('wedding.jpg','Wedding')">
+          <img src="wedding.jpg" width="124" height="137" onclick="openLightbox(['wedding.jpg','wedding-back.jpg'],'Wedding')">
           <div class="postcard-title" data-i18n="postcard_wedding">Wedding</div>
         </div>
         <div class="postcard-item">
-          <img src="marry christmas.jpg" width="124" height="137" onclick="openLightbox('marry christmas.jpg','Holiday')">
+          <img src="marry christmas.jpg" width="124" height="137" onclick="openLightbox(['marry christmas.jpg'],'Holiday')">
           <div class="postcard-title" data-i18n="postcard_holiday">Holiday</div>
         </div>
       </div>
@@ -269,8 +276,11 @@
   <div class="lightbox-overlay" id="lightbox-overlay" onclick="if(event.target===this) closeLightbox()">
     <div class="lightbox-content">
       <button class="lightbox-close" onclick="closeLightbox()">✕</button>
+      <button class="lightbox-nav lightbox-prev" id="lightbox-prev" onclick="lightboxPrev()">‹</button>
       <img id="lightbox-img" src="" alt="">
+      <button class="lightbox-nav lightbox-next" id="lightbox-next" onclick="lightboxNext()">›</button>
       <div class="lightbox-caption" id="lightbox-caption"></div>
+      <div class="lightbox-dots" id="lightbox-dots"></div>
     </div>
   </div>
 
@@ -335,6 +345,8 @@
         postcard_graduation: 'Graduation',
         postcard_wedding: 'Wedding',
         postcard_holiday: 'Holiday',
+        lightbox_front: 'Front',
+        lightbox_back: 'Back',
         send_title: '🚀 How to Send',
         send_step1: '<strong>Get your card ready.</strong> Every physical Forever 27 card (QR sticker or postcard) has its own unique QR code — this is the permanent link between your video and that one specific card, so make sure you\'re using the right card for the right person.',
         send_step2: '<strong>Open the upload page.</strong> Scan the card\'s QR code with your phone\'s camera, or manually enter the card\'s code (format <code>NNNNNN-AAAA</code>, e.g. <code>000003-ZEAH</code>). Either way brings you to the upload form for that card.',
@@ -359,6 +371,7 @@
         msg_checking: '🔍 Checking gift code...',
         msg_not_found: (id) => `❌ Gift code <strong>${id}</strong> was not found. Please check the code and try again.`,
         msg_server_error: '⚠️ Server error. Please try again in a moment.',
+
         msg_found_opening: '🎁 Gift found! Opening your video...',
         msg_found_redirect: '✅ Card found! Redirecting to upload...',
         msg_connection_error: '📡 Could not reach server. Please check your connection and try again.'
@@ -382,6 +395,8 @@
         postcard_graduation: 'ምረቃ',
         postcard_wedding: 'ሰርግ',
         postcard_holiday: 'ልዩ ልዩ በዓላት',
+        lightbox_front: 'ፊት',
+        lightbox_back: 'ጀርባ',
         send_title: '🚀 እንዴት እንደሚላክ',
         send_step1: '<strong>ካርድዎን ያዘጋጁ።</strong> እያንዳንዱ አካላዊ Forever 27 ካርድ (የQR ስቲከር ወይም ፖስት ካርድ) የራሱ የሆነ ልዩ QR ኮድ አለው — ይህ ቪዲዮዎን ከዚያ ልዩ ካርድ ጋር በቋሚነት የሚያገናኝ ነው፣ ስለዚህ ለሚሰጡት ሰው ትክክለኛውን ካርድ እየተጠቀሙ መሆኑን ያረጋግጡ።',
         send_step2: '<strong>የመጫኛ ገጹን ይክፈቱ።</strong> የካርዱን QR ኮድ በስልክዎ ካሜራ ይቃኙ፣ ወይም የካርዱን ኮድ በእጅ ያስገቡ (ቅርጸት <code>NNNNNN-AAAA</code>፣ ለምሳሌ <code>000003-ZEAH</code>)። በሁለቱም መንገድ ለዚያ ካርድ ወደ መጫኛ ቅጹ ይመራዎታል።',
@@ -434,6 +449,7 @@
       currentLang = lang;
       localStorage.setItem('f27_lang', lang);
       applyTranslations();
+      if (document.getElementById('lightbox-overlay').classList.contains('open')) renderLightbox();
     }
 
     document.addEventListener('DOMContentLoaded', applyTranslations);
@@ -466,11 +482,51 @@
       el.value = formatted;
     }
 
-    function openLightbox(src, title) {
-      document.getElementById('lightbox-img').src = src;
-      document.getElementById('lightbox-img').alt = title;
-      document.getElementById('lightbox-caption').textContent = title;
+    let lbImages = [];
+    let lbIndex = 0;
+    let lbTitle = '';
+
+    function openLightbox(images, title) {
+      lbImages = Array.isArray(images) ? images : [images];
+      lbIndex = 0;
+      lbTitle = title;
+      renderLightbox();
       document.getElementById('lightbox-overlay').classList.add('open');
+    }
+
+    function renderLightbox() {
+      const dict = translations[currentLang];
+      const multi = lbImages.length > 1;
+      const img = document.getElementById('lightbox-img');
+      img.src = lbImages[lbIndex];
+      img.alt = lbTitle;
+
+      const sideLabel = lbIndex === 0 ? dict.lightbox_front : dict.lightbox_back;
+      document.getElementById('lightbox-caption').textContent = multi ? `${lbTitle} — ${sideLabel}` : lbTitle;
+
+      document.getElementById('lightbox-prev').style.display = multi ? 'flex' : 'none';
+      document.getElementById('lightbox-next').style.display = multi ? 'flex' : 'none';
+
+      const dotsWrap = document.getElementById('lightbox-dots');
+      dotsWrap.innerHTML = '';
+      if (multi) {
+        lbImages.forEach((_, i) => {
+          const dot = document.createElement('div');
+          dot.className = 'lightbox-dot' + (i === lbIndex ? ' active' : '');
+          dot.onclick = () => { lbIndex = i; renderLightbox(); };
+          dotsWrap.appendChild(dot);
+        });
+      }
+    }
+
+    function lightboxNext() {
+      lbIndex = (lbIndex + 1) % lbImages.length;
+      renderLightbox();
+    }
+
+    function lightboxPrev() {
+      lbIndex = (lbIndex - 1 + lbImages.length) % lbImages.length;
+      renderLightbox();
     }
 
     function closeLightbox() {
@@ -478,7 +534,10 @@
     }
 
     document.addEventListener('keydown', function(e) {
+      if (!document.getElementById('lightbox-overlay').classList.contains('open')) return;
       if (e.key === 'Escape') closeLightbox();
+      if (e.key === 'ArrowRight') lightboxNext();
+      if (e.key === 'ArrowLeft') lightboxPrev();
     });
 
     function openModal() {
