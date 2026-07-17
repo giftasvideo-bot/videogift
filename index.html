@@ -193,9 +193,7 @@
       <ol class="steps-list">
         <li data-step="1">
           <div class="step-content">
-            <div align="justify" data-i18n="send_step1" data-i18n-html="1"><strong>Initialize Token Identification</strong>
-            Scan the structural printed QR code with your camera or enter its alphanumeric index identifier key into the manual interface option block.
-            </div>
+            <div align="justify" data-i18n="send_step1" data-i18n-html="1"><strong>Get your card ready.</strong> Every physical Forever 27 card (QR sticker or postcard) has its own unique QR code — this is the permanent link between your video and that one specific card, so make sure you're using the right card for the right person.</div>
             <div class="img-placeholder">
               <div align="justify"><img src="manual.png" width="146" height="127" alt="Manual Illustration"></div>
             </div>
@@ -203,23 +201,37 @@
         </li>
         <li data-step="2">
           <div class="step-content">
-            <div align="justify" data-i18n="send_step2" data-i18n-html="1"><strong>Attach Metadata &amp; Video Media</strong>
-            Provide an optional signature sender identity reference label, append an optional text statement, choose your target source media clip, and select the transmission submission link button. *Note: Data blocks finalize permanently directly post-submission.*
-            </div>
+            <div align="justify" data-i18n="send_step2" data-i18n-html="1"><strong>Open the upload page.</strong> Scan the card's QR code with your phone's camera, or manually enter the card's code (format <code>NNNNNN-AAAA</code>, e.g. <code>000003-ZEAH</code>). Either way brings you to the upload form for that card.</div>
           </div>
         </li>
         <li data-step="3">
           <div class="step-content">
-            <div align="justify" data-i18n="send_step3" data-i18n-html="1"><strong>Confirm Complete Status</strong>
-            A valid success notification panel layout text readout stating *“🎉 Your video gift has been successfully uploaded!”* confirms server-side persistence storage initialization.
-            </div>
+            <div align="justify" data-i18n="send_step3" data-i18n-html="1"><strong>Add your name and message — both optional.</strong> Your name (e.g. "Mum," "The Johnson Family") lets the recipient know who it's from, and a short written message can go alongside your video.</div>
           </div>
         </li>
         <li data-step="4">
           <div class="step-content">
-            <div align="justify" data-i18n="send_step4" data-i18n-html="1"><strong>Hand Over Presentation</strong>
-            Deliver your material item directly to your specific recipient or share the physical print card details forward electronically.
-            </div>
+            <div align="justify" data-i18n="send_step4" data-i18n-html="1"><strong>Choose how to add your video.</strong> Pick "📁 Upload a File" if you already have a video saved, or "🤳 Record a Selfie Video" to record right there in the browser.</div>
+          </div>
+        </li>
+        <li data-step="5">
+          <div class="step-content">
+            <div align="justify" data-i18n="send_step5" data-i18n-html="1"><strong>Add the video.</strong> For a file: choose it from your device. For a selfie recording: enable the camera, start recording, then stop when done — retake any time before you're happy with it.</div>
+          </div>
+        </li>
+        <li data-step="6">
+          <div class="step-content">
+            <div align="justify" data-i18n="send_step6" data-i18n-html="1"><strong>Review it.</strong> A video preview lets you watch it back and confirm it's the one you want — this is your last check before sending.</div>
+          </div>
+        </li>
+        <li data-step="7">
+          <div class="step-content">
+            <div align="justify" data-i18n="send_step7" data-i18n-html="1"><strong>Tap "Upload Video Gift."</strong> A progress bar shows the upload in real time, and a success message confirms it worked — plus how many upload attempts remain, since each card allows up to 3 attempts in case something goes wrong.</div>
+          </div>
+        </li>
+        <li data-step="8">
+          <div class="step-content">
+            <div align="justify" data-i18n="send_step8" data-i18n-html="1"><strong>Hand over the card.</strong> The physical card is now the key. Once your recipient opens and watches it, the gift is sealed and the video can no longer be replaced — so make sure step 6 is the version you're happy with.</div>
           </div>
         </li>
       </ol>
@@ -324,10 +336,14 @@
         postcard_wedding: 'Wedding',
         postcard_holiday: 'Holiday',
         send_title: '🚀 How to Send',
-        send_step1: '<strong>Initialize Token Identification</strong>Scan the structural printed QR code with your camera or enter its alphanumeric index identifier key into the manual interface option block.',
-        send_step2: '<strong>Attach Metadata &amp; Video Media</strong>Provide an optional signature sender identity reference label, append an optional text statement, choose your target source media clip, and select the transmission submission link button. *Note: Data blocks finalize permanently directly post-submission.*',
-        send_step3: '<strong>Confirm Complete Status</strong>A valid success notification panel layout text readout stating *“🎉 Your video gift has been successfully uploaded!”* confirms server-side persistence storage initialization.',
-        send_step4: '<strong>Hand Over Presentation</strong>Deliver your material item directly to your specific recipient or share the physical print card details forward electronically.',
+        send_step1: '<strong>Get your card ready.</strong> Every physical Forever 27 card (QR sticker or postcard) has its own unique QR code — this is the permanent link between your video and that one specific card, so make sure you\'re using the right card for the right person.',
+        send_step2: '<strong>Open the upload page.</strong> Scan the card\'s QR code with your phone\'s camera, or manually enter the card\'s code (format <code>NNNNNN-AAAA</code>, e.g. <code>000003-ZEAH</code>). Either way brings you to the upload form for that card.',
+        send_step3: '<strong>Add your name and message — both optional.</strong> Your name (e.g. "Mum," "The Johnson Family") lets the recipient know who it\'s from, and a short written message can go alongside your video.',
+        send_step4: '<strong>Choose how to add your video.</strong> Pick "📁 Upload a File" if you already have a video saved, or "🤳 Record a Selfie Video" to record right there in the browser.',
+        send_step5: '<strong>Add the video.</strong> For a file: choose it from your device. For a selfie recording: enable the camera, start recording, then stop when done — retake any time before you\'re happy with it.',
+        send_step6: '<strong>Review it.</strong> A video preview lets you watch it back and confirm it\'s the one you want — this is your last check before sending.',
+        send_step7: '<strong>Tap "Upload Video Gift."</strong> A progress bar shows the upload in real time, and a success message confirms it worked — plus how many upload attempts remain, since each card allows up to 3 attempts in case something goes wrong.',
+        send_step8: '<strong>Hand over the card.</strong> The physical card is now the key. Once your recipient opens and watches it, the gift is sealed and the video can no longer be replaced — so make sure step 6 is the version you\'re happy with.',
         receive_title: '🎁 How to Receive',
         receive_step1: '<strong>Identify Visual Identifier</strong>Examine the received physical piece context elements, look up the tag, and initiate standard capture via mobile reader or pass parameters via the home field submission input.',
         receive_step2: '<strong>Automatic Media Playback</strong>The underlying validation pipeline resolves the target data context dynamically and directly surfaces the integrated personal video sequence automatically!',
@@ -367,10 +383,14 @@
         postcard_wedding: 'ሰርግ',
         postcard_holiday: 'ልዩ ልዩ በዓላት',
         send_title: '🚀 እንዴት እንደሚላክ',
-        send_step1: '<strong>የቶከን መለያ ጅምር</strong>የተዋቀረውን የታተመ QR ኮድ በካሜራዎ ይቃኙ ወይም የፊደላት እና ቁጥር መለያ ቁልፉን በእጅ ግቤት አማራጭ ውስጥ ያስገቡ።',
-        send_step2: '<strong>ተጨማሪ መረጃ እና ቪዲዮ ያያይዙ</strong>አማራጭ የላኪ ስም መለያ ምልክት ያቅርቡ፣ አማራጭ የጽሁፍ መልእክት ያክሉ፣ የሚፈልጉትን የቪዲዮ ክሊፕ ይምረጡ፣ እና የመላኪያ አገናኝ አዝራሩን ይጫኑ። *ማስታወሻ፦ የመረጃ ብሎኮች ከቀረቡ በኋላ በቋሚነት ይጠናቀቃሉ።*',
-        send_step3: '<strong>የተጠናቀቀ ሁኔታን ያረጋግጡ</strong>“🎉 የቪዲዮ ስጦታዎ በተሳካ ሁኔታ ተጭኗል!” የሚል ትክክለኛ የስኬት ማሳወቂያ ጽሁፍ በአገልጋይ በኩል የመረጃ ማከማቻ ማስጀመሩን ያረጋግጣል።',
-        send_step4: '<strong>እጅ ላይ ማስረከብ</strong>እቃዎን በቀጥታ ለተቀባዩ ያድርሱ ወይም የታተመውን ካርድ ዝርዝሮች በኤሌክትሮኒክ መንገድ ያጋሩ።',
+        send_step1: '<strong>ካርድዎን ያዘጋጁ።</strong> እያንዳንዱ አካላዊ Forever 27 ካርድ (የQR ስቲከር ወይም ፖስት ካርድ) የራሱ የሆነ ልዩ QR ኮድ አለው — ይህ ቪዲዮዎን ከዚያ ልዩ ካርድ ጋር በቋሚነት የሚያገናኝ ነው፣ ስለዚህ ለሚሰጡት ሰው ትክክለኛውን ካርድ እየተጠቀሙ መሆኑን ያረጋግጡ።',
+        send_step2: '<strong>የመጫኛ ገጹን ይክፈቱ።</strong> የካርዱን QR ኮድ በስልክዎ ካሜራ ይቃኙ፣ ወይም የካርዱን ኮድ በእጅ ያስገቡ (ቅርጸት <code>NNNNNN-AAAA</code>፣ ለምሳሌ <code>000003-ZEAH</code>)። በሁለቱም መንገድ ለዚያ ካርድ ወደ መጫኛ ቅጹ ይመራዎታል።',
+        send_step3: '<strong>ስምዎን እና መልእክትዎን ያክሉ — ሁለቱም አማራጭ ናቸው።</strong> ስምዎ (ለምሳሌ "እማማ"፣ "የአቶ በላይ ቤተሰብ") ተቀባዩ ከማን እንደመጣ እንዲያውቅ ያደርጋል፣ እና አጭር የጽሁፍ መልእክት ከቪዲዮዎ ጋር ሊታከል ይችላል።',
+        send_step4: '<strong>ቪዲዮዎን እንዴት እንደሚያክሉ ይምረጡ።</strong> አስቀድመው የተቀመጠ ቪዲዮ ካልዎት "📁 ፋይል ይጫኑ" ይምረጡ፣ ወይም እዚያው በአሳሽ ውስጥ ለመቅረጽ "🤳 የሴልፊ ቪዲዮ ይቅረጹ" ይምረጡ።',
+        send_step5: '<strong>ቪዲዮውን ያክሉ።</strong> ለፋይል፦ ከመሳሪያዎ ይምረጡ። ለሴልፊ ቀረጻ፦ ካሜራውን ያብሩ፣ መቅረጽ ይጀምሩ፣ ሲጨርሱ ያቁሙ — ከመርካትዎ በፊት በማንኛውም ጊዜ እንደገና ይቅረጹ።',
+        send_step6: '<strong>ይገምግሙት።</strong> መልሰው ተመልክተው ትክክለኛው መሆኑን ማረጋገጥ እንዲችሉ የቪዲዮ ቅድመ-እይታ ይታይዎታል — ይህ ከመላክዎ በፊት የመጨረሻው ማረጋገጫዎ ነው።',
+        send_step7: '<strong>"የቪዲዮ ስጦታ ይጫኑ" የሚለውን ይጫኑ።</strong> የመጫኛ አመልካች ባር በቀጥታ መጫኛውን ያሳያል፣ እና የስኬት መልእክት መጫኑ የተሳካ መሆኑን ያረጋግጣል — እንዲሁም ስንት የመጫኛ ሙከራዎች እንደቀሩዎት፣ ምክንያቱም እያንዳንዱ ካርድ ችግር ቢያጋጥም እንደገና ለመሞከር እስከ 3 ሙከራዎች ይፈቅዳል።',
+        send_step8: '<strong>ካርዱን ያስረክቡ።</strong> አካላዊ ካርዱ አሁን ቁልፉ ነው። ተቀባዩ ከከፈተውና ከተመለከተው በኋላ ስጦታው ይታሸጋል፣ ቪዲዮውም ከዚያ በኋላ ሊቀየር አይችልም — ስለዚህ በእርምጃ 6 ላይ የገመገሙት ስሪት እርስዎ የሚፈልጉት መሆኑን ያረጋግጡ።',
         receive_title: '🎁 እንዴት እንደሚቀበሉ',
         receive_step1: '<strong>የእይታ መለያን ይለዩ</strong>የተቀበሉትን አካላዊ እቃ ገፅታዎች ይመልከቱ፣ መለያውን ያግኙ፣ እና በሞባይል አንባቢ በኩል መደበኛ ቅኝት ይጀምሩ ወይም መለኪያዎችን በመነሻ ገፅ ግቤት ውስጥ ያስገቡ።',
         receive_step2: '<strong>ራስ-ሰር የቪዲዮ ማጫወት</strong>የመሰረታዊ ማረጋገጫ ስርዓቱ የታለመውን መረጃ በራስ-ሰር ይፈታል እና የተካተተውን የግል ቪዲዮ በራስ-ሰር በቀጥታ ያሳያል!',
