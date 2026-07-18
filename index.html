@@ -30,7 +30,11 @@
     .logo-sub { font-size: 0.8rem; text-transform: uppercase; letter-spacing: 3px; color: var(--gold); margin-bottom: 30px; }
     
     /* Content Card Blocks */
-    html { scroll-behavior: smooth; }
+    html { scroll-behavior: smooth; scrollbar-color: #2a2a2a var(--paper); }
+    ::-webkit-scrollbar { width: 12px; height: 12px; }
+    ::-webkit-scrollbar-track { background: var(--paper); }
+    ::-webkit-scrollbar-thumb { background: #2a2a2a; border-radius: 20px; border: 2px solid var(--paper); }
+    ::-webkit-scrollbar-thumb:hover { background: #000; }
     .content-card { scroll-margin-top: 76px; background: #fff; border: 1px solid var(--cream); border-radius: 20px; padding: 30px 24px; text-align: left; }
     .anchor-nav { display: flex; gap: 8px; overflow-x: auto; -ms-overflow-style: none; scrollbar-width: none; padding: 4px 2px; margin-top: 18px; }
     .anchor-nav::-webkit-scrollbar { display: none; }
@@ -66,6 +70,8 @@
     .lightbox-content img { width: 100%; height: 100%; object-fit: contain; }
     .lightbox-caption { position: fixed; bottom: 24px; left: 0; right: 0; text-align: center; color: #fff; font-family: 'Playfair Display', serif; font-size: 1.1rem; letter-spacing: 0.5px; text-shadow: 0 2px 8px rgba(0,0,0,0.6); }
     .lightbox-close { position: fixed; top: 16px; right: 16px; background: rgba(255,255,255,0.15); border: none; width: 40px; height: 40px; border-radius: 50%; font-size: 1.2rem; cursor: pointer; color: #fff; backdrop-filter: blur(4px); }
+    .lightbox-home { position: fixed; top: 16px; left: 16px; display: flex; align-items: center; gap: 8px; background: rgba(255,255,255,0.15); border: none; height: 40px; padding: 0 16px; border-radius: 20px; font-size: 0.85rem; font-family: 'DM Sans', sans-serif; font-weight: 500; cursor: pointer; color: #fff; backdrop-filter: blur(4px); }
+    .lightbox-home:hover { background: rgba(255,255,255,0.28); }
     .lightbox-nav { position: fixed; top: 50%; transform: translateY(-50%); background: rgba(255,255,255,0.15); border: none; width: 48px; height: 48px; border-radius: 50%; font-size: 1.6rem; line-height: 1; cursor: pointer; color: #fff; backdrop-filter: blur(4px); display: flex; align-items: center; justify-content: center; }
     .lightbox-nav:hover { background: rgba(255,255,255,0.28); }
     .lightbox-prev { left: 16px; }
@@ -275,6 +281,7 @@
   <!-- Postcard Lightbox -->
   <div class="lightbox-overlay" id="lightbox-overlay" onclick="if(event.target===this) closeLightbox()">
     <div class="lightbox-content">
+      <button class="lightbox-home" onclick="goHomeFromLightbox()">🏠 <span data-i18n="lightbox_home">Home</span></button>
       <button class="lightbox-close" onclick="closeLightbox()">✕</button>
       <button class="lightbox-nav lightbox-prev" id="lightbox-prev" onclick="lightboxPrev()">‹</button>
       <img id="lightbox-img" src="" alt="">
@@ -347,6 +354,7 @@
         postcard_holiday: 'Holiday',
         lightbox_front: 'Front',
         lightbox_back: 'Back',
+        lightbox_home: 'Home',
         send_title: '🚀 How to Send',
         send_step1: '<strong>Get your card ready.</strong> Every physical Forever 27 card (QR sticker or postcard) has its own unique QR code — this is the permanent link between your video and that one specific card, so make sure you\'re using the right card for the right person.',
         send_step2: '<strong>Open the upload page.</strong> Scan the card\'s QR code with your phone\'s camera, or manually enter the card\'s code (format <code>NNNNNN-AAAA</code>, e.g. <code>000003-ZEAH</code>). Either way brings you to the upload form for that card.',
@@ -397,6 +405,7 @@
         postcard_holiday: 'ልዩ ልዩ በዓላት',
         lightbox_front: 'ፊት',
         lightbox_back: 'ጀርባ',
+        lightbox_home: 'መነሻ',
         send_title: '🚀 እንዴት እንደሚላክ',
         send_step1: '<strong>ካርድዎን ያዘጋጁ።</strong> እያንዳንዱ አካላዊ Forever 27 ካርድ (የQR ስቲከር ወይም ፖስት ካርድ) የራሱ የሆነ ልዩ QR ኮድ አለው — ይህ ቪዲዮዎን ከዚያ ልዩ ካርድ ጋር በቋሚነት የሚያገናኝ ነው፣ ስለዚህ ለሚሰጡት ሰው ትክክለኛውን ካርድ እየተጠቀሙ መሆኑን ያረጋግጡ።',
         send_step2: '<strong>የመጫኛ ገጹን ይክፈቱ።</strong> የካርዱን QR ኮድ በስልክዎ ካሜራ ይቃኙ፣ ወይም የካርዱን ኮድ በእጅ ያስገቡ (ቅርጸት <code>NNNNNN-AAAA</code>፣ ለምሳሌ <code>000003-ZEAH</code>)። በሁለቱም መንገድ ለዚያ ካርድ ወደ መጫኛ ቅጹ ይመራዎታል።',
@@ -531,6 +540,10 @@
 
     function closeLightbox() {
       document.getElementById('lightbox-overlay').classList.remove('open');
+    }
+    function goHomeFromLightbox() {
+      closeLightbox();
+      window.scrollTo({ top: 0, behavior: 'smooth' });
     }
 
     document.addEventListener('keydown', function(e) {
