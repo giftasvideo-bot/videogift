@@ -13,13 +13,19 @@ app.use(cors());
 app.use(express.json());
 
 // ── SUPABASE ──
+// IMPORTANT: this backend performs privileged writes (insert/update/delete)
+// on behalf of the admin. If your `gifts` table has Row Level Security (RLS)
+// enabled — which is the Supabase default — the anon key will be blocked
+// from those operations and every write will fail with a 500. The service
+// role key bypasses RLS and is meant to live only in server-side env vars
+// like this one (never ship it to the frontend).
 const supabaseUrl = process.env.SUPABASE_URL;
-const supabaseAnonKey = process.env.SUPABASE_ANON_KEY;
-if (!supabaseUrl || !supabaseAnonKey) {
-  console.error("❌ SUPABASE_URL and SUPABASE_ANON_KEY must be set.");
+const supabaseServiceKey = process.env.SUPABASE_SERVICE_KEY || process.env.SUPABASE_ANON_KEY;
+if (!supabaseUrl || !supabaseServiceKey) {
+  console.error("❌ SUPABASE_URL and SUPABASE_SERVICE_KEY (or SUPABASE_ANON_KEY) must be set.");
   process.exit(1);
 }
-const supabase = createClient(supabaseUrl, supabaseAnonKey);
+const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
 // ── JWT CONFIG ──
 const JWT_SECRET     = process.env.JWT_SECRET     || 'forever27-secret-change-this';
