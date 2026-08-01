@@ -4,6 +4,12 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Forever 27 | Admin Dashboard</title>
+  <link rel="icon" type="image/png" sizes="32x32" href="/favicons/favicon-32x32.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/favicons/favicon-16x16.png">
+  <link rel="apple-touch-icon" sizes="180x180" href="/favicons/apple-touch-icon.png">
+  <link rel="shortcut icon" href="/favicons/favicon.ico">
+  <link rel="manifest" href="/favicons/site.webmanifest">
+  <meta name="theme-color" content="#c9933a">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,700;1,400&family=DM+Sans:wght@300;400;500;700&display=swap" rel="stylesheet">
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
@@ -125,6 +131,27 @@
     .status-viewed { background: #e3f2fd; color: #1565c0; }
     .status-sealed { background: var(--success-bg); color: var(--success-text); }
 
+    .print-status-badge {
+      display: inline-block; padding: 3px 10px; border-radius: 6px;
+      font-size: 0.7rem; font-weight: 700; text-transform: uppercase;
+      letter-spacing: 0.05em; margin-bottom: 8px;
+    }
+    .print-status-yes { background: #e8f5e9; color: #2e7d32; }
+    .print-status-no  { background: #f5f5f5; color: #9e9e9e; }
+
+    .btn-print-toggle { background: #f5f5f5; color: #555; font-size: 0.82rem; }
+    .btn-print-toggle:hover { background: #e0e0e0; }
+    .btn-print-toggle.is-printed { background: #e8f5e9; color: #2e7d32; }
+    .btn-print-toggle.is-printed:hover { background: #c8e6c9; }
+
+    .filter-bar { display: flex; gap: 8px; margin-bottom: 16px; flex-wrap: wrap; align-items: center; }
+    .filter-btn {
+      padding: 6px 14px; border: 1px solid var(--cream); border-radius: 20px;
+      background: #fff; color: var(--muted); font-size: 0.8rem; cursor: pointer;
+      font-family: 'DM Sans', sans-serif; font-weight: 500; transition: all 0.15s;
+    }
+    .filter-btn.active { background: var(--gold); color: #fff; border-color: var(--gold); }
+
     .card-actions {
       display: flex;
       gap: 8px;
@@ -234,16 +261,23 @@
       ✅ QR codes now point to <strong>watch.html</strong> — the system automatically redirects to upload if no video exists yet, or plays the gift if a video is already uploaded.
     </div>
     <div class="form-group">
-      <input type="number" id="batch-count" value="1" min="1" max="100">
-      <input type="text" id="id-prefix" placeholder="Prefix (e.g. XMAS25, GIFT, LIVE)">
+      <input type="number" id="batch-count" value="1" min="1" max="100" placeholder="Quantity">
       <button class="btn" onclick="generateBatchCodes()">Generate Cards</button>
     </div>
   </div>
 
   <div class="card-section">
-    <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px;">
+    <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; flex-wrap:wrap; gap:12px;">
       <h2>📋 Active Card Registry Collection</h2>
-      <button class="btn btn-secondary" onclick="window.print()">🖨️ Print All Cards</button>
+      <div style="display:flex;gap:10px;flex-wrap:wrap;">
+        <button class="btn btn-secondary" onclick="purgeOrphanedStorage()" id="purge-btn">🧹 Purge Storage</button>
+        <button class="btn btn-secondary" onclick="printAndMark()">🖨️ Print All Cards</button>
+      </div>
+    </div>
+    <div class="filter-bar">
+      <button class="filter-btn active" id="filter-all" onclick="setFilter('all')">All <span class="filter-count" id="count-all"></span></button>
+      <button class="filter-btn" id="filter-no" onclick="setFilter('no')">🔴 Not Printed <span class="filter-count" id="count-no"></span></button>
+      <button class="filter-btn" id="filter-yes" onclick="setFilter('yes')">✅ Printed <span class="filter-count" id="count-yes"></span></button>
     </div>
     <div class="qr-grid" id="cards-grid-container"></div>
   </div>
@@ -255,7 +289,7 @@
   let BACKEND_API_BASE = localStorage.getItem('videogift_api_url') || 'https://videogift-backend-3.onrender.com';
   document.getElementById('api-url-input').value = BACKEND_API_BASE;
 
-  let localRegistry = JSON.parse(localStorage.getItem('forever27_cards_manifest')) || [];
+  let localRegistry = [];
 
   // Returns Authorization header using the stored session token
   function authHeaders(extra = {}) {
@@ -289,13 +323,26 @@
     syncStatusesWithDatabase();
   }
 
-  function generateRandomTokenString(length = 6) {
-    const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
-    let output = '';
-    for (let i = 0; i < length; i++) {
-      output += chars.charAt(Math.floor(Math.random() * chars.length));
-    }
-    return output;
+  // Returns next serial number based on existing registry cards
+  // Format: 000001-ABCD  (6-digit zero-padded serial + dash + 4 random uppercase letters)
+  function getNextSerial() {
+    let max = 0;
+    localRegistry.forEach(id => {
+      // Match leading 6-digit serial in IDs like "000001-ABCD"
+      const m = id.match(/^(\d{6})-/);
+      if (m) {
+        const n = parseInt(m[1], 10);
+        if (n > max) max = n;
+      }
+    });
+    return max + 1;
+  }
+
+  function generateSuffix(length = 4) {
+    const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ';
+    let out = '';
+    for (let i = 0; i < length; i++) out += chars.charAt(Math.floor(Math.random() * chars.length));
+    return out;
   }
 
   function buildWatchUrl(id) {
@@ -305,15 +352,18 @@
 
   async function generateBatchCodes() {
     const count = parseInt(document.getElementById('batch-count').value) || 1;
-    const prefix = document.getElementById('id-prefix').value.trim().toUpperCase();
-    const cleanPrefix = prefix ? `${prefix}-` : '';
 
+    let nextSerial = getNextSerial();
     const newCodes = [];
     for (let i = 0; i < count; i++) {
-      const targetId = `${cleanPrefix}${generateRandomTokenString()}`;
+      const serial = String(nextSerial).padStart(6, '0');
+      const suffix = generateSuffix(4);
+      const targetId = `${serial}-${suffix}`;
       if (!localRegistry.includes(targetId)) {
         newCodes.push(targetId);
+        nextSerial++;
       } else {
+        // Suffix collision (extremely rare) — retry same serial with new suffix
         i--;
       }
     }
@@ -326,10 +376,8 @@
 
       if (!response.ok) throw new Error('Database rejected batch insertion.');
 
-      localRegistry = [...newCodes, ...localRegistry];
-      localStorage.setItem('forever27_cards_manifest', JSON.stringify(localRegistry));
-
-      renderDashboardGrid();
+      // Reload all cards from DB so every browser stays in sync
+      await loadCardsFromDatabase();
       syncStatusesWithDatabase();
     } catch (err) {
       alert(`⚠️ Generation Failed: ${err.message}`);
@@ -345,7 +393,11 @@
         body: JSON.stringify({ ids: localRegistry })
       });
 
-      if (!response.ok) return;
+      if (!response.ok) {
+        console.warn(`Status sync returned ${response.status}`);
+        markStuckBadgesOffline();
+        return;
+      }
       const data = await response.json();
 
       localRegistry.forEach(id => {
@@ -354,11 +406,91 @@
         if (badge) {
           badge.textContent = remoteStatus.toUpperCase();
           badge.className = `status-badge status-${remoteStatus}`;
+          badge.style.opacity = '1';
+        }
+        // Show upload attempt count
+        const countEl = document.getElementById(`upload-count-${id}`);
+        if (countEl && data.uploadCounts) {
+          const count = data.uploadCounts[id] || 0;
+          const MAX = 3;
+          const remaining = MAX - count;
+          let color = '#7a7060';
+          if (remaining === 0) color = '#c62828';
+          else if (remaining === 1) color = '#e65100';
+          countEl.innerHTML = `<span style="color:${color};">📤 ${count}/${MAX} uploads used</span>`;
         }
       });
     } catch (err) {
       console.warn('Status sync failed:', err);
+      markStuckBadgesOffline();
     }
+  }
+
+  // Surfaces a sync failure instead of leaving badges hung on "CHECKING..." forever.
+  // Only touches badges that are still mid-check, so a known-good status from a
+  // previous successful sync is never overwritten by a transient failure.
+  function markStuckBadgesOffline() {
+    localRegistry.forEach(id => {
+      const badge = document.getElementById(`badge-${id}`);
+      if (badge && badge.textContent === 'CHECKING...') {
+        badge.textContent = 'OFFLINE';
+        badge.className = 'status-badge status-pending';
+        badge.style.opacity = '0.6';
+      }
+    });
+  }
+
+  // ── Printed-status tracking ─────────────────────────────────────────
+  // Stored locally as a simple { id: true } map so it persists across reloads.
+  const PRINTED_KEY = 'videogift_printed_ids';
+  let currentFilter = 'all';
+
+  function getPrintedMap() {
+    try { return JSON.parse(localStorage.getItem(PRINTED_KEY)) || {}; }
+    catch { return {}; }
+  }
+  function setPrintedMap(map) {
+    localStorage.setItem(PRINTED_KEY, JSON.stringify(map));
+  }
+  function isPrinted(id) {
+    return !!getPrintedMap()[id];
+  }
+  function togglePrinted(id) {
+    const map = getPrintedMap();
+    map[id] = !map[id];
+    if (!map[id]) delete map[id];
+    setPrintedMap(map);
+    renderDashboardGrid();
+  }
+  function markAllPrinted(ids) {
+    const map = getPrintedMap();
+    ids.forEach(id => { map[id] = true; });
+    setPrintedMap(map);
+  }
+  function printAndMark() {
+    window.print();
+    // afterprint fires once the print dialog closes (works in Chrome/Edge/Firefox)
+  }
+  window.addEventListener('afterprint', () => {
+    markAllPrinted(localRegistry);
+    renderDashboardGrid();
+  });
+
+  function setFilter(filter) {
+    currentFilter = filter;
+    ['all', 'no', 'yes'].forEach(f => {
+      document.getElementById(`filter-${f}`).classList.toggle('active', f === filter);
+    });
+    renderDashboardGrid();
+  }
+
+  function updateFilterCounts() {
+    const printedMap = getPrintedMap();
+    const printedCount = localRegistry.filter(id => printedMap[id]).length;
+    const notPrintedCount = localRegistry.length - printedCount;
+    document.getElementById('count-all').textContent = `(${localRegistry.length})`;
+    document.getElementById('count-no').textContent = `(${notPrintedCount})`;
+    document.getElementById('count-yes').textContent = `(${printedCount})`;
   }
 
   function renderDashboardGrid() {
@@ -368,13 +500,27 @@
     gridContainer.innerHTML = '';
     printArea.innerHTML = '';
 
+    updateFilterCounts();
+
     if (localRegistry.length === 0) {
       gridContainer.innerHTML = `<div style="grid-column:1/-1; text-align:center; color:var(--muted); padding:40px;">No registered gift cards found. Generate some above!</div>`;
       return;
     }
 
-    localRegistry.forEach(id => {
+    const printedMap = getPrintedMap();
+    const visibleIds = localRegistry.filter(id => {
+      if (currentFilter === 'yes') return !!printedMap[id];
+      if (currentFilter === 'no') return !printedMap[id];
+      return true;
+    });
+
+    if (visibleIds.length === 0) {
+      gridContainer.innerHTML = `<div style="grid-column:1/-1; text-align:center; color:var(--muted); padding:40px;">No cards match this filter.</div>`;
+    }
+
+    visibleIds.forEach(id => {
       const targetWatchUrl = buildWatchUrl(id);
+      const printed = !!printedMap[id];
 
       const card = document.createElement('div');
       card.className = 'qr-card';
@@ -382,8 +528,11 @@
       card.innerHTML = `
         <div class="qr-container" id="qr-container-${id}"></div>
         <div class="qr-id-label">${id}</div>
+        <div class="print-status-badge ${printed ? 'print-status-yes' : 'print-status-no'}">${printed ? '✅ Printed' : '🔴 Not Printed'}</div>
         <div class="status-badge status-pending" id="badge-${id}">CHECKING...</div>
+        <div id="upload-count-${id}" style="font-size:0.78rem; color:var(--muted); margin-bottom:10px; min-height:18px;"></div>
         <div class="card-actions" style="flex-wrap:wrap; gap:6px;">
+          <button class="btn btn-print-toggle ${printed ? 'is-printed' : ''}" onclick="togglePrinted('${id}')">${printed ? '✅ Printed' : '🖨️ Mark Printed'}</button>
           <button class="btn btn-secondary" onclick="copyWatchLink('${id}')">🔗 Link</button>
           <button class="btn btn-action-delete-video" id="delvid-${id}" onclick="deleteVideoOnly('${id}')">🎬 Delete Video</button>
           <button class="btn btn-action-delete" onclick="deleteCardRow('${id}')">🗑️ Card</button>
@@ -430,7 +579,9 @@
     }
 
     localRegistry = localRegistry.filter(item => item !== id);
-    localStorage.setItem('forever27_cards_manifest', JSON.stringify(localRegistry));
+
+    const map = getPrintedMap();
+    if (map[id]) { delete map[id]; setPrintedMap(map); }
 
     const cardElement = document.getElementById(`card-${id}`);
     if (cardElement) cardElement.remove();
@@ -456,7 +607,10 @@
           badge.textContent = 'PENDING';
           badge.className = 'status-badge status-pending';
         }
-        alert(`✅ Video deleted for ${id}.\nThe card is now ready to receive a new video.`);
+        // Reset upload count display
+        const countEl = document.getElementById(`upload-count-${id}`);
+        if (countEl) countEl.innerHTML = `<span style="color:#7a7060;">📤 0/3 uploads used</span>`;
+        alert(`✅ Video deleted for ${id}.\nThe card is now ready to receive a new video (upload count reset to 0).`);
       } else {
         const err = await response.json().catch(() => ({}));
         alert(`⚠️ Could not delete video: ${err.message || 'Server error'}`);
@@ -471,14 +625,53 @@
     }
   }
 
+  async function purgeOrphanedStorage() {
+    if (!confirm('This will permanently delete all video files in storage that have no matching gift card in the database.\n\nContinue?')) return;
+    const btn = document.getElementById('purge-btn');
+    btn.disabled = true;
+    btn.textContent = '🧹 Purging...';
+    try {
+      const res = await apiFetch(`${BACKEND_API_BASE}/api/admin/purge-storage`, { method: 'DELETE' });
+      const data = await res.json();
+      if (res.ok) {
+        alert(`✅ Purge complete!\n${data.deleted} orphaned file(s) deleted from storage.`);
+      } else {
+        alert(`⚠️ Purge failed: ${data.message || 'Server error'}`);
+      }
+    } catch (err) {
+      if (err.message !== 'Session expired.') alert(`⚠️ ${err.message}`);
+    } finally {
+      btn.disabled = false;
+      btn.textContent = '🧹 Purge Storage';
+    }
+  }
+
   function adminLogout() {
     sessionStorage.removeItem(SESSION_KEY);
     window.location.replace('login.html');
   }
 
-  // Init
-  renderDashboardGrid();
-  syncStatusesWithDatabase();
+  // ── INIT: load ALL cards from the database on every page load ──
+  // This ensures every browser/device always sees the same cards
+  async function loadCardsFromDatabase() {
+    const gridContainer = document.getElementById('cards-grid-container');
+    gridContainer.innerHTML = `<div style="grid-column:1/-1; text-align:center; color:var(--muted); padding:40px;">⏳ Loading cards from database...</div>`;
+
+    try {
+      const response = await apiFetch(`${BACKEND_API_BASE}/api/admin/cards`);
+      if (!response.ok) throw new Error('Failed to load cards from database.');
+      const data = await response.json();
+      localRegistry = data.ids || [];
+    } catch (err) {
+      console.warn('Could not load cards from DB:', err);
+      localRegistry = [];
+    }
+
+    renderDashboardGrid();
+    syncStatusesWithDatabase();
+  }
+
+  loadCardsFromDatabase();
   setInterval(syncStatusesWithDatabase, 4000);
 </script>
 </body>
