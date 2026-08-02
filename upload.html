@@ -245,6 +245,18 @@
       text-align: center;
       line-height: 1.5;
     }
+    .duration-warning {
+      display: none;
+      margin-top: 10px;
+      padding: 10px 14px;
+      background: #fff8e1;
+      border: 1px solid #ffe082;
+      border-radius: 8px;
+      color: #7a6020;
+      font-size: 0.82rem;
+      text-align: center;
+      line-height: 1.5;
+    }
 
     /* How it works panel */
     .how-it-works {
@@ -391,10 +403,11 @@
         <input type="file" id="video-input" accept="video/*" onchange="handleVideoSelected(this)" />
         <div id="file-name-preview" class="file-chosen-name"></div>
       </div>
-      <div class="video-preview-wrap" id="video-preview-wrap">
-        <video id="video-preview" controls playsinline></video>
-      </div>
-      <div class="video-preview-label" id="video-preview-label"></div>
+  <div class="video-preview-wrap" id="video-preview-wrap">
+    <video id="video-preview" controls playsinline></video>
+  </div>
+  <div class="video-preview-label" id="video-preview-label"></div>
+  <div class="duration-warning" id="duration-warning"></div>
 
       <!-- Selfie recording mode: opens the device's native camera app via
            capture="user" — no in-browser camera permission prompts to manage.
@@ -455,6 +468,7 @@
       click_choose_file: '🎬 Click to choose a video file',
       click_record_video: '🤳 Tap to record a selfie video',
       record_note: '📱 On your phone, this opens your camera to record directly. On desktop, choose an existing video file instead.',
+      duration_warning: (m, s) => `⏱️ This video is ${m > 0 ? `${m}m ${s}s` : `${s}s`} long. Longer videos take longer to upload and may be trimmed by the recipient's device — around 60-90 seconds usually works best.`,
       dot_used_title: (n) => `Upload ${n} used`,
       dot_empty_title: (n) => `Upload slot ${n} available`,
       upload_video_gift: 'Upload Video Gift',
@@ -519,6 +533,7 @@
       click_choose_file: '🎬 የቪዲዮ ፋይል ለመምረጥ ይጫኑ',
       click_record_video: '🤳 የሴልፊ ቪዲዮ ለመቅረጽ ይጫኑ',
       record_note: '📱 በስልክዎ ላይ፣ ይህ በቀጥታ ለመቅረጽ ካሜራዎን ይከፍታል። በዴስክቶፕ ላይ፣ ያለውን ቪዲዮ ፋይል ይምረጡ።',
+      duration_warning: (m, s) => `⏱️ ይህ ቪዲዮ ${m > 0 ? `${m} ደቂቃ ${s} ሰከንድ` : `${s} ሰከንድ`} ርዝመት አለው። ረጅም ቪዲዮዎች ለመጫን ረጅም ጊዜ ይወስዳሉ — በአጠቃላይ 60-90 ሰከንድ አካባቢ ይመረጣል።`,
       dot_used_title: (n) => `መጫኛ ${n} ጥቅም ላይ ውሏል`,
       dot_empty_title: (n) => `የመጫኛ ቦታ ${n} ይገኛል`,
       upload_video_gift: 'የቪዲዮ ስጦታ ይጫኑ',
@@ -761,7 +776,8 @@
     }
   }
 
-  const MAX_FILE_SIZE_MB = 50;
+  const MAX_FILE_SIZE_MB = 150;
+  const RECOMMENDED_MAX_SECONDS = 90; // soft warning threshold, not a hard block
 
   // ─────────────────────────────────────────
   // Shared handler for BOTH the file picker and the native-camera capture
@@ -790,6 +806,7 @@
         previewLabel.textContent = '';
         submitBtn.disabled = true;
         selectedVideoFile = null;
+        document.getElementById('duration-warning').style.display = 'none';
 
         // Show inline error
         let sizeErr = document.getElementById('size-error-msg');
@@ -819,6 +836,24 @@
       dropzone.classList.add('has-file');
 
       selectedVideoFile = file;
+
+      // ── DURATION CHECK ──
+      // Soft warning only (does not block submission) — the actual limit
+      // that matters is file size, but a duration hint helps people avoid
+      // hitting it in the first place, especially now that selfie
+      // recordings via the native camera have no built-in length cap.
+      const durationWarning = document.getElementById('duration-warning');
+      durationWarning.style.display = 'none';
+      videoEl.addEventListener('loadedmetadata', function onMeta() {
+        videoEl.removeEventListener('loadedmetadata', onMeta);
+        const seconds = videoEl.duration;
+        if (isFinite(seconds) && seconds > RECOMMENDED_MAX_SECONDS) {
+          const mins = Math.floor(seconds / 60);
+          const secs = Math.round(seconds % 60);
+          durationWarning.innerHTML = translations[currentLang].duration_warning(mins, secs);
+          durationWarning.style.display = 'block';
+        }
+      });
     }
   }
 
@@ -838,6 +873,7 @@
 
     document.getElementById('video-preview-wrap').style.display = 'none';
     document.getElementById('video-preview-label').textContent = '';
+    document.getElementById('duration-warning').style.display = 'none';
     document.getElementById('video-input').value = '';
     document.getElementById('record-input').value = '';
 

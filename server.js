@@ -33,7 +33,7 @@ const ADMIN_USERNAME = process.env.ADMIN_USERNAME || 'admin';
 const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'forever27';
 
 // ── MULTER ──
-const MAX_FILE_SIZE_MB = 50;
+const MAX_FILE_SIZE_MB = 150;
 const ALLOWED_VIDEO_MIMETYPES = new Set([
   'video/mp4',
   'video/quicktime',   // .mov
@@ -46,7 +46,7 @@ const ALLOWED_VIDEO_EXTENSIONS = new Set(['mp4', 'mov', 'avi', 'webm', '3gp', 'm
 
 const upload = multer({
   storage: multer.memoryStorage(),
-  limits: { fileSize: MAX_FILE_SIZE_MB * 1024 * 1024 }, // 50MB
+  limits: { fileSize: MAX_FILE_SIZE_MB * 1024 * 1024 }, // 150MB
   fileFilter: (req, file, cb) => {
     // Reject anything that isn't actually a video, even if the client-side
     // <input accept="video/*"> was bypassed or the mimetype was spoofed.
