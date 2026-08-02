@@ -234,97 +234,16 @@
       border-color: var(--gold);
     }
 
-    /* Selfie recording panel */
-    .record-panel {
-      display: none;
-      border: 2px dashed var(--cream);
-      border-radius: 8px;
-      padding: 16px;
-      background: var(--paper);
-      text-align: center;
-    }
-    .record-video-wrap {
-      position: relative;
-      width: 100%;
-      max-width: 320px;
-      margin: 0 auto;
-      border-radius: 10px;
-      overflow: hidden;
-      background: #000;
-    }
-    .record-video-wrap video {
-      width: 100%;
-      display: block;
-      max-height: 320px;
-      background: #000;
-      /* mirror the live camera preview like a selfie cam */
-      transform: scaleX(-1);
-    }
-    .record-video-wrap.playback video { transform: none; }
-    .rec-indicator {
-      position: absolute;
-      top: 10px; left: 10px;
-      display: none;
-      align-items: center;
-      gap: 6px;
-      background: rgba(0,0,0,0.55);
-      color: #fff;
-      padding: 4px 10px;
-      border-radius: 20px;
-      font-size: 0.75rem;
-      font-family: 'DM Sans', sans-serif;
-    }
-    .rec-indicator.live { display: flex; }
-    .rec-dot {
-      width: 8px; height: 8px;
-      border-radius: 50%;
-      background: #e53935;
-      animation: pulse 1s infinite;
-    }
-    @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.3; } }
-    .record-controls {
-      margin-top: 12px;
-      display: flex;
-      gap: 10px;
-      justify-content: center;
-      flex-wrap: wrap;
-    }
-    .record-controls button {
-      padding: 10px 18px;
-      border: none;
-      border-radius: 8px;
-      font-family: 'DM Sans', sans-serif;
-      font-size: 0.85rem;
-      font-weight: 500;
-      cursor: pointer;
-      transition: background-color 0.2s;
-    }
-    #start-record-btn { background: var(--gold); color: #fff; }
-    #start-record-btn:hover { background: var(--gold-light); }
-    #stop-record-btn { background: #e53935; color: #fff; }
-    #stop-record-btn:hover { background: #ef5350; }
-    #retake-record-btn { background: var(--cream); color: var(--ink); }
-    #retake-record-btn:hover { background: var(--gold-light); color: #fff; }
-    .record-hint {
+    /* Selfie recording note — the record "panel" is now just a second
+       file-dropzone (see .file-dropzone) using capture="user" so mobile
+       browsers open the native camera app directly. This is just the
+       small explanatory note shown underneath it. */
+    .record-note {
       font-size: 0.8rem;
       color: var(--muted);
       margin-top: 10px;
-    }
-    .record-timer {
-      font-family: monospace;
-      font-size: 0.85rem;
-      color: var(--muted);
-      margin-top: 8px;
-    }
-    .record-error {
-      margin-top: 10px;
-      padding: 10px 14px;
-      background: #ffebee;
-      border: 1px solid #ffcdd2;
-      border-radius: 8px;
-      color: #c62828;
-      font-size: 0.82rem;
-      display: none;
+      text-align: center;
+      line-height: 1.5;
     }
 
     /* How it works panel */
@@ -469,7 +388,7 @@
       <!-- File picker mode -->
       <div class="file-dropzone" id="file-dropzone" onclick="document.getElementById('video-input').click()">
         <span class="file-label-text" data-i18n="click_choose_file">🎬 Click to choose a video file</span>
-        <input type="file" id="video-input" accept="video/*" onchange="displayFileName()" />
+        <input type="file" id="video-input" accept="video/*" onchange="handleVideoSelected(this)" />
         <div id="file-name-preview" class="file-chosen-name"></div>
       </div>
       <div class="video-preview-wrap" id="video-preview-wrap">
@@ -477,22 +396,15 @@
       </div>
       <div class="video-preview-label" id="video-preview-label"></div>
 
-      <!-- Selfie recording mode -->
-      <div class="record-panel" id="record-panel">
-        <div class="record-video-wrap" id="record-video-wrap">
-          <span class="rec-indicator" id="rec-indicator"><span class="rec-dot"></span> <span id="rec-indicator-text" data-i18n="rec_label">REC</span></span>
-          <video id="record-video" autoplay muted playsinline></video>
-        </div>
-        <div class="record-timer" id="record-timer" style="display:none;">00:00</div>
-        <div class="record-controls">
-          <button type="button" id="enable-camera-btn" onclick="enableCamera()" data-i18n="enable_camera">🎥 Enable Camera</button>
-          <button type="button" id="start-record-btn" style="display:none;" onclick="startRecording()" data-i18n="start_recording">⏺ Start Recording</button>
-          <button type="button" id="stop-record-btn" style="display:none;" onclick="stopRecording()" data-i18n="stop_btn">⏹ Stop</button>
-          <button type="button" id="retake-record-btn" style="display:none;" onclick="retakeRecording()" data-i18n="retake_btn">↺ Retake</button>
-        </div>
-        <div class="record-hint" id="record-hint" data-i18n="record_hint_default">Tap "Enable Camera" to grant access, then record a short selfie video message.</div>
-        <div class="record-error" id="record-error"></div>
+      <!-- Selfie recording mode: opens the device's native camera app via
+           capture="user" — no in-browser camera permission prompts to manage.
+           On desktop, capture is ignored and it behaves like a normal file picker. -->
+      <div class="file-dropzone" id="record-dropzone" style="display:none;" onclick="document.getElementById('record-input').click()">
+        <span class="file-label-text" data-i18n="click_record_video">🤳 Tap to record a selfie video</span>
+        <input type="file" id="record-input" accept="video/*" capture="user" onchange="handleVideoSelected(this)" />
+        <div id="record-name-preview" class="file-chosen-name"></div>
       </div>
+      <div class="record-note" data-i18n="record_note">📱 On your phone, this opens your camera to record directly. On desktop, choose an existing video file instead.</div>
     </div>
     <button type="submit" id="submit-btn" class="btn" disabled data-i18n="upload_video_gift">Upload Video Gift</button>
   </form>
@@ -541,18 +453,10 @@
       mode_file: '📁 Upload a File',
       mode_record: '🤳 Record a Selfie Video',
       click_choose_file: '🎬 Click to choose a video file',
-      enable_camera: '🎥 Enable Camera',
-      start_recording: '⏺ Start Recording',
-      stop_btn: '⏹ Stop',
-      retake_btn: '↺ Retake',
-      rec_label: 'REC',
+      click_record_video: '🤳 Tap to record a selfie video',
+      record_note: '📱 On your phone, this opens your camera to record directly. On desktop, choose an existing video file instead.',
       dot_used_title: (n) => `Upload ${n} used`,
       dot_empty_title: (n) => `Upload slot ${n} available`,
-      record_hint_default: 'Tap "Enable Camera" to grant access, then record a short selfie video message.',
-      record_hint_ready: 'When you\'re ready, tap "Start Recording" and say your message.',
-      record_hint_recording: 'Recording... tap "Stop" when you\'re done.',
-      record_hint_recorded: (mb) => `Recorded ${mb} MB — scroll to review before uploading.`,
-      record_hint_retake: 'Please retake a shorter recording.',
       upload_video_gift: 'Upload Video Gift',
       uploading_0: 'Uploading: 0%',
       uploading_pct: (p) => `Uploading: ${p}%`,
@@ -562,9 +466,6 @@
       missing_id_alert: 'Error: This link is missing a Card ID. Please scan the QR code again.',
       scroll_review: (mb) => `${mb} MB — scroll to review before uploading`,
       file_too_large_inline: (mb, max) => `⚠️ <strong>File too large (${mb} MB).</strong><br>Maximum allowed size is <strong>${max} MB</strong>. Please compress your video and try again.`,
-      recording_too_large: (mb, max) => `⚠️ <strong>Recording too large (${mb} MB).</strong> Maximum allowed size is <strong>${max} MB</strong>. Try recording a shorter message.`,
-      camera_error: '⚠️ Could not access your camera/microphone. Please allow camera permission in your browser settings, or switch to "Upload a File" instead.',
-      recorder_unsupported: '⚠️ Recording isn\'t supported in this browser. Please switch to "Upload a File" instead.',
       opened_title: 'This gift has been opened',
       opened_desc: (id) => `Card <strong>${id}</strong> has already been watched by the recipient.<br>To keep the moment intact, the video can no longer be changed.`,
       watch_again_btn: '▶ Watch It Again',
@@ -575,7 +476,7 @@
       one_attempt_left: `⚠️ <strong>Last upload attempt!</strong> You have <strong>1 of ${MAX_UPLOADS}</strong> attempts left.<br>Once uploaded, this video cannot be changed again.`,
       attempts_remaining: (remaining) => `You have <strong>${remaining} of ${MAX_UPLOADS}</strong> upload attempts remaining.`,
       already_uploaded: (count) => `<br><small>You've already uploaded ${count} time${count > 1 ? 's' : ''}.</small>`,
-      alert_record_first: 'Please record a selfie video first.',
+      alert_record_first: 'Please record or choose a selfie video first.',
       alert_select_first: 'Please select a video file first.',
       alert_success_final: '🎉 Your video gift has been successfully uploaded!\n\n⚠️ This was your final upload attempt. The video is now locked.',
       alert_success_remaining: (remaining) => `🎉 Your video gift has been successfully uploaded!\n\nYou have ${remaining} upload attempt${remaining !== 1 ? 's' : ''} remaining if you need to change it.`,
@@ -616,18 +517,10 @@
       mode_file: '📁 ፋይል ይጫኑ',
       mode_record: '🤳 የሴልፊ ቪዲዮ ይቅረጹ',
       click_choose_file: '🎬 የቪዲዮ ፋይል ለመምረጥ ይጫኑ',
-      enable_camera: '🎥 ካሜራ ያንቁ',
-      start_recording: '⏺ መቅረጽ ይጀምሩ',
-      stop_btn: '⏹ ያቁሙ',
-      retake_btn: '↺ እንደገና ይቅረጹ',
-      rec_label: 'እየተቀረጸ',
+      click_record_video: '🤳 የሴልፊ ቪዲዮ ለመቅረጽ ይጫኑ',
+      record_note: '📱 በስልክዎ ላይ፣ ይህ በቀጥታ ለመቅረጽ ካሜራዎን ይከፍታል። በዴስክቶፕ ላይ፣ ያለውን ቪዲዮ ፋይል ይምረጡ።',
       dot_used_title: (n) => `መጫኛ ${n} ጥቅም ላይ ውሏል`,
       dot_empty_title: (n) => `የመጫኛ ቦታ ${n} ይገኛል`,
-      record_hint_default: 'ፍቃድ ለመስጠት "ካሜራ ያንቁ" የሚለውን ይጫኑ፣ ከዚያም አጭር የሴልፊ ቪዲዮ መልእክት ይቅረጹ።',
-      record_hint_ready: 'ዝግጁ ሲሆኑ "መቅረጽ ይጀምሩ" የሚለውን ይጫኑ እና መልእክትዎን ይናገሩ።',
-      record_hint_recording: 'በመቅረጽ ላይ... ሲጨርሱ "ያቁሙ" የሚለውን ይጫኑ።',
-      record_hint_recorded: (mb) => `${mb} ሜባ ተቀርጿል — ከመጫንዎ በፊት ለመገምገም ወደታች ይሸብልሉ።`,
-      record_hint_retake: 'እባክዎ አጭር ቀረጻ እንደገና ይቅረጹ።',
       upload_video_gift: 'የቪዲዮ ስጦታ ይጫኑ',
       uploading_0: 'በመጫን ላይ: 0%',
       uploading_pct: (p) => `በመጫን ላይ: ${p}%`,
@@ -637,9 +530,6 @@
       missing_id_alert: 'ስህተት፦ ይህ አገናኝ የካርድ መለያ የለውም። እባክዎ QR ኮዱን እንደገና ይቃኙ።',
       scroll_review: (mb) => `${mb} ሜባ — ከመጫንዎ በፊት ለመገምገም ወደታች ይሸብልሉ`,
       file_too_large_inline: (mb, max) => `⚠️ <strong>ፋይሉ በጣም ትልቅ ነው (${mb} ሜባ)።</strong><br>ከፍተኛ የተፈቀደ መጠን <strong>${max} ሜባ</strong> ነው። እባክዎ ቪዲዮዎን ጨምቀው እንደገና ይሞክሩ።`,
-      recording_too_large: (mb, max) => `⚠️ <strong>ቀረጻው በጣም ትልቅ ነው (${mb} ሜባ)።</strong> ከፍተኛ የተፈቀደ መጠን <strong>${max} ሜባ</strong> ነው። አጭር መልእክት ለመቅረጽ ይሞክሩ።`,
-      camera_error: '⚠️ ካሜራ/ማይክሮፎንዎን ማግኘት አልተቻለም። እባክዎ በአሳሽዎ ቅንብሮች ውስጥ የካሜራ ፍቃድ ይፍቀዱ፣ ወይም ይልቁን "ፋይል ይጫኑ" የሚለውን ይጠቀሙ።',
-      recorder_unsupported: '⚠️ ቀረጻ በዚህ አሳሽ አይደገፍም። እባክዎ ይልቁን "ፋይል ይጫኑ" የሚለውን ይጠቀሙ።',
       opened_title: 'ይህ ስጦታ ተከፍቷል',
       opened_desc: (id) => `ካርድ <strong>${id}</strong> ቀድሞውኑ በተቀባዩ ታይቷል።<br>ቅፅበቱን ያልተነካ ለማድረግ፣ ቪዲዮው ከዚህ በኋላ ሊቀየር አይችልም።`,
       watch_again_btn: '▶ እንደገና ይመልከቱ',
@@ -650,7 +540,7 @@
       one_attempt_left: `⚠️ <strong>የመጨረሻ የመጫኛ ሙከራ!</strong> <strong>1 ከ ${MAX_UPLOADS}</strong> ሙከራዎች ቀርተዋል።<br>ከተጫነ በኋላ ይህ ቪዲዮ እንደገና ሊቀየር አይችልም።`,
       attempts_remaining: (remaining) => `<strong>${remaining} ከ ${MAX_UPLOADS}</strong> የመጫኛ ሙከራዎች ቀርተውዎታል።`,
       already_uploaded: (count) => `<br><small>ቀድሞውኑ ${count} ጊዜ ጭነዋል።</small>`,
-      alert_record_first: 'እባክዎ መጀመሪያ የሴልፊ ቪዲዮ ይቅረጹ።',
+      alert_record_first: 'እባክዎ መጀመሪያ የሴልፊ ቪዲዮ ይቅረጹ ወይም ይምረጡ።',
       alert_select_first: 'እባክዎ መጀመሪያ የቪዲዮ ፋይል ይምረጡ።',
       alert_success_final: '🎉 የቪዲዮ ስጦታዎ በተሳካ ሁኔታ ተጭኗል!\n\n⚠️ ይህ የመጨረሻ የመጫኛ ሙከራዎ ነበር። ቪዲዮው አሁን ተቆልፏል።',
       alert_success_remaining: (remaining) => `🎉 የቪዲዮ ስጦታዎ በተሳካ ሁኔታ ተጭኗል!\n\nለውጥ ካስፈለገዎት ${remaining} የመጫኛ ሙከራ${remaining !== 1 ? 'ዎች' : ''} ቀርተውዎታል።`,
@@ -701,15 +591,9 @@
   document.addEventListener('DOMContentLoaded', applyTranslations);
   // ---------- End language / i18n ----------
 
-  // Shared state for whichever source (file picker or selfie recording) provides the video
+  // Shared state for whichever source (file picker or native-camera capture) provides the video
   let uploadMode = 'file'; // 'file' | 'record'
-  let selectedVideoFile = null; // File/Blob to actually submit
-  let cameraStream = null;
-  let mediaRecorder = null;
-  let recordedChunks = [];
-  let recordTimerInterval = null;
-  let recordSeconds = 0;
-  const MAX_RECORD_SECONDS = 90; // safety cap on selfie recording length
+  let selectedVideoFile = null; // File to actually submit
 
   const urlParams = new URLSearchParams(window.location.search);
   const giftId = urlParams.get('id');
@@ -879,17 +763,22 @@
 
   const MAX_FILE_SIZE_MB = 50;
 
-  function displayFileName() {
-    const fileInput = document.getElementById('video-input');
-    const preview = document.getElementById('file-name-preview');
+  // ─────────────────────────────────────────
+  // Shared handler for BOTH the file picker and the native-camera capture
+  // input — they're both just <input type="file"> under the hood, so one
+  // function handles size-checking + preview for whichever one fired.
+  // ─────────────────────────────────────────
+  function handleVideoSelected(inputEl) {
+    const isRecord = inputEl.id === 'record-input';
+    const preview = document.getElementById(isRecord ? 'record-name-preview' : 'file-name-preview');
     const previewWrap = document.getElementById('video-preview-wrap');
     const videoEl = document.getElementById('video-preview');
     const previewLabel = document.getElementById('video-preview-label');
-    const dropzone = fileInput.closest('.file-dropzone');
+    const dropzone = document.getElementById(isRecord ? 'record-dropzone' : 'file-dropzone');
     const submitBtn = document.getElementById('submit-btn');
 
-    if (fileInput.files && fileInput.files.length > 0) {
-      const file = fileInput.files[0];
+    if (inputEl.files && inputEl.files.length > 0) {
+      const file = inputEl.files[0];
       const sizeMB = (file.size / (1024 * 1024)).toFixed(1);
 
       // ── SIZE GUARD ──
@@ -897,7 +786,7 @@
         preview.textContent = '';
         previewWrap.style.display = 'none';
         dropzone.classList.remove('has-file');
-        fileInput.value = '';
+        inputEl.value = '';
         previewLabel.textContent = '';
         submitBtn.disabled = true;
         selectedVideoFile = null;
@@ -934,7 +823,7 @@
   }
 
   // ─────────────────────────────────────────
-  // Upload mode toggle (file picker vs selfie recording)
+  // Upload mode toggle (file picker vs native-camera selfie capture)
   // ─────────────────────────────────────────
   function setUploadMode(mode) {
     uploadMode = mode;
@@ -945,168 +834,15 @@
     document.getElementById('mode-record-btn').classList.toggle('active', mode === 'record');
 
     document.getElementById('file-dropzone').style.display = mode === 'file' ? 'block' : 'none';
+    document.getElementById('record-dropzone').style.display = mode === 'record' ? 'block' : 'none';
+
     document.getElementById('video-preview-wrap').style.display = 'none';
     document.getElementById('video-preview-label').textContent = '';
     document.getElementById('video-input').value = '';
+    document.getElementById('record-input').value = '';
 
-    document.getElementById('record-panel').style.display = mode === 'record' ? 'block' : 'none';
-
-    if (mode === 'file') {
-      stopCamera();
-    }
-  }
-
-  // ─────────────────────────────────────────
-  // Selfie recording via getUserMedia + MediaRecorder
-  // ─────────────────────────────────────────
-  async function enableCamera() {
-    const errBox = document.getElementById('record-error');
-    errBox.style.display = 'none';
-
-    try {
-      cameraStream = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode: 'user' },
-        audio: true
-      });
-    } catch (err) {
-      errBox.textContent = translations[currentLang].camera_error;
-      errBox.style.display = 'block';
-      return;
-    }
-
-    const videoEl = document.getElementById('record-video');
-    videoEl.srcObject = cameraStream;
-    document.getElementById('record-video-wrap').classList.remove('playback');
-
-    document.getElementById('enable-camera-btn').style.display = 'none';
-    document.getElementById('start-record-btn').style.display = 'inline-block';
-    document.getElementById('record-hint').textContent = translations[currentLang].record_hint_ready;
-  }
-
-  function pickSupportedMimeType() {
-    const candidates = [
-      'video/webm;codecs=vp9,opus',
-      'video/webm;codecs=vp8,opus',
-      'video/webm',
-      'video/mp4'
-    ];
-    for (const type of candidates) {
-      if (window.MediaRecorder && MediaRecorder.isTypeSupported && MediaRecorder.isTypeSupported(type)) {
-        return type;
-      }
-    }
-    return '';
-  }
-
-  function startRecording() {
-    if (!cameraStream) return;
-    recordedChunks = [];
-    const mimeType = pickSupportedMimeType();
-
-    try {
-      mediaRecorder = mimeType
-        ? new MediaRecorder(cameraStream, { mimeType })
-        : new MediaRecorder(cameraStream);
-    } catch (err) {
-      const errBox = document.getElementById('record-error');
-      errBox.textContent = translations[currentLang].recorder_unsupported;
-      errBox.style.display = 'block';
-      return;
-    }
-
-    mediaRecorder.ondataavailable = (e) => {
-      if (e.data && e.data.size > 0) recordedChunks.push(e.data);
-    };
-    mediaRecorder.onstop = onRecordingStopped;
-    mediaRecorder.start();
-
-    recordSeconds = 0;
-    updateRecordTimer();
-    document.getElementById('record-timer').style.display = 'block';
-    recordTimerInterval = setInterval(() => {
-      recordSeconds++;
-      updateRecordTimer();
-      if (recordSeconds >= MAX_RECORD_SECONDS) stopRecording();
-    }, 1000);
-
-    document.getElementById('rec-indicator').classList.add('live');
-    document.getElementById('start-record-btn').style.display = 'none';
-    document.getElementById('stop-record-btn').style.display = 'inline-block';
-    document.getElementById('record-hint').textContent = translations[currentLang].record_hint_recording;
-  }
-
-  function updateRecordTimer() {
-    const m = String(Math.floor(recordSeconds / 60)).padStart(2, '0');
-    const s = String(recordSeconds % 60).padStart(2, '0');
-    document.getElementById('record-timer').textContent = `${m}:${s}`;
-  }
-
-  function stopRecording() {
-    if (mediaRecorder && mediaRecorder.state !== 'inactive') {
-      mediaRecorder.stop();
-    }
-    clearInterval(recordTimerInterval);
-    document.getElementById('rec-indicator').classList.remove('live');
-    document.getElementById('stop-record-btn').style.display = 'none';
-  }
-
-  function onRecordingStopped() {
-    const mimeType = (mediaRecorder && mediaRecorder.mimeType) || 'video/webm';
-    const blob = new Blob(recordedChunks, { type: mimeType });
-    const ext = mimeType.includes('mp4') ? 'mp4' : 'webm';
-    selectedVideoFile = new File([blob], `selfie-${giftId || 'gift'}.${ext}`, { type: mimeType });
-
-    const sizeMB = (selectedVideoFile.size / (1024 * 1024)).toFixed(1);
-    if (selectedVideoFile.size > MAX_FILE_SIZE_MB * 1024 * 1024) {
-      const errBox = document.getElementById('record-error');
-      errBox.innerHTML = translations[currentLang].recording_too_large(sizeMB, MAX_FILE_SIZE_MB);
-      errBox.style.display = 'block';
-      selectedVideoFile = null;
-      document.getElementById('submit-btn').disabled = true;
-    } else {
-      document.getElementById('submit-btn').disabled = false;
-    }
-
-    // Stop the live camera feed and switch preview to playback of the recording
-    stopCamera();
-    const videoEl = document.getElementById('record-video');
-    videoEl.srcObject = null;
-    videoEl.src = URL.createObjectURL(blob);
-    videoEl.controls = true;
-    videoEl.muted = false;
-    videoEl.play().catch(() => {});
-    document.getElementById('record-video-wrap').classList.add('playback');
-
-    document.getElementById('record-timer').style.display = 'none';
-    document.getElementById('retake-record-btn').style.display = 'inline-block';
-    document.getElementById('record-hint').textContent = selectedVideoFile
-      ? translations[currentLang].record_hint_recorded(sizeMB)
-      : translations[currentLang].record_hint_retake;
-  }
-
-  function retakeRecording() {
-    selectedVideoFile = null;
-    document.getElementById('submit-btn').disabled = true;
-    document.getElementById('record-error').style.display = 'none';
-    document.getElementById('retake-record-btn').style.display = 'none';
-
-    const videoEl = document.getElementById('record-video');
-    videoEl.controls = false;
-    videoEl.muted = true;
-    videoEl.removeAttribute('src');
-    document.getElementById('record-video-wrap').classList.remove('playback');
-
-    enableCamera();
-  }
-
-  function stopCamera() {
-    if (cameraStream) {
-      cameraStream.getTracks().forEach(track => track.stop());
-      cameraStream = null;
-    }
-    document.getElementById('enable-camera-btn').style.display = 'inline-block';
-    document.getElementById('start-record-btn').style.display = 'none';
-    document.getElementById('stop-record-btn').style.display = 'none';
+    const sizeErr = document.getElementById('size-error-msg');
+    if (sizeErr) sizeErr.style.display = 'none';
   }
 
   async function handleFormSubmit(event) {
