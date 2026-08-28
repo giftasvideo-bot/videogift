@@ -33,7 +33,7 @@ const ADMIN_USERNAME = process.env.ADMIN_USERNAME || 'admin';
 const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'forever27';
 
 // ── MULTER ──
-const MAX_FILE_SIZE_MB = 150;
+const MAX_FILE_SIZE_MB = 50;
 const ALLOWED_VIDEO_MIMETYPES = new Set([
   'video/mp4',
   'video/quicktime',   // .mov
@@ -46,7 +46,7 @@ const ALLOWED_VIDEO_EXTENSIONS = new Set(['mp4', 'mov', 'avi', 'webm', '3gp', 'm
 
 const upload = multer({
   storage: multer.memoryStorage(),
-  limits: { fileSize: MAX_FILE_SIZE_MB * 1024 * 1024 }, // 150MB
+  limits: { fileSize: MAX_FILE_SIZE_MB * 1024 * 1024 }, // 50MB
   fileFilter: (req, file, cb) => {
     // Reject anything that isn't actually a video, even if the client-side
     // <input accept="video/*"> was bypassed or the mimetype was spoofed.
@@ -279,8 +279,35 @@ app.post('/api/upload', (req, res, next) => {
 // ── MARK AS VIEWED ──
 app.post('/api/gift/:id/view', async (req, res) => {
   try {
-    await supabase.from('gifts').update({ status: 'viewed' }).eq('id', req.params.id);
-    res.status(200).json({ success: true });
+    const giftId = req.params.id;
+
+    // Only seal a card as "viewed" if it actually has a video attached.
+    // Without this check, a card can be marked viewed with nothing uploaded
+    // (e.g. a stale/duplicate call after the video was deleted), which then
+    // shows the recipient a permanent "already opened" screen for a gift
+    // that was never actually given, and blocks admin from resetting it
+    // via the normal Delete Video flow.
+    const { data: existing, error: lookupErr } = await supabase
+      .from('gifts')
+      .select('status, video_url')
+      .eq('id', giftId)
+      .single();
+
+    if (lookupErr || !existing) {
+      return res.status(404).json({ error: 'Gift not found.' });
+    }
+
+    if (!existing.video_url) {
+      // Nothing to seal — silently no-op rather than erroring, since the
+      // recipient-facing page calls this opportunistically on load.
+      return res.status(200).json({ success: true, sealed: false, reason: 'no_video' });
+    }
+
+    if (existing.status !== 'viewed') {
+      await supabase.from('gifts').update({ status: 'viewed' }).eq('id', giftId);
+    }
+
+    res.status(200).json({ success: true, sealed: true });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -301,8 +328,20 @@ app.delete('/api/gift/:id/video', requireAuth, async (req, res) => {
       return res.status(404).json({ message: 'Gift not found.' });
     }
 
+    // If there's no video_url, there's nothing to delete from storage —
+    // but the card may still be stuck with status: 'viewed' from the
+    // inconsistent state this endpoint exists partly to recover from.
+    // Always fall through and reset the DB row rather than hard-erroring,
+    // so this button reliably works as an admin "reset this card" action.
     if (!data.video_url) {
-      return res.status(400).json({ message: 'No video attached to this card.' });
+      const { error: resetErr } = await supabase
+        .from('gifts')
+        .update({ status: 'pending', upload_count: 0 })
+        .eq('id', giftId);
+      if (resetErr) throw resetErr;
+
+      console.log(`♻️ Reset stuck card (no video was attached): ${giftId}`);
+      return res.status(200).json({ ok: true, note: 'No video was attached; card status reset anyway.' });
     }
 
     // 2. Extract the file path inside the storage bucket from the public URL
