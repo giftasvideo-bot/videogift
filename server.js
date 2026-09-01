@@ -4,6 +4,7 @@ const cors = require('cors');
 const multer = require('multer');
 const jwt = require('jsonwebtoken');
 const { createClient } = require('@supabase/supabase-js');
+const { S3Client, PutObjectCommand, DeleteObjectCommand, DeleteObjectsCommand, ListObjectsV2Command } = require('@aws-sdk/client-s3');
 
 const app = express();
 const PORT = process.env.PORT || 10000;
@@ -12,7 +13,7 @@ const PORT = process.env.PORT || 10000;
 app.use(cors());
 app.use(express.json());
 
-// ── SUPABASE ──
+// ── SUPABASE ── (database only — video files now live on Cloudflare R2, see below)
 // IMPORTANT: this backend performs privileged writes (insert/update/delete)
 // on behalf of the admin. If your `gifts` table has Row Level Security (RLS)
 // enabled — which is the Supabase default — the anon key will be blocked
@@ -27,13 +28,40 @@ if (!supabaseUrl || !supabaseServiceKey) {
 }
 const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
+// ── CLOUDFLARE R2 (video file storage) ──
+// R2 is S3-compatible, so we talk to it with the standard AWS S3 SDK, just
+// pointed at Cloudflare's endpoint instead of AWS. Only the DATABASE lives
+// on Supabase now — actual video files live here.
+const R2_ACCOUNT_ID = process.env.R2_ACCOUNT_ID;
+const R2_ACCESS_KEY_ID = process.env.R2_ACCESS_KEY_ID;
+const R2_SECRET_ACCESS_KEY = process.env.R2_SECRET_ACCESS_KEY;
+const R2_BUCKET_NAME = process.env.R2_BUCKET_NAME || 'videogift';
+// Public base URL for serving files back out (e.g. your r2.dev Public
+// Development URL, or a custom domain connected to the bucket). No
+// trailing slash. Example: https://pub-xxxxxxxx.r2.dev
+const R2_PUBLIC_URL_BASE = process.env.R2_PUBLIC_URL_BASE;
+
+if (!R2_ACCOUNT_ID || !R2_ACCESS_KEY_ID || !R2_SECRET_ACCESS_KEY || !R2_PUBLIC_URL_BASE) {
+  console.error("❌ R2_ACCOUNT_ID, R2_ACCESS_KEY_ID, R2_SECRET_ACCESS_KEY, and R2_PUBLIC_URL_BASE must all be set.");
+  process.exit(1);
+}
+
+const r2 = new S3Client({
+  region: 'auto',
+  endpoint: `https://${R2_ACCOUNT_ID}.r2.cloudflarestorage.com`,
+  credentials: {
+    accessKeyId: R2_ACCESS_KEY_ID,
+    secretAccessKey: R2_SECRET_ACCESS_KEY
+  }
+});
+
 // ── JWT CONFIG ──
 const JWT_SECRET     = process.env.JWT_SECRET     || 'forever27-secret-change-this';
 const ADMIN_USERNAME = process.env.ADMIN_USERNAME || 'admin';
 const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'forever27';
 
 // ── MULTER ──
-const MAX_FILE_SIZE_MB = 50;
+const MAX_FILE_SIZE_MB = 150;
 const ALLOWED_VIDEO_MIMETYPES = new Set([
   'video/mp4',
   'video/quicktime',   // .mov
@@ -46,7 +74,7 @@ const ALLOWED_VIDEO_EXTENSIONS = new Set(['mp4', 'mov', 'avi', 'webm', '3gp', 'm
 
 const upload = multer({
   storage: multer.memoryStorage(),
-  limits: { fileSize: MAX_FILE_SIZE_MB * 1024 * 1024 }, // 50MB
+  limits: { fileSize: MAX_FILE_SIZE_MB * 1024 * 1024 }, // 150MB
   fileFilter: (req, file, cb) => {
     // Reject anything that isn't actually a video, even if the client-side
     // <input accept="video/*"> was bypassed or the mimetype was spoofed.
@@ -235,27 +263,26 @@ app.post('/api/upload', (req, res, next) => {
       });
     }
 
-    // Upload to Supabase Storage
+    // Upload to Cloudflare R2
     const ext = (file.originalname.split('.').pop() || 'mp4').toLowerCase();
     const filePath = `videos/${giftId}-${Date.now()}.${ext}`;
 
-    const { error: storageError } = await supabase.storage
-      .from('videos')
-      .upload(filePath, file.buffer, {
-        contentType: file.mimetype,
-        cacheControl: '3600',
-        upsert: true
-      });
-    if (storageError) throw storageError;
+    await r2.send(new PutObjectCommand({
+      Bucket: R2_BUCKET_NAME,
+      Key: filePath,
+      Body: file.buffer,
+      ContentType: file.mimetype,
+      CacheControl: '3600'
+    }));
 
-    const { data: urlData } = supabase.storage.from('videos').getPublicUrl(filePath);
+    const publicUrl = `${R2_PUBLIC_URL_BASE}/${filePath}`;
 
     // Update DB row — increment upload_count
     const newCount = (existing.upload_count || 0) + 1;
     const { error: dbError } = await supabase
       .from('gifts')
       .update({
-        video_url: urlData.publicUrl,
+        video_url: publicUrl,
         message: message || '',
         gifter_name: gifterName || '',
         status: 'uploaded',
@@ -266,7 +293,7 @@ app.post('/api/upload', (req, res, next) => {
 
     res.status(200).json({
       success: true,
-      video_url: urlData.publicUrl,
+      video_url: publicUrl,
       upload_count: newCount,
       max_uploads: 3
     });
@@ -344,27 +371,24 @@ app.delete('/api/gift/:id/video', requireAuth, async (req, res) => {
       return res.status(200).json({ ok: true, note: 'No video was attached; card status reset anyway.' });
     }
 
-    // 2. Extract the file path inside the storage bucket from the public URL
-    // Supabase URL format: https://<project>.supabase.co/storage/v1/object/public/videos/<filePath>
-    const marker = '/object/public/videos/';
+    // 2. Extract the object key inside the R2 bucket from the public URL
+    // R2 public URL format: <R2_PUBLIC_URL_BASE>/videos/<filePath>
+    const marker = '/videos/';
     const markerIdx = data.video_url.indexOf(marker);
     let filePath = null;
 
     if (markerIdx !== -1) {
-      filePath = decodeURIComponent(data.video_url.slice(markerIdx + marker.length));
+      filePath = 'videos/' + decodeURIComponent(data.video_url.slice(markerIdx + marker.length));
     }
 
     if (filePath) {
-      // 3. Delete file from Supabase Storage bucket "videos"
-      const { error: storageErr } = await supabase.storage
-        .from('videos')
-        .remove([filePath]);
-
-      if (storageErr) {
-        console.error(`Storage delete failed for "${filePath}":`, storageErr.message);
+      // 3. Delete file from Cloudflare R2
+      try {
+        await r2.send(new DeleteObjectCommand({ Bucket: R2_BUCKET_NAME, Key: filePath }));
+        console.log(`🗑️ R2 file deleted: ${filePath}`);
+      } catch (storageErr) {
+        console.error(`R2 delete failed for "${filePath}":`, storageErr.message);
         // Don't return error — still clear the DB below
-      } else {
-        console.log(`🗑️ Storage file deleted: ${filePath}`);
       }
     } else {
       console.warn('Could not parse file path from URL:', data.video_url);
@@ -397,13 +421,16 @@ app.delete('/api/gift/:id', requireAuth, async (req, res) => {
       .from('gifts').select('video_url').eq('id', giftId).single();
 
     if (data && data.video_url) {
-      const marker = '/object/public/videos/';
+      const marker = '/videos/';
       const markerIdx = data.video_url.indexOf(marker);
       if (markerIdx !== -1) {
-        const filePath = decodeURIComponent(data.video_url.slice(markerIdx + marker.length));
-        const { error: storageErr } = await supabase.storage.from('videos').remove([filePath]);
-        if (storageErr) console.warn('Storage delete on card delete failed:', storageErr.message);
-        else console.log(`🗑️ Storage file deleted with card: ${filePath}`);
+        const filePath = 'videos/' + decodeURIComponent(data.video_url.slice(markerIdx + marker.length));
+        try {
+          await r2.send(new DeleteObjectCommand({ Bucket: R2_BUCKET_NAME, Key: filePath }));
+          console.log(`🗑️ R2 file deleted with card: ${filePath}`);
+        } catch (storageErr) {
+          console.warn('R2 delete on card delete failed:', storageErr.message);
+        }
       }
     }
 
@@ -435,16 +462,18 @@ app.get('/api/admin/cards', requireAuth, async (req, res) => {
 });
 
 // ── PURGE ORPHANED STORAGE FILES (protected) ──
-// Deletes all files in the storage bucket that have no matching DB record
+// Deletes all files in the R2 bucket that have no matching DB record
 app.delete('/api/admin/purge-storage', requireAuth, async (req, res) => {
   try {
-    // 1. List all files in the videos/ folder of the bucket
-    const { data: files, error: listErr } = await supabase.storage
-      .from('videos')
-      .list('videos', { limit: 1000 });
+    // 1. List all files in the videos/ prefix of the R2 bucket
+    const listResult = await r2.send(new ListObjectsV2Command({
+      Bucket: R2_BUCKET_NAME,
+      Prefix: 'videos/',
+      MaxKeys: 1000
+    }));
+    const files = listResult.Contents || [];
 
-    if (listErr) throw listErr;
-    if (!files || files.length === 0) {
+    if (files.length === 0) {
       return res.json({ deleted: 0, message: 'Storage is already empty.' });
     }
 
@@ -457,20 +486,20 @@ app.delete('/api/admin/purge-storage', requireAuth, async (req, res) => {
 
     // 3. Find orphaned files (in storage but not referenced in any DB row)
     const orphans = files.filter(file => {
-      const { data: urlData } = supabase.storage
-        .from('videos')
-        .getPublicUrl(`videos/${file.name}`);
-      return !activeUrls.has(urlData.publicUrl);
+      const publicUrl = `${R2_PUBLIC_URL_BASE}/${file.Key}`;
+      return !activeUrls.has(publicUrl);
     });
 
     if (orphans.length === 0) {
       return res.json({ deleted: 0, message: 'No orphaned files found.' });
     }
 
-    // 4. Delete orphaned files
-    const orphanPaths = orphans.map(f => `videos/${f.name}`);
-    const { error: delErr } = await supabase.storage.from('videos').remove(orphanPaths);
-    if (delErr) throw delErr;
+    // 4. Delete orphaned files (up to 1000 per request, well within our cap above)
+    const orphanPaths = orphans.map(f => f.Key);
+    await r2.send(new DeleteObjectsCommand({
+      Bucket: R2_BUCKET_NAME,
+      Delete: { Objects: orphanPaths.map(Key => ({ Key })) }
+    }));
 
     console.log(`🧹 Purged ${orphans.length} orphaned storage file(s).`);
     res.json({ deleted: orphans.length, files: orphanPaths });
