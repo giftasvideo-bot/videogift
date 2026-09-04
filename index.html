@@ -113,6 +113,15 @@
     .divider { display: flex; align-items: center; gap: 10px; margin: 18px 0; color: var(--muted); font-size: 0.78rem; text-transform: uppercase; letter-spacing: 1px; }
     .divider::before, .divider::after { content: ''; flex: 1; height: 1px; background: var(--cream); }
 
+    /* Contact Us Section */
+    .contact-info { display: flex; flex-direction: column; gap: 10px; margin-top: 6px; }
+    .contact-row { display: flex; align-items: center; gap: 14px; padding: 14px 16px; background: var(--paper); border: 1px solid var(--cream); border-radius: 12px; text-decoration: none; color: var(--ink); transition: border-color 0.2s, transform 0.2s; }
+    .contact-row:hover { border-color: var(--gold); transform: translateY(-1px); }
+    .contact-icon { font-size: 1.3rem; flex-shrink: 0; }
+    .contact-label { font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); font-weight: 500; }
+    .contact-form { display: flex; flex-direction: column; gap: 10px; }
+    .contact-textarea { resize: vertical; min-height: 90px; font-family: 'DM Sans', sans-serif; line-height: 1.5; padding-top: 12px; }
+
     .manual-wrap { display: flex; gap: 8px; }
     .manual-input { flex: 1; padding: 13px 16px; border: 1px solid var(--cream); border-radius: 10px; font-family: 'DM Sans', sans-serif; font-size: 0.95rem; outline: none; background: #fff; transition: border-color 0.2s; }
     .manual-input:focus { border-color: var(--gold); }
@@ -170,6 +179,7 @@
         <a href="#postcards" data-i18n="nav_postcards">Postcards</a>
         <a href="#how-send" data-i18n="nav_send">How to Send</a>
         <a href="#how-receive" data-i18n="nav_receive">How to Receive</a>
+        <a href="#contact" data-i18n="nav_contact">Contact Us</a>
       </nav>
     </div>
 
@@ -202,6 +212,14 @@
         <div class="postcard-item">
           <img src="new-year.png" width="124" height="137" onclick="openLightbox(['new year post.png','new-year-inside.png'],'Holiday')">
           <div class="postcard-title" data-i18n="postcard_holiday">Holiday</div>
+        </div>
+        <div class="postcard-item">
+          <img src="new-year.png" width="124" height="137" onclick="openLightbox(['love-outside.png','love-inside.png'],'Love')">
+          <div class="postcard-title" data-i18n="postcard_holiday">Love</div>
+        </div>
+        <div class="postcard-item">
+          <img src="new-year.png" width="124" height="137" onclick="openLightbox(['ሞም-ቲ-ቢ.png','ባክ-ማም-ቱ-ቢ.png'],'Mom to be')">
+          <div class="postcard-title" data-i18n="postcard_holiday">Mom to be</div>
         </div>
       </div>
     </div>
@@ -275,6 +293,36 @@
           </div>
         </li>
       </ol>
+    </div>
+
+    <!-- Contact Us Section -->
+    <div class="content-card" id="contact">
+      <h3 data-i18n="contact_title">💌 Contact Us</h3>
+      <p align="justify" data-i18n="contact_desc">Have a question about an order, a card that isn't scanning, or a custom postcard request? Reach us directly, or send a message below and we'll get back to you.</p>
+
+      <div class="contact-info">
+        <a class="contact-row" href="mailto:giftasvideo@gmail.com">
+          <span class="contact-icon">✉️</span>
+          <span><span class="contact-label" data-i18n="contact_email_label">Email</span><br>giftasvideo@gmail.com</span>
+        </a>
+        <a class="contact-row" href="https://wa.me/251932203358" target="_blank" rel="noopener">
+          <span class="contact-icon">💬</span>
+          <span><span class="contact-label" data-i18n="contact_whatsapp_label">WhatsApp</span><br>+251 932 203358</span>
+        </a>
+        <a class="contact-row" href="tel:+251932203358">
+          <span class="contact-icon">📞</span>
+          <span><span class="contact-label" data-i18n="contact_phone_label">Phone</span><br>+251 932 203358</span>
+        </a>
+      </div>
+
+      <div class="divider" data-i18n="contact_or">or send a message</div>
+
+      <form class="contact-form" id="contact-form" onsubmit="return sendContactMessage(event)">
+        <input type="text" id="contact-name" class="manual-input" data-i18n-placeholder="contact_name_ph" placeholder="Your name" required>
+        <input type="email" id="contact-email" class="manual-input" data-i18n-placeholder="contact_email_ph" placeholder="giftasvideo@gmail.com" required>
+        <textarea id="contact-message" class="manual-input contact-textarea" data-i18n-placeholder="contact_msg_ph" placeholder="How can we help?" required></textarea>
+        <button type="submit" class="cta-btn" data-i18n="contact_send">Send Message</button>
+      </form>
     </div>
 
     <!-- Site Copyright Footer -->
@@ -373,6 +421,18 @@
         receive_title: '🎁 How to Receive',
         receive_step1: '<strong>Identify Visual Identifier</strong>Examine the received physical piece context elements, look up the tag, and initiate standard capture via mobile reader or pass parameters via the home field submission input.',
         receive_step2: '<strong>Automatic Media Playback</strong>The underlying validation pipeline resolves the target data context dynamically and directly surfaces the integrated personal video sequence automatically!',
+        nav_contact: 'Contact Us',
+
+        contact_title: '💌 Contact Us',
+        contact_desc: "Have a question about an order, a card that isn't scanning, or a custom postcard request? Reach us directly, or send a message below and we'll get back to you.",
+        contact_email_label: 'Email',
+        contact_whatsapp_label: 'WhatsApp',
+        contact_phone_label: 'Phone',
+        contact_or: 'or send a message',
+        contact_name_ph: 'Your name',
+        contact_email_ph: 'Your email',
+        contact_msg_ph: 'How can we help?',
+        contact_send: 'Send Message',
         footer_text: '&copy; 2026 WordGift. All Rights Reserved. Memories That Last Forever.',
         modal_title: 'Point camera at QR code',
         scan_starting: 'Starting camera...',
@@ -424,6 +484,17 @@
         receive_title: '🎁 እንዴት እንደሚቀበሉ',
         receive_step1: '<strong>የእይታ መለያን ይለዩ</strong>የተቀበሉትን አካላዊ እቃ ገፅታዎች ይመልከቱ፣ መለያውን ያግኙ፣ እና በሞባይል አንባቢ በኩል መደበኛ ቅኝት ይጀምሩ ወይም መለኪያዎችን በመነሻ ገፅ ግቤት ውስጥ ያስገቡ።',
         receive_step2: '<strong>ራስ-ሰር የቪዲዮ ማጫወት</strong>የመሰረታዊ ማረጋገጫ ስርዓቱ የታለመውን መረጃ በራስ-ሰር ይፈታል እና የተካተተውን የግል ቪዲዮ በራስ-ሰር በቀጥታ ያሳያል!',
+        nav_contact: 'ያግኙን',
+        contact_title: '💌 ያግኙን',
+        contact_desc: 'ስለ ትዕዛዝ፣ ስለማይቃኝ ካርድ፣ ወይም ስለ ልዩ ፖስትካርድ ጥያቄ አለዎት? በቀጥታ ያግኙን፣ ወይም ከታች መልእክት ይላኩልን፤ በቅርቡ እንመልስልዎታለን።',
+        contact_email_label: 'ኢሜይል',
+        contact_whatsapp_label: 'ዋትስአፕ',
+        contact_phone_label: 'ስልክ',
+        contact_or: 'ወይም መልእክት ይላኩ',
+        contact_name_ph: 'ስምዎ',
+        contact_email_ph: 'ኢሜይልዎ',
+        contact_msg_ph: 'እንዴት ልንረዳዎት እንችላለን?',
+        contact_send: 'መልእክት ላክ',
         footer_text: '&copy; 2026 የቃል ስጦታ። መብቱ በህግ የተጠበቀ ነው። ለዘላለም የሚዘልቁ ትዝታዎች።',
         modal_title: 'ካሜራውን ወደ QR ኮድ ያመልክቱ',
         scan_starting: 'ካሜራ በመጀመር ላይ...',
@@ -454,6 +525,10 @@
         else el.textContent = val;
       });
       document.getElementById('manual-code').placeholder = dict.manual_placeholder;
+      document.querySelectorAll('[data-i18n-placeholder]').forEach(el => {
+        const key = el.getAttribute('data-i18n-placeholder');
+        if (dict[key] !== undefined) el.placeholder = dict[key];
+      });
       document.documentElement.lang = currentLang;
       document.body.classList.toggle('lang-am', currentLang === 'am');
       document.getElementById('lang-en').classList.toggle('active', currentLang === 'en');
@@ -713,6 +788,20 @@
     document.getElementById('scan-modal').addEventListener('click', function(e) {
       if (e.target === this) closeModal();
     });
+
+    // ---------- Contact Form ----------
+    function sendContactMessage(event) {
+      event.preventDefault();
+      const name = document.getElementById('contact-name').value.trim();
+      const email = document.getElementById('contact-email').value.trim();
+      const message = document.getElementById('contact-message').value.trim();
+
+      const subject = encodeURIComponent(`WordGift enquiry from ${name}`);
+      const body = encodeURIComponent(`${message}\n\n— ${name} (${email})`);
+      window.location.href = `mailto:hello@wordgift.com?subject=${subject}&body=${body}`;
+
+      return false;
+    }
   </script>
 </body>
 </html>
