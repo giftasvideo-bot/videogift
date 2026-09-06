@@ -194,8 +194,27 @@
       body * { display: none !important; }
       #print-area { display: grid !important; grid-template-columns: repeat(3, 1fr); gap: 25px; padding: 10px; }
       #print-area * { display: block !important; }
-      .print-card { border: 1px dashed #bbb; padding: 20px; text-align: center; background: white; page-break-inside: avoid; }
-      .print-card div { margin-top: 10px; font-family: monospace; font-size: 12px; font-weight: bold; }
+      #print-area .print-card {
+        display: flex !important;
+        flex-direction: column !important;
+        justify-content: space-between !important;
+        align-items: center !important;
+        height: 260px;
+        border: 1px dashed #bbb; padding: 20px; text-align: center; background: white; page-break-inside: avoid;
+      }
+      #print-area .print-card .print-id {
+        font-family: monospace; font-size: 12px; font-weight: bold;
+      }
+      #print-area .print-card .print-qr-wrap {
+        margin-top: auto !important;
+        display: flex !important;
+        flex-direction: column !important;
+        align-items: center !important;
+      }
+      #print-area .print-card .print-caption {
+        margin-top: 8px; font-size: 11px; font-weight: 600; color: #333;
+        max-width: 150px; line-height: 1.3; font-family: 'DM Sans', sans-serif;
+      }
     }
 
     /* Sold-to info + buyer modal */
@@ -337,7 +356,7 @@
         <button class="btn btn-secondary" onclick="viewUnsoldList()" id="view-unsold-btn">👁️ View Unsold List</button>
         <button class="btn btn-secondary" onclick="exportUnsoldToExcel()" id="export-unsold-btn">📊 Export Unsold (Excel)</button>
         <button class="btn btn-secondary" onclick="purgeOrphanedStorage()" id="purge-btn">🧹 Purge Storage</button>
-        <button class="btn btn-secondary" onclick="printAndMark()">🖨️ Print All Cards</button>
+        <button class="btn btn-secondary" onclick="printAndMark()">🖨️ Print Unsold Cards</button>
       </div>
     </div>
     <div class="filter-bar">
@@ -580,11 +599,17 @@
     setPrintedMap(map);
   }
   function printAndMark() {
+    const printArea = document.getElementById('print-area');
+    if (!printArea.children.length) {
+      alert('🎉 Nothing to print — every card in the registry has already been sold.');
+      return;
+    }
     window.print();
     // afterprint fires once the print dialog closes (works in Chrome/Edge/Firefox)
   }
   window.addEventListener('afterprint', () => {
-    markAllPrinted(localRegistry);
+    const printedIds = localRegistry.filter(id => !isCardSold(id));
+    markAllPrinted(printedIds);
     renderDashboardGrid();
   });
 
@@ -667,14 +692,29 @@
 
       const pCard = document.createElement('div');
       pCard.className = 'print-card';
-      const qrTarget = document.createElement('div');
-      pCard.appendChild(qrTarget);
+
       const label = document.createElement('div');
+      label.className = 'print-id';
       label.textContent = id;
       pCard.appendChild(label);
-      printArea.appendChild(pCard);
 
-      new QRCode(qrTarget, { text: targetWatchUrl, width: 140, height: 140 });
+      const qrWrap = document.createElement('div');
+      qrWrap.className = 'print-qr-wrap';
+      const qrTarget = document.createElement('div');
+      qrWrap.appendChild(qrTarget);
+      const caption = document.createElement('div');
+      caption.className = 'print-caption';
+      caption.textContent = 'Scan to add/watch your video gift';
+      qrWrap.appendChild(caption);
+      pCard.appendChild(qrWrap);
+
+      // Only cards that haven't been sold go into the printable sheet —
+      // a sold card's physical copy is already out the door, so reprinting
+      // it would just waste paper/ink.
+      if (!isSold) {
+        printArea.appendChild(pCard);
+        new QRCode(qrTarget, { text: targetWatchUrl, width: 140, height: 140 });
+      }
     });
   }
 
@@ -820,7 +860,6 @@
       document.getElementById('unsold-modal').classList.add('open');
       return;
     }
-
 
     subtitle.textContent = `${unsoldIds.length} card${unsoldIds.length === 1 ? '' : 's'} not yet sold, in print order.`;
 
