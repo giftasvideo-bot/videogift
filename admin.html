@@ -201,34 +201,40 @@
        so there's no last-second paint to race against at print time. */
     #print-area { position: fixed; top: 0; left: -9999px; visibility: hidden; }
     @media print {
+      @page { size: A5; margin: 12mm; }
       body * { visibility: hidden !important; }
       #print-area, #print-area * { visibility: visible !important; }
       #print-area {
         position: static !important;
         left: auto !important;
-        display: grid !important;
-        grid-template-columns: repeat(3, 1fr); gap: 25px; padding: 10px;
+        display: block !important;
       }
       #print-area .print-card {
-        display: flex !important;
-        flex-direction: column !important;
-        justify-content: space-between !important;
-        align-items: center !important;
-        height: 260px;
-        border: 1px dashed #bbb; padding: 20px; text-align: center; background: white; page-break-inside: avoid;
+        text-align: center;
+        padding-top: 45mm;
+        page-break-after: always;
+        break-after: page;
+      }
+      #print-area .print-card:last-child {
+        page-break-after: auto;
+        break-after: auto;
       }
       #print-area .print-card .print-id {
-        font-family: monospace; font-size: 12px; font-weight: bold;
+        font-family: monospace; font-size: 20px; font-weight: bold; margin-bottom: 24px;
       }
       #print-area .print-card .print-qr-wrap {
-        margin-top: auto !important;
         display: flex !important;
         flex-direction: column !important;
         align-items: center !important;
       }
+      #print-area .print-card .print-qr-wrap canvas,
+      #print-area .print-card .print-qr-wrap img {
+        width: 240px !important;
+        height: 240px !important;
+      }
       #print-area .print-card .print-caption {
-        margin-top: 8px; font-size: 11px; font-weight: 600; color: #333;
-        max-width: 150px; line-height: 1.3; font-family: 'DM Sans', sans-serif;
+        margin-top: 20px; font-size: 15px; font-weight: 600; color: #333;
+        max-width: 260px; line-height: 1.3; font-family: 'DM Sans', sans-serif;
       }
     }
 
@@ -427,6 +433,7 @@
     <div class="modal-actions">
       <button class="btn btn-secondary" onclick="closeUnsoldModal()">Close</button>
       <button class="btn" onclick="exportUnsoldToExcel()">📊 Export Excel</button>
+      <button class="btn" onclick="printAndMark()">🖨️ Print Cards</button>
     </div>
   </div>
 </div>
@@ -617,6 +624,7 @@
   function debugPrintArea() {
     const pa = document.getElementById('print-area');
     const cs = getComputedStyle(pa);
+
     const qrLibLoaded = typeof QRCode !== 'undefined';
     const firstCard = pa.children[0];
     const qrWrap = firstCard ? firstCard.querySelector('.print-qr-wrap') : null;
@@ -776,7 +784,7 @@
       // it would just waste paper/ink.
       if (!isSold) {
         printArea.appendChild(pCard);
-        new QRCode(qrTarget, { text: targetWatchUrl, width: 140, height: 140 });
+        new QRCode(qrTarget, { text: targetWatchUrl, width: 240, height: 240 });
       }
     });
   }
