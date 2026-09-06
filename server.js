@@ -323,6 +323,65 @@ app.post('/api/upload', (req, res, next) => {
   }
 });
 
+// -- RECORD SALE / BUYER INFO (protected) --
+// NOTE: requires these columns on the `gifts` table in Supabase (run once):
+//   ALTER TABLE gifts ADD COLUMN buyer_name text;
+//   ALTER TABLE gifts ADD COLUMN buyer_contact text;
+//   ALTER TABLE gifts ADD COLUMN buyer_note text;
+//   ALTER TABLE gifts ADD COLUMN sold_at timestamptz;
+// Lets the admin note who a physical card was sold to. Stored on the same
+// gift row so it stays in sync across every device viewing the dashboard,
+// instead of living only in one browser's localStorage.
+app.patch('/api/gift/:id/buyer', requireAuth, async (req, res) => {
+  const giftId = req.params.id;
+  const { buyerName, buyerContact, note } = req.body || {};
+
+  if (!buyerName && !buyerContact && !note) {
+    return res.status(400).json({ error: 'Provide at least a buyer name, contact, or note.' });
+  }
+
+  try {
+    const { data: existing, error: lookupErr } = await supabase
+      .from('gifts').select('id').eq('id', giftId).single();
+    if (lookupErr || !existing) {
+      return res.status(404).json({ error: 'Gift not found.' });
+    }
+
+    const { data, error } = await supabase
+      .from('gifts')
+      .update({
+        buyer_name: buyerName || null,
+        buyer_contact: buyerContact || null,
+        buyer_note: note || null,
+        sold_at: new Date().toISOString()
+      })
+      .eq('id', giftId)
+      .select()
+      .single();
+
+    if (error) throw error;
+    res.status(200).json({ success: true, gift: data });
+  } catch (err) {
+    console.error('Record sale error:', err.message);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// -- CLEAR SALE / BUYER INFO (protected) --
+app.delete('/api/gift/:id/buyer', requireAuth, async (req, res) => {
+  const giftId = req.params.id;
+  try {
+    const { error } = await supabase
+      .from('gifts')
+      .update({ buyer_name: null, buyer_contact: null, buyer_note: null, sold_at: null })
+      .eq('id', giftId);
+    if (error) throw error;
+    res.status(200).json({ success: true });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // -- MARK AS VIEWED --
 app.post('/api/gift/:id/view', async (req, res) => {
   try {
@@ -466,15 +525,36 @@ app.delete('/api/gift/:id', requireAuth, async (req, res) => {
 // admin.html calls this on load so ALL browsers see the same cards from DB
 app.get('/api/admin/cards', requireAuth, async (req, res) => {
   try {
-    const { data, error } = await supabase
+    let { data, error } = await supabase
       .from('gifts')
-      .select('id')
+      .select('id, buyer_name, buyer_contact, buyer_note, sold_at')
       .order('id', { ascending: false });
+
+    if (error) {
+      // Most likely cause: buyer_* columns don't exist yet on this table
+      // (see the migration note above the /api/gift/:id/buyer route).
+      // Don't fail the whole card list over it — retry with just id.
+      console.warn('⚠️ /api/admin/cards: full select failed, retrying without buyer fields:', error.message);
+      const fallback = await supabase.from('gifts').select('id').order('id', { ascending: false });
+      data = fallback.data;
+      error = fallback.error;
+    }
 
     if (error) throw error;
 
     const ids = (data || []).map(row => row.id);
-    res.json({ ids });
+    const buyers = {};
+    (data || []).forEach(row => {
+      if (row.buyer_name || row.buyer_contact || row.buyer_note) {
+        buyers[row.id] = {
+          buyerName: row.buyer_name || '',
+          buyerContact: row.buyer_contact || '',
+          buyerNote: row.buyer_note || '',
+          soldAt: row.sold_at || null
+        };
+      }
+    });
+    res.json({ ids, buyers });
   } catch (err) {
     console.error('Failed to fetch card list:', err);
     res.status(500).json({ message: err.message });

@@ -196,6 +196,50 @@
       .print-card { border: 1px dashed #bbb; padding: 20px; text-align: center; background: white; page-break-inside: avoid; }
       .print-card div { margin-top: 10px; font-family: monospace; font-size: 12px; font-weight: bold; }
     }
+
+    /* Sold-to info + buyer modal */
+    .sold-info {
+      width: 100%;
+      font-size: 0.78rem;
+      color: var(--muted);
+      background: var(--paper);
+      border: 1px solid var(--cream);
+      border-radius: 8px;
+      padding: 8px 10px;
+      margin-bottom: 10px;
+      text-align: left;
+      line-height: 1.5;
+    }
+    .sold-info.has-buyer { background: #fff8e1; border-color: #ffe082; color: #7a6020; }
+    .sold-info strong { color: var(--ink); }
+    .btn-action-sold { background: #ede7f6; color: #5e35b1; }
+    .btn-action-sold:hover { background: #d1c4e9; }
+    .btn-action-sold.is-sold { background: #fff8e1; color: #7a6020; }
+    .btn-action-sold.is-sold:hover { background: #ffe082; }
+
+    .modal-overlay {
+      position: fixed; inset: 0; background: rgba(13,13,13,0.55);
+      display: none; align-items: center; justify-content: center;
+      z-index: 1000; padding: 20px;
+    }
+    .modal-overlay.open { display: flex; }
+    .modal-box {
+      background: #fff; border-radius: 14px; padding: 26px 24px;
+      width: 100%; max-width: 400px; position: relative;
+    }
+    .modal-box h3 { font-family: 'Playfair Display', serif; font-size: 1.2rem; margin-bottom: 4px; }
+    .modal-box .modal-subtitle { font-size: 0.8rem; color: var(--muted); margin-bottom: 18px; }
+    .modal-box label { display: block; font-size: 0.8rem; font-weight: 500; margin-bottom: 6px; }
+    .modal-box .form-field { margin-bottom: 14px; }
+    .modal-box input[type="text"], .modal-box textarea {
+      width: 100%; padding: 10px 14px; border: 1px solid var(--cream);
+      border-radius: 8px; background: var(--paper); font-family: 'DM Sans', sans-serif;
+      font-size: 0.9rem; outline: none;
+    }
+    .modal-box textarea { resize: vertical; min-height: 60px; }
+    .modal-actions { display: flex; gap: 8px; margin-top: 18px; }
+    .modal-actions .btn { flex: 1; padding: 10px; font-size: 0.88rem; }
+    .modal-close { position: absolute; top: 16px; right: 16px; background: var(--cream); border: none; width: 30px; height: 30px; border-radius: 50%; cursor: pointer; color: var(--muted); font-size: 1rem; }
   </style>
 </head>
 <body>
@@ -285,11 +329,37 @@
 
 <div id="print-area"></div>
 
+<!-- Sold-To / Buyer Info Modal -->
+<div class="modal-overlay" id="buyer-modal">
+  <div class="modal-box">
+    <button class="modal-close" onclick="closeBuyerModal()">✕</button>
+    <h3>🧾 Record Sale</h3>
+    <div class="modal-subtitle">Card <strong id="buyer-modal-id"></strong></div>
+    <div class="form-field">
+      <label for="buyer-name-input">Buyer name</label>
+      <input type="text" id="buyer-name-input" placeholder="e.g. Sarah Tesfaye">
+    </div>
+    <div class="form-field">
+      <label for="buyer-contact-input">Phone / email (optional)</label>
+      <input type="text" id="buyer-contact-input" placeholder="e.g. 0911 234 567">
+    </div>
+    <div class="form-field">
+      <label for="buyer-note-input">Note (optional)</label>
+      <textarea id="buyer-note-input" placeholder="e.g. Sold at Bole shop, cash"></textarea>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-secondary" id="buyer-clear-btn" onclick="clearBuyerInfo()">Clear</button>
+      <button class="btn" onclick="saveBuyerInfo()">Save</button>
+    </div>
+  </div>
+</div>
+
 <script>
   let BACKEND_API_BASE = localStorage.getItem('videogift_api_url') || 'https://videogift-backend-3.onrender.com';
   document.getElementById('api-url-input').value = BACKEND_API_BASE;
 
   let localRegistry = [];
+  let buyerMap = {}; // { [id]: { buyerName, buyerContact, buyerNote, soldAt } }
 
   // Returns Authorization header using the stored session token
   function authHeaders(extra = {}) {
@@ -521,6 +591,8 @@
     visibleIds.forEach(id => {
       const targetWatchUrl = buildWatchUrl(id);
       const printed = !!printedMap[id];
+      const buyer = buyerMap[id];
+      const isSold = !!(buyer && (buyer.buyerName || buyer.buyerContact || buyer.buyerNote));
 
       const card = document.createElement('div');
       card.className = 'qr-card';
@@ -531,9 +603,11 @@
         <div class="print-status-badge ${printed ? 'print-status-yes' : 'print-status-no'}">${printed ? '✅ Printed' : '🔴 Not Printed'}</div>
         <div class="status-badge status-pending" id="badge-${id}">CHECKING...</div>
         <div id="upload-count-${id}" style="font-size:0.78rem; color:var(--muted); margin-bottom:10px; min-height:18px;"></div>
+        <div class="sold-info ${isSold ? 'has-buyer' : ''}" id="sold-info-${id}">${renderSoldInfoHtml(buyer)}</div>
         <div class="card-actions" style="flex-wrap:wrap; gap:6px;">
           <button class="btn btn-print-toggle ${printed ? 'is-printed' : ''}" onclick="togglePrinted('${id}')">${printed ? '✅ Printed' : '🖨️ Mark Printed'}</button>
           <button class="btn btn-secondary" onclick="copyWatchLink('${id}')">🔗 Link</button>
+          <button class="btn btn-action-sold ${isSold ? 'is-sold' : ''}" onclick="openBuyerModal('${id}')">${isSold ? '🧾 Edit Sale' : '🧾 Record Sale'}</button>
           <button class="btn btn-action-delete-video" id="delvid-${id}" onclick="deleteVideoOnly('${id}')">🎬 Delete Video</button>
           <button class="btn btn-action-delete" onclick="deleteCardRow('${id}')">🗑️ Card</button>
         </div>
@@ -562,6 +636,101 @@
     });
   }
 
+  function escapeHtml(str) {
+    return String(str).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  }
+
+  function renderSoldInfoHtml(buyer) {
+    if (!buyer || (!buyer.buyerName && !buyer.buyerContact && !buyer.buyerNote)) {
+      return `<span style="color:var(--muted);">Not sold yet</span>`;
+    }
+    const parts = [];
+    if (buyer.buyerName) parts.push(`<strong>${escapeHtml(buyer.buyerName)}</strong>`);
+    if (buyer.buyerContact) parts.push(escapeHtml(buyer.buyerContact));
+    let line = `🧾 Sold to: ${parts.join(' · ') || '—'}`;
+    if (buyer.buyerNote) line += `<br>📝 ${escapeHtml(buyer.buyerNote)}`;
+    if (buyer.soldAt) {
+      const d = new Date(buyer.soldAt);
+      if (!isNaN(d)) line += `<br><span style="opacity:0.75;">${d.toLocaleDateString()}</span>`;
+    }
+    return line;
+  }
+
+  let buyerModalCardId = null;
+
+  function openBuyerModal(id) {
+    buyerModalCardId = id;
+    const buyer = buyerMap[id] || {};
+    document.getElementById('buyer-modal-id').textContent = id;
+    document.getElementById('buyer-name-input').value = buyer.buyerName || '';
+    document.getElementById('buyer-contact-input').value = buyer.buyerContact || '';
+    document.getElementById('buyer-note-input').value = buyer.buyerNote || '';
+    document.getElementById('buyer-clear-btn').style.display =
+      (buyer.buyerName || buyer.buyerContact || buyer.buyerNote) ? 'inline-flex' : 'none';
+    document.getElementById('buyer-modal').classList.add('open');
+  }
+
+  function closeBuyerModal() {
+    document.getElementById('buyer-modal').classList.remove('open');
+    buyerModalCardId = null;
+  }
+
+  async function saveBuyerInfo() {
+    if (!buyerModalCardId) return;
+    const id = buyerModalCardId;
+    const buyerName = document.getElementById('buyer-name-input').value.trim();
+    const buyerContact = document.getElementById('buyer-contact-input').value.trim();
+    const note = document.getElementById('buyer-note-input').value.trim();
+
+    if (!buyerName && !buyerContact && !note) {
+      alert('Enter at least a buyer name, contact, or note.');
+      return;
+    }
+
+    try {
+      const res = await apiFetch(`${BACKEND_API_BASE}/api/gift/${id}/buyer`, {
+        method: 'PATCH',
+        body: JSON.stringify({ buyerName, buyerContact, note })
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.error || 'Server error');
+
+      buyerMap[id] = {
+        buyerName,
+        buyerContact,
+        buyerNote: note,
+        soldAt: (data.gift && data.gift.sold_at) || new Date().toISOString()
+      };
+      closeBuyerModal();
+      renderDashboardGrid();
+    } catch (err) {
+      alert(`⚠️ Could not save sale info: ${err.message}`);
+    }
+  }
+
+  async function clearBuyerInfo() {
+    if (!buyerModalCardId) return;
+    const id = buyerModalCardId;
+    if (!confirm(`Clear sale info for card ${id}?`)) return;
+
+    try {
+      const res = await apiFetch(`${BACKEND_API_BASE}/api/gift/${id}/buyer`, { method: 'DELETE' });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data.error || 'Server error');
+      }
+      delete buyerMap[id];
+      closeBuyerModal();
+      renderDashboardGrid();
+    } catch (err) {
+      alert(`⚠️ Could not clear sale info: ${err.message}`);
+    }
+  }
+
+  document.getElementById('buyer-modal').addEventListener('click', function(e) {
+    if (e.target === this) closeBuyerModal();
+  });
+
   function copyWatchLink(id) {
     const url = buildWatchUrl(id);
     navigator.clipboard.writeText(url).then(() => {
@@ -579,6 +748,7 @@
     }
 
     localRegistry = localRegistry.filter(item => item !== id);
+    delete buyerMap[id];
 
     const map = getPrintedMap();
     if (map[id]) { delete map[id]; setPrintedMap(map); }
@@ -662,9 +832,11 @@
       if (!response.ok) throw new Error('Failed to load cards from database.');
       const data = await response.json();
       localRegistry = data.ids || [];
+      buyerMap = data.buyers || {};
     } catch (err) {
       console.warn('Could not load cards from DB:', err);
       localRegistry = [];
+      buyerMap = {};
     }
 
     renderDashboardGrid();
