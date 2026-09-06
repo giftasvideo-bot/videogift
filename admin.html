@@ -223,7 +223,7 @@
     .modal-box .modal-subtitle { font-size: 0.8rem; color: var(--muted); margin-bottom: 18px; }
     .modal-box label { display: block; font-size: 0.8rem; font-weight: 500; margin-bottom: 6px; }
     .modal-box .form-field { margin-bottom: 14px; }
-    .modal-box input[type="text"], .modal-box textarea {
+    .modal-box input[type="text"], .modal-box input[type="date"], .modal-box textarea {
       width: 100%; padding: 10px 14px; border: 1px solid var(--cream);
       border-radius: 8px; background: var(--paper); font-family: 'DM Sans', sans-serif;
       font-size: 0.9rem; outline: none;
@@ -251,6 +251,25 @@
     }
     .unsold-tile .qr-mini { width: 100px; height: 100px; margin: 0 auto 8px; background: #fff; border-radius: 6px; display: flex; align-items: center; justify-content: center; }
     .unsold-tile .id-mini { font-family: monospace; font-weight: 700; font-size: 0.82rem; }
+
+    /* Sales report modal */
+    .sales-summary {
+      display: flex; gap: 12px; flex-wrap: wrap; margin: 4px 0 16px;
+    }
+    .sales-stat {
+      flex: 1; min-width: 140px; background: var(--paper); border: 1px solid var(--cream);
+      border-radius: 10px; padding: 14px 16px; text-align: center;
+    }
+    .sales-stat .stat-value { font-family: 'Playfair Display', serif; font-size: 1.4rem; color: var(--gold); }
+    .sales-stat .stat-label { font-size: 0.75rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.04em; margin-top: 4px; }
+    .sales-table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
+    .sales-table th, .sales-table td {
+      text-align: left; padding: 8px 10px; border-bottom: 1px solid var(--cream);
+      vertical-align: top;
+    }
+    .sales-table th { font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.04em; color: var(--muted); }
+    .sales-table td.id-cell { font-family: monospace; font-weight: 700; }
+    .sales-table td.price-cell { color: var(--gold); font-weight: 600; white-space: nowrap; }
   </style>
 </head>
 <body>
@@ -326,6 +345,7 @@
       <h2>📋 Active Card Registry Collection</h2>
       <div style="display:flex;gap:10px;flex-wrap:wrap;">
         <button class="btn btn-secondary" onclick="viewUnsoldList()" id="view-unsold-btn">👁️ View Unsold List</button>
+        <button class="btn btn-secondary" onclick="viewSalesReport()" id="view-sales-btn">💰 Sales Report</button>
         <button class="btn btn-secondary" onclick="exportUnsoldToExcel()" id="export-unsold-btn">📊 Export Unsold (Excel)</button>
         <button class="btn btn-secondary" onclick="purgeOrphanedStorage()" id="purge-btn">🧹 Purge Storage</button>
         <button class="btn btn-secondary" onclick="printAndMark()">🖨️ Print Unsold Cards</button>
@@ -359,6 +379,10 @@
       <input type="text" inputmode="decimal" id="buyer-price-input" placeholder="e.g. 500">
     </div>
     <div class="form-field">
+      <label for="buyer-sold-date-input">Sale date</label>
+      <input type="date" id="buyer-sold-date-input">
+    </div>
+    <div class="form-field">
       <label for="buyer-note-input">Note (optional)</label>
       <textarea id="buyer-note-input" placeholder="e.g. Sold at Bole shop, cash"></textarea>
     </div>
@@ -382,6 +406,35 @@
       <button class="btn btn-secondary" onclick="closeUnsoldModal()">Close</button>
       <button class="btn" onclick="exportUnsoldToExcel()">📊 Export Excel</button>
       <button class="btn" onclick="printAndMark()">🖨️ Print Cards</button>
+    </div>
+  </div>
+</div>
+
+<!-- Sales Report Modal -->
+<div class="modal-overlay" id="sales-modal">
+  <div class="modal-box wide">
+    <button class="modal-close" onclick="closeSalesModal()">✕</button>
+    <h3>💰 Sales Report</h3>
+    <div class="modal-subtitle" id="sales-modal-subtitle">Loading…</div>
+    <div class="sales-summary" id="sales-summary"></div>
+    <div class="unsold-list-body">
+      <table class="sales-table" id="sales-table">
+        <thead>
+          <tr>
+            <th>Card ID</th>
+            <th>Buyer</th>
+            <th>Contact</th>
+            <th>Price</th>
+            <th>Note</th>
+            <th>Sold on</th>
+          </tr>
+        </thead>
+        <tbody id="sales-table-body"></tbody>
+      </table>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-secondary" onclick="closeSalesModal()">Close</button>
+      <button class="btn" onclick="exportSalesToExcel()">📊 Export Excel</button>
     </div>
   </div>
 </div>
@@ -607,12 +660,13 @@
       <!DOCTYPE html>
       <html><head><title>Print Cards</title>
       <style>
-        @page { size: A5; margin: 12mm; }
+        @page { margin: 12mm; }
+        html, body { height: 100%; }
         * { margin:0; padding:0; box-sizing:border-box; }
         body { font-family: 'DM Sans', sans-serif; }
         .print-card {
           display:flex; flex-direction:column; align-items:center; justify-content:flex-end;
-          min-height:186mm; padding-bottom:10mm; text-align:center; page-break-after: always;
+          min-height:100vh; padding-bottom:10mm; text-align:center; page-break-after: always;
         }
         .print-card:last-child { page-break-after: auto; }
         .print-id { font-family: monospace; font-size:16px; font-weight:bold; margin-bottom:14px; }
@@ -751,6 +805,12 @@
     document.getElementById('buyer-contact-input').value = buyer.buyerContact || '';
     document.getElementById('buyer-price-input').value = (buyer.price !== null && buyer.price !== undefined) ? buyer.price : '';
     document.getElementById('buyer-note-input').value = buyer.buyerNote || '';
+
+    // Pre-fill with the existing sale date if there is one, otherwise
+    // default to today so a same-day sale needs no extra typing.
+    const existingDate = buyer.soldAt && !isNaN(new Date(buyer.soldAt)) ? new Date(buyer.soldAt) : new Date();
+    document.getElementById('buyer-sold-date-input').value = existingDate.toISOString().slice(0, 10);
+
     document.getElementById('buyer-clear-btn').style.display =
       (buyer.buyerName || buyer.buyerContact || buyer.buyerNote || buyer.price !== null && buyer.price !== undefined) ? 'inline-flex' : 'none';
     document.getElementById('buyer-modal').classList.add('open');
@@ -768,6 +828,7 @@
     const buyerContact = document.getElementById('buyer-contact-input').value.trim();
     const priceRaw = document.getElementById('buyer-price-input').value.trim();
     const note = document.getElementById('buyer-note-input').value.trim();
+    const dateRaw = document.getElementById('buyer-sold-date-input').value; // "YYYY-MM-DD" or ""
 
     if (!buyerName && !buyerContact && !priceRaw && !note) {
       alert('Enter at least a buyer name, contact, price, or note.');
@@ -783,10 +844,14 @@
       }
     }
 
+    // Noon UTC avoids the date shifting a day backward/forward when the
+    // browser's local timezone is behind/ahead of UTC.
+    const soldAt = dateRaw ? new Date(`${dateRaw}T12:00:00`).toISOString() : new Date().toISOString();
+
     try {
       const res = await apiFetch(`${BACKEND_API_BASE}/api/gift/${id}/buyer`, {
         method: 'PATCH',
-        body: JSON.stringify({ buyerName, buyerContact, note, price })
+        body: JSON.stringify({ buyerName, buyerContact, note, price, soldAt })
       });
       const data = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(data.error || 'Server error');
@@ -796,7 +861,7 @@
         buyerContact,
         buyerNote: note,
         price: price,
-        soldAt: (data.gift && data.gift.sold_at) || new Date().toISOString()
+        soldAt
       };
       closeBuyerModal();
       renderDashboardGrid();
@@ -886,6 +951,117 @@
   document.getElementById('unsold-modal').addEventListener('click', function(e) {
     if (e.target === this) closeUnsoldModal();
   });
+
+  // ── Sales report ─────────────────────────────────────────────────────
+  // Pulls every sold card (isCardSold) out of buyerMap and summarizes it —
+  // count, total revenue (only cards with a numeric price contribute),
+  // and a sortable-by-date table. Revenue math is done with numbers only;
+  // formatPrice() is used purely for display.
+  function getSalesRecords() {
+    return localRegistry
+      .filter(id => isCardSold(id))
+      .map(id => ({ id, ...buyerMap[id] }))
+      .sort((a, b) => new Date(b.soldAt || 0) - new Date(a.soldAt || 0));
+  }
+
+  function viewSalesReport() {
+    const sales = getSalesRecords();
+    const subtitle = document.getElementById('sales-modal-subtitle');
+    const summary = document.getElementById('sales-summary');
+    const tbody = document.getElementById('sales-table-body');
+    tbody.innerHTML = '';
+
+    if (sales.length === 0) {
+      subtitle.textContent = 'No sales recorded yet.';
+      summary.innerHTML = '';
+      document.getElementById('sales-modal').classList.add('open');
+      return;
+    }
+
+    const withPrice = sales.filter(s => s.price !== null && s.price !== undefined && !isNaN(Number(s.price)));
+    const totalRevenue = withPrice.reduce((sum, s) => sum + Number(s.price), 0);
+
+    subtitle.textContent = `${sales.length} card${sales.length === 1 ? '' : 's'} sold.`;
+    summary.innerHTML = `
+      <div class="sales-stat"><div class="stat-value">${sales.length}</div><div class="stat-label">Cards sold</div></div>
+      <div class="sales-stat"><div class="stat-value">${formatPrice(totalRevenue)}</div><div class="stat-label">Total revenue${withPrice.length < sales.length ? ' (priced sales)' : ''}</div></div>
+      <div class="sales-stat"><div class="stat-value">${withPrice.length ? formatPrice(totalRevenue / withPrice.length) : '—'}</div><div class="stat-label">Avg. price</div></div>
+    `;
+
+    sales.forEach(s => {
+      const row = document.createElement('tr');
+      const soldDate = s.soldAt && !isNaN(new Date(s.soldAt)) ? new Date(s.soldAt).toLocaleDateString() : '—';
+      row.innerHTML = `
+        <td class="id-cell">${escapeHtml(s.id)}</td>
+        <td>${escapeHtml(s.buyerName || '—')}</td>
+        <td>${escapeHtml(s.buyerContact || '—')}</td>
+        <td class="price-cell">${(s.price !== null && s.price !== undefined && !isNaN(Number(s.price))) ? formatPrice(s.price) : '—'}</td>
+        <td>${escapeHtml(s.buyerNote || '—')}</td>
+        <td>${soldDate}</td>
+      `;
+      tbody.appendChild(row);
+    });
+
+    document.getElementById('sales-modal').classList.add('open');
+  }
+
+  function closeSalesModal() {
+    document.getElementById('sales-modal').classList.remove('open');
+  }
+
+  document.getElementById('sales-modal').addEventListener('click', function(e) {
+    if (e.target === this) closeSalesModal();
+  });
+
+  async function exportSalesToExcel() {
+    const sales = getSalesRecords();
+    if (sales.length === 0) {
+      alert('🎉 No sales recorded yet — nothing to export.');
+      return;
+    }
+
+    const workbook = new ExcelJS.Workbook();
+    const worksheet = workbook.addWorksheet('Sales');
+    worksheet.columns = [
+      { header: 'Card ID', key: 'id', width: 16 },
+      { header: 'Buyer', key: 'buyerName', width: 24 },
+      { header: 'Contact', key: 'buyerContact', width: 22 },
+      { header: 'Price', key: 'price', width: 12 },
+      { header: 'Note', key: 'buyerNote', width: 35 },
+      { header: 'Sold on', key: 'soldAt', width: 16 }
+    ];
+    worksheet.getRow(1).font = { bold: true };
+
+    let totalRevenue = 0;
+    sales.forEach(s => {
+      const priceNum = (s.price !== null && s.price !== undefined && !isNaN(Number(s.price))) ? Number(s.price) : null;
+      if (priceNum !== null) totalRevenue += priceNum;
+      worksheet.addRow({
+        id: s.id,
+        buyerName: s.buyerName || '',
+        buyerContact: s.buyerContact || '',
+        price: priceNum !== null ? priceNum : '',
+        buyerNote: s.buyerNote || '',
+        soldAt: s.soldAt && !isNaN(new Date(s.soldAt)) ? new Date(s.soldAt).toLocaleDateString() : ''
+      });
+    });
+
+    const totalRow = worksheet.addRow({ id: '', buyerName: '', buyerContact: '', price: totalRevenue, buyerNote: 'TOTAL', soldAt: '' });
+    totalRow.font = { bold: true };
+
+    const buffer = await workbook.xlsx.writeBuffer();
+    const blob = new Blob([buffer], {
+      type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+    });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `sales-report-${new Date().toISOString().slice(0, 10)}.xlsx`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    setTimeout(() => URL.revokeObjectURL(url), 3000);
+  }
 
   function exportUnsoldToExcel() {
     if (typeof ExcelJS === 'undefined' || typeof QRCode === 'undefined') {
