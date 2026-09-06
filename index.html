@@ -69,6 +69,38 @@
     .postcard-item img { cursor: pointer; transition: transform 0.2s; border-radius: 8px; }
     .postcard-item img:hover { transform: scale(1.03); }
 
+    /* Advertising Clients Banner — auto-rotating marquee, sits just under
+       the top announcement banner. The track holds the logo list TWICE
+       back-to-back and animates from 0% to -50% translateX; because the
+       two halves are identical, the loop point is invisible and it reads
+       as an endless scroll. Pauses on hover/focus so people can actually
+       read/click a logo. */
+    .clients-banner {
+      width: 100%; max-width: 600px; overflow: hidden; margin-top: 6px;
+      -webkit-mask-image: linear-gradient(to right, transparent, #000 8%, #000 92%, transparent);
+      mask-image: linear-gradient(to right, transparent, #000 8%, #000 92%, transparent);
+    }
+    .clients-banner-label {
+      text-align: center; font-size: 0.72rem; text-transform: uppercase; letter-spacing: 2px;
+      color: var(--muted); margin-bottom: 8px;
+    }
+    .clients-track {
+      display: flex; gap: 16px; width: max-content;
+      animation: clients-scroll 22s linear infinite;
+    }
+    .clients-banner:hover .clients-track,
+    .clients-track:focus-within { animation-play-state: paused; }
+    @keyframes clients-scroll {
+      from { transform: translateX(0); }
+      to   { transform: translateX(-50%); }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      .clients-track { animation: none; }
+    }
+    .client-logo { flex: 0 0 auto; width: 140px; height: 72px; background: var(--paper); border: 1px solid var(--cream); border-radius: 12px; display: flex; align-items: center; justify-content: center; text-align: center; padding: 8px; font-size: 0.8rem; font-weight: 500; color: var(--muted); transition: border-color 0.2s, transform 0.2s; }
+    .client-logo:hover { border-color: var(--gold); transform: translateY(-2px); }
+    .client-logo img { max-width: 100%; max-height: 100%; object-fit: contain; }
+
     /* Lightbox */
     .lightbox-overlay { position: fixed; inset: 0; background: #0d0d0d; display: none; align-items: center; justify-content: center; z-index: 300; }
     .lightbox-overlay.open { display: flex; }
@@ -166,7 +198,28 @@
   </div>
 
   <div class="wrapper">
-    
+
+    <!-- Advertising Clients Banner (auto-rotating) -->
+    <div class="clients-banner">
+      <div class="clients-banner-label" data-i18n="clients_title">🤝 Our Advertising Clients</div>
+      <!-- Replace each .client-logo's content with <img src="your-logo.png" alt="Company Name">
+           once you have real logos. The whole list below is duplicated once so the
+           marquee loop is seamless — if you add/remove a logo, change BOTH copies. -->
+      <div class="clients-track">
+        <div class="client-logo">Your Logo Here</div>
+        <div class="client-logo">Your Logo Here</div>
+        <div class="client-logo">Your Logo Here</div>
+        <div class="client-logo">Your Logo Here</div>
+        <div class="client-logo">Your Logo Here</div>
+        <!-- duplicate copy for the seamless loop -->
+        <div class="client-logo">Your Logo Here</div>
+        <div class="client-logo">Your Logo Here</div>
+        <div class="client-logo">Your Logo Here</div>
+        <div class="client-logo">Your Logo Here</div>
+        <div class="client-logo">Your Logo Here</div>
+      </div>
+    </div>
+
     <!-- Header Scanner Core -->
     <div class="container">
       <div class="logo-mark" data-i18n="logo_mark" data-i18n-html="1">Word<span>Gift</span></div>
@@ -411,6 +464,7 @@
         postcard_holiday: 'Holiday',
 		postcard_Love: 'Love',
 		postcard_Momtobe: 'Mom to be',
+        clients_title: '🤝 Our Advertising Clients',
         lightbox_front: 'Front',
         lightbox_back: 'Back',
         lightbox_home: 'Home',
@@ -476,6 +530,7 @@
         postcard_holiday: 'ልዩ ልዩ በዓላት',
 		postcard_love: 'ፍቅር',
 		postcard_momtobe: 'እናት ያድርግሽ',
+        clients_title: '🤝 የማስታወቂያ ደንበኞቻችን',
         lightbox_front: 'ፊት',
         lightbox_back: 'ጀርባ',
         lightbox_home: 'መነሻ',
