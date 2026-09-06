@@ -604,7 +604,17 @@
       alert('🎉 Nothing to print — every card in the registry has already been sold.');
       return;
     }
-    window.print();
+    // Give the browser time to lay out/paint the print-area's QR canvases
+    // before opening the print dialog. #print-area is `display:none` on
+    // screen, so its content has never been laid out; calling window.print()
+    // synchronously can snapshot the preview before that layout/paint pass
+    // finishes, producing a blank page. Two rAF ticks (one to apply the
+    // display change, one to paint it) reliably avoids that.
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        window.print();
+      });
+    });
     // afterprint fires once the print dialog closes (works in Chrome/Edge/Firefox)
   }
   window.addEventListener('afterprint', () => {
