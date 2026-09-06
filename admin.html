@@ -270,6 +270,17 @@
     .sales-table th { font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.04em; color: var(--muted); }
     .sales-table td.id-cell { font-family: monospace; font-weight: 700; }
     .sales-table td.price-cell { color: var(--gold); font-weight: 600; white-space: nowrap; }
+
+    .sales-trend-section { margin-bottom: 20px; }
+    .sales-trend-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
+    .sales-trend-header h4 { font-family: 'Playfair Display', serif; font-size: 1rem; font-weight: 700; }
+    .trend-toggle { display: flex; gap: 6px; }
+    #sales-trend-rows { max-height: 220px; overflow-y: auto; padding-right: 4px; }
+    .trend-row { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; font-size: 0.8rem; }
+    .trend-label { width: 110px; flex-shrink: 0; color: var(--muted); }
+    .trend-bar-wrap { flex: 1; background: var(--cream); border-radius: 4px; height: 14px; overflow: hidden; }
+    .trend-bar { height: 100%; background: var(--gold); border-radius: 4px; min-width: 2px; }
+    .trend-value { width: 150px; flex-shrink: 0; text-align: right; font-weight: 500; white-space: nowrap; }
   </style>
 </head>
 <body>
@@ -417,6 +428,16 @@
     <h3>💰 Sales Report</h3>
     <div class="modal-subtitle" id="sales-modal-subtitle">Loading…</div>
     <div class="sales-summary" id="sales-summary"></div>
+    <div class="sales-trend-section">
+      <div class="sales-trend-header">
+        <h4>Trend</h4>
+        <div class="trend-toggle">
+          <button class="filter-btn active" id="trend-daily-btn" onclick="setSalesTrendPeriod('daily')">Daily</button>
+          <button class="filter-btn" id="trend-weekly-btn" onclick="setSalesTrendPeriod('weekly')">Weekly</button>
+        </div>
+      </div>
+      <div id="sales-trend-rows"></div>
+    </div>
     <div class="unsold-list-body">
       <table class="sales-table" id="sales-table">
         <thead>
@@ -964,6 +985,70 @@
       .sort((a, b) => new Date(b.soldAt || 0) - new Date(a.soldAt || 0));
   }
 
+  let salesTrendPeriod = 'daily';
+
+  // Buckets sales into calendar days or Monday-starting weeks and sums
+  // count + revenue per bucket. Sales with no valid soldAt are skipped —
+  // they'd otherwise all collapse into a single "Invalid Date" bucket.
+  function groupSalesByPeriod(sales, period) {
+    const groups = {};
+    sales.forEach(s => {
+      if (!s.soldAt || isNaN(new Date(s.soldAt))) return;
+      const d = new Date(s.soldAt);
+      let key, label, sortKey;
+
+      if (period === 'weekly') {
+        const day = d.getDay(); // 0=Sun..6=Sat
+        const diffToMonday = (day === 0 ? -6 : 1) - day;
+        const monday = new Date(d.getFullYear(), d.getMonth(), d.getDate() + diffToMonday);
+        key = monday.toISOString().slice(0, 10);
+        label = `Week of ${monday.toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}`;
+        sortKey = monday.getTime();
+      } else {
+        const dayDate = new Date(d.getFullYear(), d.getMonth(), d.getDate());
+        key = dayDate.toISOString().slice(0, 10);
+        label = dayDate.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
+        sortKey = dayDate.getTime();
+      }
+
+      if (!groups[key]) groups[key] = { label, count: 0, revenue: 0, sortKey };
+      groups[key].count += 1;
+      const priceNum = (s.price !== null && s.price !== undefined && !isNaN(Number(s.price))) ? Number(s.price) : 0;
+      groups[key].revenue += priceNum;
+    });
+    return Object.values(groups).sort((a, b) => a.sortKey - b.sortKey);
+  }
+
+  function renderSalesTrend() {
+    const container = document.getElementById('sales-trend-rows');
+    if (!container) return;
+    const grouped = groupSalesByPeriod(getSalesRecords(), salesTrendPeriod);
+
+    if (grouped.length === 0) {
+      container.innerHTML = `<div style="color:var(--muted);font-size:0.85rem;padding:8px 0;">No dated sales to show a trend yet.</div>`;
+      return;
+    }
+
+    const maxRevenue = Math.max(...grouped.map(g => g.revenue), 1);
+    // Most-recent bucket first, easiest to scan at a glance
+    container.innerHTML = [...grouped].reverse().map(g => {
+      const pct = g.revenue > 0 ? Math.max((g.revenue / maxRevenue) * 100, 4) : 0;
+      return `
+        <div class="trend-row">
+          <div class="trend-label">${escapeHtml(g.label)}</div>
+          <div class="trend-bar-wrap"><div class="trend-bar" style="width:${pct}%"></div></div>
+          <div class="trend-value">${g.count} sold${g.revenue > 0 ? ' · ' + formatPrice(g.revenue) : ''}</div>
+        </div>`;
+    }).join('');
+  }
+
+  function setSalesTrendPeriod(period) {
+    salesTrendPeriod = period;
+    document.getElementById('trend-daily-btn').classList.toggle('active', period === 'daily');
+    document.getElementById('trend-weekly-btn').classList.toggle('active', period === 'weekly');
+    renderSalesTrend();
+  }
+
   function viewSalesReport() {
     const sales = getSalesRecords();
     const subtitle = document.getElementById('sales-modal-subtitle');
@@ -974,6 +1059,7 @@
     if (sales.length === 0) {
       subtitle.textContent = 'No sales recorded yet.';
       summary.innerHTML = '';
+      document.getElementById('sales-trend-rows').innerHTML = '';
       document.getElementById('sales-modal').classList.add('open');
       return;
     }
@@ -987,6 +1073,8 @@
       <div class="sales-stat"><div class="stat-value">${formatPrice(totalRevenue)}</div><div class="stat-label">Total revenue${withPrice.length < sales.length ? ' (priced sales)' : ''}</div></div>
       <div class="sales-stat"><div class="stat-value">${withPrice.length ? formatPrice(totalRevenue / withPrice.length) : '—'}</div><div class="stat-label">Avg. price</div></div>
     `;
+
+    renderSalesTrend();
 
     sales.forEach(s => {
       const row = document.createElement('tr');
