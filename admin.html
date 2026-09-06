@@ -189,10 +189,23 @@
       margin-bottom: 16px;
     }
 
-    #print-area { display: none; }
+    /* Kept out of view but NOT display:none: display:none means the browser
+       never lays out or paints this subtree, so when it's flipped visible
+       at print time there's a race between that first layout/paint pass and
+       the print snapshot, which is what was causing the blank page. Keeping
+       it absolutely positioned + zero-size + hidden overflow means the QR
+       canvases are already fully rendered well before printAndMark() runs. */
+    #print-area { position: absolute; top: 0; left: 0; width: 0; height: 0; overflow: hidden; pointer-events: none; }
     @media print {
       body * { display: none !important; }
-      #print-area { display: grid !important; grid-template-columns: repeat(3, 1fr); gap: 25px; padding: 10px; }
+      #print-area {
+        position: static !important;
+        width: auto !important;
+        height: auto !important;
+        overflow: visible !important;
+        display: grid !important;
+        grid-template-columns: repeat(3, 1fr); gap: 25px; padding: 10px;
+      }
       #print-area * { display: block !important; }
       #print-area .print-card {
         display: flex !important;
