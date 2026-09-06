@@ -13,7 +13,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,700;1,400&family=DM+Sans:wght@300;400;500;700&display=swap" rel="stylesheet">
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/exceljs@4.4.0/dist/exceljs.min.js"></script>
   <style>
     :root {
       --ink: #0d0d0d;
@@ -241,6 +241,25 @@
     .modal-actions { display: flex; gap: 8px; margin-top: 18px; }
     .modal-actions .btn { flex: 1; padding: 10px; font-size: 0.88rem; }
     .modal-close { position: absolute; top: 16px; right: 16px; background: var(--cream); border: none; width: 30px; height: 30px; border-radius: 50%; cursor: pointer; color: var(--muted); font-size: 1rem; }
+
+    /* Unsold list preview modal */
+    .modal-box.wide { max-width: 900px; max-height: 88vh; display: flex; flex-direction: column; }
+    .unsold-list-body { overflow-y: auto; margin-top: 4px; padding-right: 4px; }
+    .unsold-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+      gap: 14px;
+      margin-top: 10px;
+    }
+    .unsold-tile {
+      border: 1px solid var(--cream);
+      border-radius: 10px;
+      padding: 10px;
+      text-align: center;
+      background: var(--paper);
+    }
+    .unsold-tile .qr-mini { width: 100px; height: 100px; margin: 0 auto 8px; background: #fff; border-radius: 6px; display: flex; align-items: center; justify-content: center; }
+    .unsold-tile .id-mini { font-family: monospace; font-weight: 700; font-size: 0.82rem; }
   </style>
 </head>
 <body>
@@ -315,6 +334,7 @@
     <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; flex-wrap:wrap; gap:12px;">
       <h2>📋 Active Card Registry Collection</h2>
       <div style="display:flex;gap:10px;flex-wrap:wrap;">
+        <button class="btn btn-secondary" onclick="viewUnsoldList()" id="view-unsold-btn">👁️ View Unsold List</button>
         <button class="btn btn-secondary" onclick="exportUnsoldToExcel()" id="export-unsold-btn">📊 Export Unsold (Excel)</button>
         <button class="btn btn-secondary" onclick="purgeOrphanedStorage()" id="purge-btn">🧹 Purge Storage</button>
         <button class="btn btn-secondary" onclick="printAndMark()">🖨️ Print All Cards</button>
@@ -356,6 +376,22 @@
     <div class="modal-actions">
       <button class="btn btn-secondary" id="buyer-clear-btn" onclick="clearBuyerInfo()">Clear</button>
       <button class="btn" onclick="saveBuyerInfo()">Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- Unsold Cards Preview Modal -->
+<div class="modal-overlay" id="unsold-modal">
+  <div class="modal-box wide">
+    <button class="modal-close" onclick="closeUnsoldModal()">✕</button>
+    <h3>👁️ Unsold Cards</h3>
+    <div class="modal-subtitle" id="unsold-modal-subtitle">Loading…</div>
+    <div class="unsold-list-body">
+      <div class="unsold-grid" id="unsold-grid"></div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-secondary" onclick="closeUnsoldModal()">Close</button>
+      <button class="btn" onclick="exportUnsoldToExcel()">📊 Export Excel</button>
     </div>
   </div>
 </div>
@@ -771,8 +807,56 @@
     return [...ids].sort((a, b) => a.localeCompare(b, undefined, { numeric: true }));
   }
 
+  function viewUnsoldList() {
+    const printedMap = getPrintedMap();
+    const unsoldIds = sortIdsAscending(localRegistry.filter(id => !isCardSold(id)));
+
+    const subtitle = document.getElementById('unsold-modal-subtitle');
+    const grid = document.getElementById('unsold-grid');
+    grid.innerHTML = '';
+
+    if (unsoldIds.length === 0) {
+      subtitle.textContent = 'None — every card currently in the registry has been sold. 🎉';
+      document.getElementById('unsold-modal').classList.add('open');
+      return;
+    }
+
+
+    subtitle.textContent = `${unsoldIds.length} card${unsoldIds.length === 1 ? '' : 's'} not yet sold, in print order.`;
+
+    unsoldIds.forEach((id, i) => {
+      const printed = !!printedMap[id];
+      const tile = document.createElement('div');
+      tile.className = 'unsold-tile';
+      tile.innerHTML = `
+        <div class="qr-mini" id="unsold-qr-${i}"></div>
+        <div class="id-mini">${id}</div>
+        <div style="font-size:0.7rem;margin-top:4px;color:${printed ? '#2e7d32' : '#9e9e9e'};">${printed ? '✅ Printed' : '🔴 Not printed'}</div>
+      `;
+      grid.appendChild(tile);
+    });
+
+    document.getElementById('unsold-modal').classList.add('open');
+
+    // Render QR codes after the tiles exist in the DOM
+    setTimeout(() => {
+      unsoldIds.forEach((id, i) => {
+        const el = document.getElementById(`unsold-qr-${i}`);
+        if (el) new QRCode(el, { text: buildWatchUrl(id), width: 90, height: 90, correctLevel: QRCode.CorrectLevel.M });
+      });
+    }, 10);
+  }
+
+  function closeUnsoldModal() {
+    document.getElementById('unsold-modal').classList.remove('open');
+  }
+
+  document.getElementById('unsold-modal').addEventListener('click', function(e) {
+    if (e.target === this) closeUnsoldModal();
+  });
+
   function exportUnsoldToExcel() {
-    if (typeof XLSX === 'undefined') {
+    if (typeof ExcelJS === 'undefined' || typeof QRCode === 'undefined') {
       alert('⚠️ Export library failed to load. Check your internet connection and reload the page.');
       return;
     }
@@ -785,21 +869,90 @@
       return;
     }
 
-    const rows = unsoldIds.map((id, idx) => ({
-      '#': idx + 1,
-      'Card ID': id,
-      'QR Link': buildWatchUrl(id),
-      'Printed': printedMap[id] ? 'Yes' : 'No'
-    }));
+    const btn = document.getElementById('export-unsold-btn');
+    if (btn) { btn.disabled = true; btn.textContent = '📊 Generating…'; }
 
-    const worksheet = XLSX.utils.json_to_sheet(rows);
-    worksheet['!cols'] = [{ wch: 5 }, { wch: 16 }, { wch: 55 }, { wch: 10 }];
+    // Kick off async build without blocking the click handler
+    buildUnsoldWorkbook(unsoldIds, printedMap)
+      .catch(err => alert(`⚠️ Export failed: ${err.message}`))
+      .finally(() => {
+        if (btn) { btn.disabled = false; btn.textContent = '📊 Export Unsold (Excel)'; }
+      });
+  }
 
-    const workbook = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(workbook, worksheet, 'Unsold Cards');
+  // Renders a QR code for `text` into a detached container and returns a
+  // PNG data URL. qrcode.js draws synchronously to a <canvas>, so this
+  // doesn't need to be async — but is kept in its own function for clarity.
+  function generateQrDataUrl(text, size) {
+    const tempContainer = document.createElement('div');
+    tempContainer.style.position = 'fixed';
+    tempContainer.style.left = '-9999px';
+    tempContainer.style.top = '-9999px';
+    document.body.appendChild(tempContainer);
 
-    const dateStr = new Date().toISOString().slice(0, 10);
-    XLSX.writeFile(workbook, `unsold-qr-codes-${dateStr}.xlsx`);
+    new QRCode(tempContainer, {
+      text,
+      width: size,
+      height: size,
+      correctLevel: QRCode.CorrectLevel.M
+    });
+
+    const canvas = tempContainer.querySelector('canvas');
+    const dataUrl = canvas ? canvas.toDataURL('image/png') : null;
+    document.body.removeChild(tempContainer);
+    return dataUrl;
+  }
+
+  async function buildUnsoldWorkbook(unsoldIds, printedMap) {
+    const workbook = new ExcelJS.Workbook();
+    const worksheet = workbook.addWorksheet('Unsold Cards');
+
+    worksheet.columns = [
+      { header: '#', key: 'idx', width: 5 },
+      { header: 'Card ID', key: 'id', width: 16 },
+      { header: 'QR Code', key: 'qr', width: 15 },
+      { header: 'QR Link', key: 'link', width: 55 },
+      { header: 'Printed', key: 'printed', width: 10 }
+    ];
+    worksheet.getRow(1).font = { bold: true };
+
+    const QR_PIXELS = 90;
+
+    unsoldIds.forEach((id, i) => {
+      const link = buildWatchUrl(id);
+      const excelRowNumber = i + 2; // row 1 is the header
+
+      worksheet.addRow({
+        idx: i + 1,
+        id,
+        qr: '',
+        link,
+        printed: printedMap[id] ? 'Yes' : 'No'
+      });
+      worksheet.getRow(excelRowNumber).height = QR_PIXELS * 0.75; // px → points
+
+      const dataUrl = generateQrDataUrl(link, QR_PIXELS);
+      if (dataUrl) {
+        const imageId = workbook.addImage({ base64: dataUrl, extension: 'png' });
+        worksheet.addImage(imageId, {
+          tl: { col: 2, row: excelRowNumber - 1 }, // 0-indexed
+          ext: { width: QR_PIXELS, height: QR_PIXELS }
+        });
+      }
+    });
+
+    const buffer = await workbook.xlsx.writeBuffer();
+    const blob = new Blob([buffer], {
+      type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+    });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `unsold-qr-codes-${new Date().toISOString().slice(0, 10)}.xlsx`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    setTimeout(() => URL.revokeObjectURL(url), 3000);
   }
 
   function copyWatchLink(id) {
