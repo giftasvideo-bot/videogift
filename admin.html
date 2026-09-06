@@ -13,6 +13,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,700;1,400&family=DM+Sans:wght@300;400;500;700&display=swap" rel="stylesheet">
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
   <style>
     :root {
       --ink: #0d0d0d;
@@ -314,6 +315,7 @@
     <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; flex-wrap:wrap; gap:12px;">
       <h2>📋 Active Card Registry Collection</h2>
       <div style="display:flex;gap:10px;flex-wrap:wrap;">
+        <button class="btn btn-secondary" onclick="exportUnsoldToExcel()" id="export-unsold-btn">📊 Export Unsold (Excel)</button>
         <button class="btn btn-secondary" onclick="purgeOrphanedStorage()" id="purge-btn">🧹 Purge Storage</button>
         <button class="btn btn-secondary" onclick="printAndMark()">🖨️ Print All Cards</button>
       </div>
@@ -756,6 +758,49 @@
   document.getElementById('buyer-modal').addEventListener('click', function(e) {
     if (e.target === this) closeBuyerModal();
   });
+
+  function isCardSold(id) {
+    const buyer = buyerMap[id];
+    return !!(buyer && (buyer.buyerName || buyer.buyerContact || buyer.buyerNote || (buyer.price !== null && buyer.price !== undefined)));
+  }
+
+  // Sorts card IDs in natural print order: by serial number first
+  // (000001, 000002, ...), then by suffix, so the exported list matches the
+  // order the physical cards were generated/printed in.
+  function sortIdsAscending(ids) {
+    return [...ids].sort((a, b) => a.localeCompare(b, undefined, { numeric: true }));
+  }
+
+  function exportUnsoldToExcel() {
+    if (typeof XLSX === 'undefined') {
+      alert('⚠️ Export library failed to load. Check your internet connection and reload the page.');
+      return;
+    }
+
+    const printedMap = getPrintedMap();
+    const unsoldIds = sortIdsAscending(localRegistry.filter(id => !isCardSold(id)));
+
+    if (unsoldIds.length === 0) {
+      alert('🎉 No unsold cards — everything currently in the registry has been sold.');
+      return;
+    }
+
+    const rows = unsoldIds.map((id, idx) => ({
+      '#': idx + 1,
+      'Card ID': id,
+      'QR Link': buildWatchUrl(id),
+      'Printed': printedMap[id] ? 'Yes' : 'No'
+    }));
+
+    const worksheet = XLSX.utils.json_to_sheet(rows);
+    worksheet['!cols'] = [{ wch: 5 }, { wch: 16 }, { wch: 55 }, { wch: 10 }];
+
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, 'Unsold Cards');
+
+    const dateStr = new Date().toISOString().slice(0, 10);
+    XLSX.writeFile(workbook, `unsold-qr-codes-${dateStr}.xlsx`);
+  }
 
   function copyWatchLink(id) {
     const url = buildWatchUrl(id);
