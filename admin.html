@@ -370,6 +370,7 @@
         <button class="btn btn-secondary" onclick="exportUnsoldToExcel()" id="export-unsold-btn">📊 Export Unsold (Excel)</button>
         <button class="btn btn-secondary" onclick="purgeOrphanedStorage()" id="purge-btn">🧹 Purge Storage</button>
         <button class="btn btn-secondary" onclick="printAndMark()">🖨️ Print Unsold Cards</button>
+        <button class="btn btn-secondary" style="background:#fff3cd;" onclick="debugPrintArea()">🔍 Debug Print Area</button>
       </div>
     </div>
     <div class="filter-bar">
@@ -392,6 +393,7 @@
     <div class="form-field">
       <label for="buyer-name-input">Buyer name</label>
       <input type="text" id="buyer-name-input" placeholder="e.g. Sarah Tesfaye">
+
     </div>
     <div class="form-field">
       <label for="buyer-contact-input">Phone / email (optional)</label>
@@ -610,6 +612,32 @@
     const map = getPrintedMap();
     ids.forEach(id => { map[id] = true; });
     setPrintedMap(map);
+  }
+  function debugPrintArea() {
+    const pa = document.getElementById('print-area');
+    const cs = getComputedStyle(pa);
+    const qrLibLoaded = typeof QRCode !== 'undefined';
+    const firstCard = pa.children[0];
+    const firstCanvas = firstCard ? firstCard.querySelector('canvas') : null;
+    let canvasInfo = '(no canvas found)';
+    if (firstCanvas) {
+      const ctx = firstCanvas.getContext('2d');
+      const pixels = ctx.getImageData(0, 0, firstCanvas.width, firstCanvas.height).data;
+      let nonWhite = 0;
+      for (let i = 0; i < pixels.length; i += 4) {
+        if (pixels[i] < 250 || pixels[i+1] < 250 || pixels[i+2] < 250) nonWhite++;
+      }
+      canvasInfo = `canvas ${firstCanvas.width}x${firstCanvas.height}, non-white pixels: ${nonWhite}`;
+    }
+    alert(
+      'QRCode library loaded: ' + qrLibLoaded + '\n' +
+      'print-area children count: ' + pa.children.length + '\n' +
+      'print-area position (screen): ' + cs.position + '\n' +
+      'first card exists: ' + !!firstCard + '\n' +
+      'first card has canvas: ' + !!firstCanvas + '\n' +
+      canvasInfo + '\n\n' +
+      'first card HTML:\n' + (firstCard ? firstCard.outerHTML.slice(0, 500) : '(none)')
+    );
   }
   function printAndMark() {
     const printArea = document.getElementById('print-area');
