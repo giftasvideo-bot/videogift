@@ -9,29 +9,29 @@ const { S3Client, PutObjectCommand, DeleteObjectCommand, DeleteObjectsCommand, L
 const app = express();
 const PORT = process.env.PORT || 10000;
 
-// ── MIDDLEWARE ──
+// -- MIDDLEWARE --
 app.use(cors());
 app.use(express.json());
 
-// ── SUPABASE ── (database only — video files now live on Cloudflare R2, see below)
+// -- SUPABASE -- (database only � video files now live on Cloudflare R2, see below)
 // IMPORTANT: this backend performs privileged writes (insert/update/delete)
 // on behalf of the admin. If your `gifts` table has Row Level Security (RLS)
-// enabled — which is the Supabase default — the anon key will be blocked
+// enabled � which is the Supabase default � the anon key will be blocked
 // from those operations and every write will fail with a 500. The service
 // role key bypasses RLS and is meant to live only in server-side env vars
 // like this one (never ship it to the frontend).
 const supabaseUrl = process.env.SUPABASE_URL;
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_KEY || process.env.SUPABASE_ANON_KEY;
 if (!supabaseUrl || !supabaseServiceKey) {
-  console.error("❌ SUPABASE_URL and SUPABASE_SERVICE_KEY (or SUPABASE_ANON_KEY) must be set.");
+  console.error("? SUPABASE_URL and SUPABASE_SERVICE_KEY (or SUPABASE_ANON_KEY) must be set.");
   process.exit(1);
 }
 const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-// ── CLOUDFLARE R2 (video file storage) ──
+// -- CLOUDFLARE R2 (video file storage) --
 // R2 is S3-compatible, so we talk to it with the standard AWS S3 SDK, just
 // pointed at Cloudflare's endpoint instead of AWS. Only the DATABASE lives
-// on Supabase now — actual video files live here.
+// on Supabase now � actual video files live here.
 const R2_ACCOUNT_ID = process.env.R2_ACCOUNT_ID;
 const R2_ACCESS_KEY_ID = process.env.R2_ACCESS_KEY_ID;
 const R2_SECRET_ACCESS_KEY = process.env.R2_SECRET_ACCESS_KEY;
@@ -42,7 +42,7 @@ const R2_BUCKET_NAME = process.env.R2_BUCKET_NAME || 'videogift';
 const R2_PUBLIC_URL_BASE = process.env.R2_PUBLIC_URL_BASE;
 
 if (!R2_ACCOUNT_ID || !R2_ACCESS_KEY_ID || !R2_SECRET_ACCESS_KEY || !R2_PUBLIC_URL_BASE) {
-  console.error("❌ R2_ACCOUNT_ID, R2_ACCESS_KEY_ID, R2_SECRET_ACCESS_KEY, and R2_PUBLIC_URL_BASE must all be set.");
+  console.error("? R2_ACCOUNT_ID, R2_ACCESS_KEY_ID, R2_SECRET_ACCESS_KEY, and R2_PUBLIC_URL_BASE must all be set.");
   process.exit(1);
 }
 
@@ -55,12 +55,12 @@ const r2 = new S3Client({
   }
 });
 
-// ── JWT CONFIG ──
+// -- JWT CONFIG --
 const JWT_SECRET     = process.env.JWT_SECRET     || 'forever27-secret-change-this';
 const ADMIN_USERNAME = process.env.ADMIN_USERNAME || 'admin';
 const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'forever27';
 
-// ── MULTER ──
+// -- MULTER --
 const MAX_FILE_SIZE_MB = 150;
 const ALLOWED_VIDEO_MIMETYPES = new Set([
   'video/mp4',
@@ -89,7 +89,7 @@ const upload = multer({
   }
 });
 
-// ── AUTH MIDDLEWARE ──
+// -- AUTH MIDDLEWARE --
 function requireAuth(req, res, next) {
   const authHeader = req.headers['authorization'] || '';
   const token = authHeader.startsWith('Bearer ') ? authHeader.slice(7) : null;
@@ -102,16 +102,16 @@ function requireAuth(req, res, next) {
   }
 }
 
-// ════════════════════════════════════════
+// ----------------------------------------
 // ROUTES
-// ════════════════════════════════════════
+// ----------------------------------------
 
-// ── BASE ──
+// -- BASE --
 app.get('/', (req, res) => {
-  res.status(200).send('🚀 Forever 27 API is running!');
+  res.status(200).send('?? Forever 27 API is running!');
 });
 
-// ── ADMIN LOGIN ──
+// -- ADMIN LOGIN --
 app.post('/api/admin/login', (req, res) => {
   const { username, password } = req.body || {};
 
@@ -125,7 +125,7 @@ app.post('/api/admin/login', (req, res) => {
       JWT_SECRET,
       { expiresIn: '8h' }
     );
-    console.log(`✅ Admin login: ${username}`);
+    console.log(`? Admin login: ${username}`);
     return res.json({ token });
   }
 
@@ -135,12 +135,12 @@ app.post('/api/admin/login', (req, res) => {
   }, 400);
 });
 
-// ── VERIFY TOKEN ──
+// -- VERIFY TOKEN --
 app.get('/api/admin/verify', requireAuth, (req, res) => {
   res.json({ ok: true, user: req.admin.username });
 });
 
-// ── GET GIFT BY ID ──
+// -- GET GIFT BY ID --
 app.get('/api/gift/:id', async (req, res) => {
   const giftId = req.params.id;
   try {
@@ -153,7 +153,7 @@ app.get('/api/gift/:id', async (req, res) => {
   }
 });
 
-// ── VALIDATE GIFT ID ──
+// -- VALIDATE GIFT ID --
 app.get('/api/validate', async (req, res) => {
   const { id } = req.query;
   if (!id) return res.json({ isValid: false });
@@ -162,7 +162,7 @@ app.get('/api/validate', async (req, res) => {
   return res.json({ isValid: !error && !!data });
 });
 
-// ── ADMIN BATCH INSERT (protected) ──
+// -- ADMIN BATCH INSERT (protected) --
 app.post('/api/admin/batch-insert', requireAuth, async (req, res) => {
   const { cards } = req.body;
   if (!cards || !Array.isArray(cards)) {
@@ -178,7 +178,7 @@ app.post('/api/admin/batch-insert', requireAuth, async (req, res) => {
   }
 });
 
-// ── STATUS SYNC ──
+// -- STATUS SYNC --
 app.post('/api/gifts/status', async (req, res) => {
   const { ids } = req.body;
   if (!ids || !Array.isArray(ids)) {
@@ -190,8 +190,8 @@ app.post('/api/gifts/status', async (req, res) => {
 
     if (error) {
       // Most likely cause: upload_count column doesn't exist yet on this table.
-      // Don't fail the whole status check over it — retry without it.
-      console.warn('⚠️ /api/gifts/status: full select failed, retrying without upload_count:', error.message);
+      // Don't fail the whole status check over it � retry without it.
+      console.warn('?? /api/gifts/status: full select failed, retrying without upload_count:', error.message);
       const fallback = await supabase
         .from('gifts').select('id, status').in('id', ids);
       data = fallback.data;
@@ -208,12 +208,12 @@ app.post('/api/gifts/status', async (req, res) => {
     });
     res.status(200).json({ statuses, uploadCounts });
   } catch (error) {
-    console.error('❌ /api/gifts/status failed:', error.message);
+    console.error('? /api/gifts/status failed:', error.message);
     res.status(500).json({ error: error.message });
   }
 });
 
-// ── VIDEO UPLOAD ──
+// -- VIDEO UPLOAD --
 app.post('/api/upload', (req, res, next) => {
   upload.single('video')(req, res, (err) => {
     if (err && err.code === 'LIMIT_FILE_SIZE') {
@@ -240,7 +240,7 @@ app.post('/api/upload', (req, res, next) => {
 
     // Check gift exists and enforce upload limit
     const { data: existing, error: lookupErr } = await supabase
-      .from('gifts').select('id, upload_count, status').eq('id', giftId).single();
+      .from('gifts').select('id, upload_count, status, video_url').eq('id', giftId).single();
     if (lookupErr || !existing) {
       return res.status(400).json({ error: 'Invalid Gift ID.' });
     }
@@ -277,7 +277,7 @@ app.post('/api/upload', (req, res, next) => {
 
     const publicUrl = `${R2_PUBLIC_URL_BASE}/${filePath}`;
 
-    // Update DB row — increment upload_count
+    // Update DB row � increment upload_count
     const newCount = (existing.upload_count || 0) + 1;
     const { error: dbError } = await supabase
       .from('gifts')
@@ -291,6 +291,26 @@ app.post('/api/upload', (req, res, next) => {
       .eq('id', giftId);
     if (dbError) throw dbError;
 
+    // Clean up the previous video file in R2 now that the new one is safely
+    // uploaded and the DB row points at it. Without this, every re-upload
+    // (2nd/3rd chance) leaves the old file behind as permanent dead weight
+    // in storage instead of the new video actually replacing it.
+    if (existing.video_url) {
+      const marker = '/videos/';
+      const markerIdx = existing.video_url.indexOf(marker);
+      if (markerIdx !== -1) {
+        const oldFilePath = 'videos/' + decodeURIComponent(existing.video_url.slice(markerIdx + marker.length));
+        try {
+          await r2.send(new DeleteObjectCommand({ Bucket: R2_BUCKET_NAME, Key: oldFilePath }));
+          console.log(`🗑️ Replaced old R2 file on re-upload: ${oldFilePath}`);
+        } catch (storageErr) {
+          // Don't fail the request over cleanup � the new video is already
+          // live and correct either way, this is just housekeeping.
+          console.error(`Failed to delete old R2 file "${oldFilePath}" on re-upload:`, storageErr.message);
+        }
+      }
+    }
+
     res.status(200).json({
       success: true,
       video_url: publicUrl,
@@ -303,7 +323,7 @@ app.post('/api/upload', (req, res, next) => {
   }
 });
 
-// ── MARK AS VIEWED ──
+// -- MARK AS VIEWED --
 app.post('/api/gift/:id/view', async (req, res) => {
   try {
     const giftId = req.params.id;
@@ -325,7 +345,7 @@ app.post('/api/gift/:id/view', async (req, res) => {
     }
 
     if (!existing.video_url) {
-      // Nothing to seal — silently no-op rather than erroring, since the
+      // Nothing to seal � silently no-op rather than erroring, since the
       // recipient-facing page calls this opportunistically on load.
       return res.status(200).json({ success: true, sealed: false, reason: 'no_video' });
     }
@@ -340,7 +360,7 @@ app.post('/api/gift/:id/view', async (req, res) => {
   }
 });
 
-// ── DELETE VIDEO ONLY (protected) ──
+// -- DELETE VIDEO ONLY (protected) --
 app.delete('/api/gift/:id/video', requireAuth, async (req, res) => {
   const giftId = req.params.id;
   try {
@@ -355,7 +375,7 @@ app.delete('/api/gift/:id/video', requireAuth, async (req, res) => {
       return res.status(404).json({ message: 'Gift not found.' });
     }
 
-    // If there's no video_url, there's nothing to delete from storage —
+    // If there's no video_url, there's nothing to delete from storage �
     // but the card may still be stuck with status: 'viewed' from the
     // inconsistent state this endpoint exists partly to recover from.
     // Always fall through and reset the DB row rather than hard-erroring,
@@ -367,7 +387,7 @@ app.delete('/api/gift/:id/video', requireAuth, async (req, res) => {
         .eq('id', giftId);
       if (resetErr) throw resetErr;
 
-      console.log(`♻️ Reset stuck card (no video was attached): ${giftId}`);
+      console.log(`?? Reset stuck card (no video was attached): ${giftId}`);
       return res.status(200).json({ ok: true, note: 'No video was attached; card status reset anyway.' });
     }
 
@@ -385,10 +405,10 @@ app.delete('/api/gift/:id/video', requireAuth, async (req, res) => {
       // 3. Delete file from Cloudflare R2
       try {
         await r2.send(new DeleteObjectCommand({ Bucket: R2_BUCKET_NAME, Key: filePath }));
-        console.log(`🗑️ R2 file deleted: ${filePath}`);
+        console.log(`??? R2 file deleted: ${filePath}`);
       } catch (storageErr) {
         console.error(`R2 delete failed for "${filePath}":`, storageErr.message);
-        // Don't return error — still clear the DB below
+        // Don't return error � still clear the DB below
       }
     } else {
       console.warn('Could not parse file path from URL:', data.video_url);
@@ -402,7 +422,7 @@ app.delete('/api/gift/:id/video', requireAuth, async (req, res) => {
 
     if (dbErr) throw dbErr;
 
-    console.log(`✅ Video cleared from DB for card: ${giftId}`);
+    console.log(`? Video cleared from DB for card: ${giftId}`);
     res.status(200).json({ ok: true });
 
   } catch (err) {
@@ -411,7 +431,7 @@ app.delete('/api/gift/:id/video', requireAuth, async (req, res) => {
   }
 });
 
-// ── DELETE GIFT (protected) — also deletes its video from storage ──
+// -- DELETE GIFT (protected) � also deletes its video from storage --
 app.delete('/api/gift/:id', requireAuth, async (req, res) => {
   const giftId = req.params.id;
   if (!giftId) return res.status(400).json({ error: 'No ID provided.' });
@@ -427,7 +447,7 @@ app.delete('/api/gift/:id', requireAuth, async (req, res) => {
         const filePath = 'videos/' + decodeURIComponent(data.video_url.slice(markerIdx + marker.length));
         try {
           await r2.send(new DeleteObjectCommand({ Bucket: R2_BUCKET_NAME, Key: filePath }));
-          console.log(`🗑️ R2 file deleted with card: ${filePath}`);
+          console.log(`??? R2 file deleted with card: ${filePath}`);
         } catch (storageErr) {
           console.warn('R2 delete on card delete failed:', storageErr.message);
         }
@@ -442,7 +462,7 @@ app.delete('/api/gift/:id', requireAuth, async (req, res) => {
   }
 });
 
-// ── GET ALL CARD IDs (protected) ──
+// -- GET ALL CARD IDs (protected) --
 // admin.html calls this on load so ALL browsers see the same cards from DB
 app.get('/api/admin/cards', requireAuth, async (req, res) => {
   try {
@@ -461,7 +481,7 @@ app.get('/api/admin/cards', requireAuth, async (req, res) => {
   }
 });
 
-// ── PURGE ORPHANED STORAGE FILES (protected) ──
+// -- PURGE ORPHANED STORAGE FILES (protected) --
 // Deletes all files in the R2 bucket that have no matching DB record
 app.delete('/api/admin/purge-storage', requireAuth, async (req, res) => {
   try {
@@ -501,7 +521,7 @@ app.delete('/api/admin/purge-storage', requireAuth, async (req, res) => {
       Delete: { Objects: orphanPaths.map(Key => ({ Key })) }
     }));
 
-    console.log(`🧹 Purged ${orphans.length} orphaned storage file(s).`);
+    console.log(`?? Purged ${orphans.length} orphaned storage file(s).`);
     res.json({ deleted: orphans.length, files: orphanPaths });
   } catch (err) {
     console.error('Purge storage error:', err);
@@ -509,9 +529,9 @@ app.delete('/api/admin/purge-storage', requireAuth, async (req, res) => {
   }
 });
 
-// ── START SERVER ──
+// -- START SERVER --
 app.listen(PORT, () => {
-  console.log(`🚀 Forever 27 API running on port ${PORT}`);
+  console.log(`?? Forever 27 API running on port ${PORT}`);
 });
 
 // Self-ping to prevent Render sleep
