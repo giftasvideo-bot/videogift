@@ -16,7 +16,7 @@
   <style>
     :root { --ink: #0d0d0d; --paper: #faf7f2; --gold: #c9933a; --gold-light: #e8b86d; --cream: #f0ead8; --muted: #7a7060; }
     * { margin: 0; padding: 0; box-sizing: border-box; }
-    body { background: var(--paper); color: var(--ink); font-family: 'DM Sans', sans-serif; min-height: 100vh; display: flex; flex-direction: column; align-items: center; padding: 20px; padding-top: 60px; }
+    body { background: var(--paper); color: var(--ink); font-family: 'DM Sans', sans-serif; min-height: 100vh; display: flex; flex-direction: column; align-items: center; padding: 20px; padding-top: 46px; }
     
     /* Top Announcement Banner */
     .top-banner { position: fixed; top: 0; left: 0; width: 100%; background: #1a1226; color: #fff; z-index: 1000; display: flex; align-items: center; justify-content: center; padding: 10px 40px; font-size: 0.85rem; letter-spacing: 1px; border-bottom: 2px solid var(--gold); box-shadow: 0 2px 10px rgba(0,0,0,0.1); transition: transform 0.3s ease; }
@@ -28,12 +28,12 @@
     body.banner-hidden .top-banner { transform: translateY(-100%); }
 
     /* Main Container layout */
-    .wrapper { max-width: 600px; width: 100%; display: flex; flex-direction: column; gap: 30px; margin-top: 20px; }
+    .wrapper { max-width: 600px; width: 100%; display: flex; flex-direction: column; gap: 30px; margin-top: 0; }
     
-    .container { width: 100%; text-align: center; padding: 40px 24px; background: rgba(250,247,242,0.85); border: 1px solid rgba(201,147,58,0.15); border-radius: 24px; box-shadow: 0 4px 20px rgba(0,0,0,0.02); }
-    .logo-mark { font-family: 'Playfair Display', serif; font-size: 2.2rem; font-weight: 700; margin-bottom: 8px; }
+    .container { width: 100%; text-align: center; padding: 14px 24px 8px; background: rgba(250,247,242,0.85); border: 1px solid rgba(201,147,58,0.15); border-radius: 24px; box-shadow: 0 4px 20px rgba(0,0,0,0.02); }
+    .logo-mark { font-family: 'Playfair Display', serif; font-size: 1.6rem; font-weight: 700; margin-bottom: 4px; }
     .logo-mark span { color: var(--gold); font-style: italic; }
-    .logo-sub { font-size: 0.8rem; text-transform: uppercase; letter-spacing: 3px; color: var(--gold); margin-bottom: 30px; }
+    .logo-sub { font-size: 0.7rem; text-transform: uppercase; letter-spacing: 3px; color: var(--gold); margin-bottom: 16px; }
     
     /* Content Card Blocks */
     html { scroll-behavior: smooth; scrollbar-color: #2a2a2a var(--paper); }
@@ -80,12 +80,8 @@
       -webkit-mask-image: linear-gradient(to right, transparent, #000 8%, #000 92%, transparent);
       mask-image: linear-gradient(to right, transparent, #000 8%, #000 92%, transparent);
     }
-    .clients-banner-label {
-      text-align: center; font-size: 0.72rem; text-transform: uppercase; letter-spacing: 2px;
-      color: var(--muted); margin-bottom: 8px;
-    }
     .clients-track {
-      display: flex; gap: 16px; width: max-content;
+      display: flex; gap: 10px; width: max-content;
       animation: clients-scroll 22s linear infinite;
     }
     .clients-banner:hover .clients-track,
@@ -97,7 +93,7 @@
     @media (prefers-reduced-motion: reduce) {
       .clients-track { animation: none; }
     }
-    .client-logo { flex: 0 0 auto; width: 140px; height: 72px; background: var(--paper); border: 1px solid var(--cream); border-radius: 12px; display: flex; align-items: center; justify-content: center; text-align: center; padding: 8px; font-size: 0.8rem; font-weight: 500; color: var(--muted); transition: border-color 0.2s, transform 0.2s; }
+    .client-logo { flex: 0 0 auto; width: 90px; height: 46px; background: var(--paper); border: 1px solid var(--cream); border-radius: 8px; display: flex; align-items: center; justify-content: center; text-align: center; padding: 6px; font-size: 0.68rem; font-weight: 500; color: var(--muted); transition: border-color 0.2s, transform 0.2s; }
     .client-logo:hover { border-color: var(--gold); transform: translateY(-2px); }
     .client-logo img { max-width: 100%; max-height: 100%; object-fit: contain; }
 
@@ -169,8 +165,8 @@
     .msg-box.success { background: #e8f5e9; border: 1px solid #a5d6a7; color: #2e7d32; }
 
     /* Language Toggle */
-    .lang-toggle { position: fixed; top: 66px; right: 16px; z-index: 500; background: #fff; border: 1px solid var(--gold); border-radius: 20px; padding: 7px 8px; font-size: 0.78rem; cursor: pointer; color: var(--ink); box-shadow: 0 2px 8px rgba(0,0,0,0.08); font-family: 'DM Sans', sans-serif; display: flex; align-items: center; gap: 2px; transition: top 0.3s ease; }
-    body.banner-hidden .lang-toggle { top: 16px; }
+    .lang-toggle { position: fixed; top: 48px; right: 16px; z-index: 500; background: #fff; border: 1px solid var(--gold); border-radius: 20px; padding: 7px 8px; font-size: 0.78rem; cursor: pointer; color: var(--ink); box-shadow: 0 2px 8px rgba(0,0,0,0.08); font-family: 'DM Sans', sans-serif; display: flex; align-items: center; gap: 2px; transition: top 0.3s ease; }
+    body.banner-hidden .lang-toggle { top: 12px; }
     .lang-toggle span { padding: 3px 9px; border-radius: 14px; transition: background 0.2s, color 0.2s; }
     .lang-toggle span.active { background: var(--ink); color: #fff; }
 
@@ -201,7 +197,6 @@
 
     <!-- Advertising Clients Banner (auto-rotating) -->
     <div class="clients-banner">
-      <div class="clients-banner-label" data-i18n="clients_title">🤝 Our Advertising Clients</div>
       <!-- Replace each .client-logo's content with <img src="your-logo.png" alt="Company Name">
            once you have real logos. The whole list below is duplicated once so the
            marquee loop is seamless — if you add/remove a logo, change BOTH copies. -->
@@ -238,7 +233,7 @@
 
     <!-- About Us Section -->
     
-      <div class="content-card" id="about">
+      <div class="content-card" id="about" style="margin-top:-16px;">
       <h3 data-i18n="about_title">🌿 About Us</h3>
       <p align="justify" data-i18n="about_p1" data-i18n-html="1">At <strong>WordGift</strong>, we bridge the gap between tangible handcrafted design and digital storytelling. Our signature service transforms physical postcards into interactive keepsakes; by scanning the custom QR code, you can easily upload a personal memorial video that helps express your deepest feelings and most meaningful memories.</p>
       <p align="justify" data-i18n="about_p2">Whether you are celebrating a special milestone or honoring a beautiful memory, our physical-to-digital ecosystem ensures your genuine warmth and heartfelt expressions are preserved securely and delivered seamlessly to your loved ones.</p>
@@ -464,7 +459,6 @@
         postcard_holiday: 'Holiday',
 		postcard_Love: 'Love',
 		postcard_Momtobe: 'Mom to be',
-        clients_title: '🤝 Our Advertising Clients',
         lightbox_front: 'Front',
         lightbox_back: 'Back',
         lightbox_home: 'Home',
@@ -530,7 +524,6 @@
         postcard_holiday: 'ልዩ ልዩ በዓላት',
 		postcard_love: 'ፍቅር',
 		postcard_momtobe: 'እናት ያድርግሽ',
-        clients_title: '🤝 የማስታወቂያ ደንበኞቻችን',
         lightbox_front: 'ፊት',
         lightbox_back: 'ጀርባ',
         lightbox_home: 'መነሻ',
