@@ -344,6 +344,10 @@
       <input type="text" id="buyer-contact-input" placeholder="e.g. 0911 234 567">
     </div>
     <div class="form-field">
+      <label for="buyer-price-input">Price (optional)</label>
+      <input type="text" inputmode="decimal" id="buyer-price-input" placeholder="e.g. 500">
+    </div>
+    <div class="form-field">
       <label for="buyer-note-input">Note (optional)</label>
       <textarea id="buyer-note-input" placeholder="e.g. Sold at Bole shop, cash"></textarea>
     </div>
@@ -592,7 +596,7 @@
       const targetWatchUrl = buildWatchUrl(id);
       const printed = !!printedMap[id];
       const buyer = buyerMap[id];
-      const isSold = !!(buyer && (buyer.buyerName || buyer.buyerContact || buyer.buyerNote));
+      const isSold = !!(buyer && (buyer.buyerName || buyer.buyerContact || buyer.buyerNote || (buyer.price !== null && buyer.price !== undefined)));
 
       const card = document.createElement('div');
       card.className = 'qr-card';
@@ -641,19 +645,29 @@
   }
 
   function renderSoldInfoHtml(buyer) {
-    if (!buyer || (!buyer.buyerName && !buyer.buyerContact && !buyer.buyerNote)) {
+    if (!buyer || (!buyer.buyerName && !buyer.buyerContact && !buyer.buyerNote && (buyer.price === null || buyer.price === undefined))) {
       return `<span style="color:var(--muted);">Not sold yet</span>`;
     }
     const parts = [];
     if (buyer.buyerName) parts.push(`<strong>${escapeHtml(buyer.buyerName)}</strong>`);
     if (buyer.buyerContact) parts.push(escapeHtml(buyer.buyerContact));
     let line = `🧾 Sold to: ${parts.join(' · ') || '—'}`;
+    if (buyer.price !== null && buyer.price !== undefined) {
+      line += ` <span style="color:var(--gold);font-weight:600;">· ${formatPrice(buyer.price)}</span>`;
+    }
     if (buyer.buyerNote) line += `<br>📝 ${escapeHtml(buyer.buyerNote)}`;
     if (buyer.soldAt) {
       const d = new Date(buyer.soldAt);
       if (!isNaN(d)) line += `<br><span style="opacity:0.75;">${d.toLocaleDateString()}</span>`;
     }
     return line;
+  }
+
+  function formatPrice(price) {
+    const n = Number(price);
+    if (isNaN(n)) return '';
+    // No fixed currency symbol assumed — just format the number cleanly.
+    return n % 1 === 0 ? n.toLocaleString() : n.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
   }
 
   let buyerModalCardId = null;
@@ -664,9 +678,10 @@
     document.getElementById('buyer-modal-id').textContent = id;
     document.getElementById('buyer-name-input').value = buyer.buyerName || '';
     document.getElementById('buyer-contact-input').value = buyer.buyerContact || '';
+    document.getElementById('buyer-price-input').value = (buyer.price !== null && buyer.price !== undefined) ? buyer.price : '';
     document.getElementById('buyer-note-input').value = buyer.buyerNote || '';
     document.getElementById('buyer-clear-btn').style.display =
-      (buyer.buyerName || buyer.buyerContact || buyer.buyerNote) ? 'inline-flex' : 'none';
+      (buyer.buyerName || buyer.buyerContact || buyer.buyerNote || buyer.price !== null && buyer.price !== undefined) ? 'inline-flex' : 'none';
     document.getElementById('buyer-modal').classList.add('open');
   }
 
@@ -680,17 +695,27 @@
     const id = buyerModalCardId;
     const buyerName = document.getElementById('buyer-name-input').value.trim();
     const buyerContact = document.getElementById('buyer-contact-input').value.trim();
+    const priceRaw = document.getElementById('buyer-price-input').value.trim();
     const note = document.getElementById('buyer-note-input').value.trim();
 
-    if (!buyerName && !buyerContact && !note) {
-      alert('Enter at least a buyer name, contact, or note.');
+    if (!buyerName && !buyerContact && !priceRaw && !note) {
+      alert('Enter at least a buyer name, contact, price, or note.');
       return;
+    }
+
+    let price = null;
+    if (priceRaw) {
+      price = Number(priceRaw);
+      if (isNaN(price) || price < 0) {
+        alert('Price must be a valid non-negative number.');
+        return;
+      }
     }
 
     try {
       const res = await apiFetch(`${BACKEND_API_BASE}/api/gift/${id}/buyer`, {
         method: 'PATCH',
-        body: JSON.stringify({ buyerName, buyerContact, note })
+        body: JSON.stringify({ buyerName, buyerContact, note, price })
       });
       const data = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(data.error || 'Server error');
@@ -699,6 +724,7 @@
         buyerName,
         buyerContact,
         buyerNote: note,
+        price: price,
         soldAt: (data.gift && data.gift.sold_at) || new Date().toISOString()
       };
       closeBuyerModal();

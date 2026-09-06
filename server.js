@@ -328,16 +328,25 @@ app.post('/api/upload', (req, res, next) => {
 //   ALTER TABLE gifts ADD COLUMN buyer_name text;
 //   ALTER TABLE gifts ADD COLUMN buyer_contact text;
 //   ALTER TABLE gifts ADD COLUMN buyer_note text;
+//   ALTER TABLE gifts ADD COLUMN sale_price numeric;
 //   ALTER TABLE gifts ADD COLUMN sold_at timestamptz;
 // Lets the admin note who a physical card was sold to. Stored on the same
 // gift row so it stays in sync across every device viewing the dashboard,
 // instead of living only in one browser's localStorage.
 app.patch('/api/gift/:id/buyer', requireAuth, async (req, res) => {
   const giftId = req.params.id;
-  const { buyerName, buyerContact, note } = req.body || {};
+  const { buyerName, buyerContact, note, price } = req.body || {};
 
-  if (!buyerName && !buyerContact && !note) {
-    return res.status(400).json({ error: 'Provide at least a buyer name, contact, or note.' });
+  if (!buyerName && !buyerContact && !note && (price === undefined || price === null || price === '')) {
+    return res.status(400).json({ error: 'Provide at least a buyer name, contact, price, or note.' });
+  }
+
+  let salePrice = null;
+  if (price !== undefined && price !== null && price !== '') {
+    salePrice = Number(price);
+    if (isNaN(salePrice) || salePrice < 0) {
+      return res.status(400).json({ error: 'Price must be a valid non-negative number.' });
+    }
   }
 
   try {
@@ -353,6 +362,7 @@ app.patch('/api/gift/:id/buyer', requireAuth, async (req, res) => {
         buyer_name: buyerName || null,
         buyer_contact: buyerContact || null,
         buyer_note: note || null,
+        sale_price: salePrice,
         sold_at: new Date().toISOString()
       })
       .eq('id', giftId)
@@ -373,7 +383,7 @@ app.delete('/api/gift/:id/buyer', requireAuth, async (req, res) => {
   try {
     const { error } = await supabase
       .from('gifts')
-      .update({ buyer_name: null, buyer_contact: null, buyer_note: null, sold_at: null })
+      .update({ buyer_name: null, buyer_contact: null, buyer_note: null, sale_price: null, sold_at: null })
       .eq('id', giftId);
     if (error) throw error;
     res.status(200).json({ success: true });
@@ -527,7 +537,7 @@ app.get('/api/admin/cards', requireAuth, async (req, res) => {
   try {
     let { data, error } = await supabase
       .from('gifts')
-      .select('id, buyer_name, buyer_contact, buyer_note, sold_at')
+      .select('id, buyer_name, buyer_contact, buyer_note, sale_price, sold_at')
       .order('id', { ascending: false });
 
     if (error) {
@@ -545,11 +555,12 @@ app.get('/api/admin/cards', requireAuth, async (req, res) => {
     const ids = (data || []).map(row => row.id);
     const buyers = {};
     (data || []).forEach(row => {
-      if (row.buyer_name || row.buyer_contact || row.buyer_note) {
+      if (row.buyer_name || row.buyer_contact || row.buyer_note || row.sale_price != null) {
         buyers[row.id] = {
           buyerName: row.buyer_name || '',
           buyerContact: row.buyer_contact || '',
           buyerNote: row.buyer_note || '',
+          price: row.sale_price != null ? row.sale_price : null,
           soldAt: row.sold_at || null
         };
       }
