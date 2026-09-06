@@ -189,24 +189,26 @@
       margin-bottom: 16px;
     }
 
-    /* Kept out of view but NOT display:none: display:none means the browser
-       never lays out or paints this subtree, so when it's flipped visible
-       at print time there's a race between that first layout/paint pass and
-       the print snapshot, which is what was causing the blank page. Keeping
-       it absolutely positioned + zero-size + hidden overflow means the QR
-       canvases are already fully rendered well before printAndMark() runs. */
-    #print-area { position: absolute; top: 0; left: 0; width: 0; height: 0; overflow: hidden; pointer-events: none; }
+    /* Standard "print only this section" technique. We deliberately do NOT
+       use display:none or zero-size+overflow:hidden here: both of those
+       clip the element to nothing, and Chromium appears to cull that
+       content from its paint/composite pipeline and then fail to properly
+       repaint it once print CSS resizes it -- that's what was producing a
+       genuinely blank PDF (confirmed: not just a preview glitch) even
+       though the QR data and DOM were all correct. Keeping the element at
+       visibility:hidden (not display:none) means it's laid out and painted
+       normally the whole time -- just invisible and pushed off-screen --
+       so there's no last-second paint to race against at print time. */
+    #print-area { position: fixed; top: 0; left: -9999px; visibility: hidden; }
     @media print {
-      body * { display: none !important; }
+      body * { visibility: hidden !important; }
+      #print-area, #print-area * { visibility: visible !important; }
       #print-area {
         position: static !important;
-        width: auto !important;
-        height: auto !important;
-        overflow: visible !important;
+        left: auto !important;
         display: grid !important;
         grid-template-columns: repeat(3, 1fr); gap: 25px; padding: 10px;
       }
-      #print-area * { display: block !important; }
       #print-area .print-card {
         display: flex !important;
         flex-direction: column !important;
@@ -393,7 +395,6 @@
     <div class="form-field">
       <label for="buyer-name-input">Buyer name</label>
       <input type="text" id="buyer-name-input" placeholder="e.g. Sarah Tesfaye">
-
     </div>
     <div class="form-field">
       <label for="buyer-contact-input">Phone / email (optional)</label>
@@ -618,7 +619,9 @@
     const cs = getComputedStyle(pa);
     const qrLibLoaded = typeof QRCode !== 'undefined';
     const firstCard = pa.children[0];
+    const qrWrap = firstCard ? firstCard.querySelector('.print-qr-wrap') : null;
     const firstCanvas = firstCard ? firstCard.querySelector('canvas') : null;
+    const firstImg = firstCard ? firstCard.querySelector('img') : null;
     let canvasInfo = '(no canvas found)';
     if (firstCanvas) {
       const ctx = firstCanvas.getContext('2d');
@@ -627,16 +630,25 @@
       for (let i = 0; i < pixels.length; i += 4) {
         if (pixels[i] < 250 || pixels[i+1] < 250 || pixels[i+2] < 250) nonWhite++;
       }
-      canvasInfo = `canvas ${firstCanvas.width}x${firstCanvas.height}, non-white pixels: ${nonWhite}`;
+      canvasInfo = `canvas ${firstCanvas.width}x${firstCanvas.height}, non-white pixels: ${nonWhite}, inline style: "${firstCanvas.getAttribute('style')}"`;
+    }
+    let imgInfo = '(no img found)';
+    if (firstImg) {
+      imgInfo = 'img src length: ' + (firstImg.src ? firstImg.src.length : 0) +
+        ', src starts with: ' + (firstImg.src ? firstImg.src.slice(0,40) : '(empty)') +
+        ', naturalWidth: ' + firstImg.naturalWidth +
+        ', naturalHeight: ' + firstImg.naturalHeight +
+        ', complete: ' + firstImg.complete +
+        ', inline style: "' + firstImg.getAttribute('style') + '"';
     }
     alert(
       'QRCode library loaded: ' + qrLibLoaded + '\n' +
       'print-area children count: ' + pa.children.length + '\n' +
-      'print-area position (screen): ' + cs.position + '\n' +
-      'first card exists: ' + !!firstCard + '\n' +
       'first card has canvas: ' + !!firstCanvas + '\n' +
       canvasInfo + '\n\n' +
-      'first card HTML:\n' + (firstCard ? firstCard.outerHTML.slice(0, 500) : '(none)')
+      'first card has img: ' + !!firstImg + '\n' +
+      imgInfo + '\n\n' +
+      'qr-wrap innerHTML:\n' + (qrWrap ? qrWrap.innerHTML : '(none)')
     );
   }
   function printAndMark() {
