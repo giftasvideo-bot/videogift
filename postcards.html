@@ -13,6 +13,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,700;1,400&family=DM+Sans:wght@300;400;500;700&display=swap" rel="stylesheet">
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   <style>
     :root {
       --ink: #0d0d0d;
@@ -161,7 +162,9 @@
   <div class="card-section">
     <h2>🖨️ Print Postcards</h2>
     <div class="notice-box">
-      This page reuses the card IDs already in your registry. Each printed postcard is two A4-landscape sheets: the front cover artwork, then the inside artwork with that card's QR code added in the blank area next to the message.
+      This page reuses the card IDs already in your registry. Each postcard is two A4-landscape sheets: the front cover artwork, then the inside artwork with that card's QR code added in the blank area next to the message.
+      <br><br>
+      <strong>Sending to a print shop?</strong> Use "⬇️ Download Print PDF" — it builds an actual PDF with fixed A4 pages and full-resolution artwork baked in, so the layout can't be thrown off by anyone's local print settings. The "🖨️ Print" button is fine for a quick office/home test print instead. Note: the PDF is generated in RGB, not CMYK — check with your print shop if they specifically require CMYK files.
     </div>
     <div class="notice-box warn" id="assets-warning" style="display:none;">
       ⚠️ Couldn't load <strong>love.png</strong> / <strong>love-inside.png</strong>. Make sure both files are uploaded to the same folder as this page, then reload.
@@ -178,8 +181,12 @@
     <div class="toolbar">
       <button class="btn btn-secondary" onclick="selectAllVisible()">☑️ Select all shown</button>
       <button class="btn btn-secondary" onclick="clearSelection()">Clear selection</button>
+      <span style="font-size:0.8rem; color:var(--muted); margin-left:6px;">Page size:</span>
+      <button class="filter-btn active" id="size-a4" onclick="setPageSize('a4')">A4</button>
+      <button class="filter-btn" id="size-a5" onclick="setPageSize('a5')">A5</button>
       <div class="spacer"></div>
       <span class="selected-count" id="selected-count">0 selected</span>
+      <button class="btn btn-secondary pdf-btn" id="pdf-selected-btn" onclick="downloadPostcardsPdf()">⬇️ Download Print PDF</button>
       <button class="btn" id="print-selected-btn" onclick="printSelectedPostcards()">🖨️ Print Selected Postcards</button>
     </div>
 
@@ -193,6 +200,13 @@
   let buyerMap = {};
   let currentFilter = 'unsold';
   let selectedIds = new Set();
+  let pageSizeChoice = 'a4';
+  const PAGE_DIMENSIONS = { a4: { w: 297, h: 210 }, a5: { w: 210, h: 148.5 } };
+  function setPageSize(size) {
+    pageSizeChoice = size;
+    document.getElementById('size-a4').classList.toggle('active', size === 'a4');
+    document.getElementById('size-a5').classList.toggle('active', size === 'a5');
+  }
 
   // Separate printed-tracking key so marking a postcard as printed never
   // touches the existing video-card "printed" flags used by admin.html.
@@ -287,6 +301,7 @@
   function updateSelectedCount() {
     document.getElementById('selected-count').textContent = `${selectedIds.size} selected`;
     document.getElementById('print-selected-btn').disabled = selectedIds.size === 0;
+    document.getElementById('pdf-selected-btn').disabled = selectedIds.size === 0;
   }
 
   function toggleSelect(id) {
@@ -356,6 +371,8 @@
   function printSelectedPostcards() {
     if (selectedIds.size === 0) return;
     const ids = sortIdsAscending([...selectedIds]);
+    const dims = PAGE_DIMENSIONS[pageSizeChoice];
+    const cssSizeName = pageSizeChoice === 'a5' ? 'A5' : 'A4';
 
     const pagesHtml = ids.map(id => {
       const qrDataUrl = generateQrDataUrl(buildWatchUrl(id), 260);
@@ -383,12 +400,12 @@
       <!DOCTYPE html>
       <html><head><title>Print Postcards</title>
       <style>
-        @page { size: A4 landscape; margin: 0; }
+        @page { size: ${cssSizeName} landscape; margin: 0; }
         html, body { height: 100%; }
         * { margin:0; padding:0; box-sizing:border-box; }
         body { font-family: 'DM Sans', sans-serif; }
         .pc-print-page {
-          width: 297mm; height: 210mm; position: relative; overflow: hidden;
+          width: ${dims.w}mm; height: ${dims.h}mm; position: relative; overflow: hidden;
           page-break-after: always;
         }
         .pc-print-page:last-child { page-break-after: auto; }
@@ -413,6 +430,104 @@
       renderGrid();
       printWin.close();
     });
+  }
+
+  // --- PDF generation (for sending to a print shop) ---------------------
+  // Loads love.png / love-inside.png once as real <img> elements so we can
+  // draw them into <canvas> (needed to embed full-res pixels into the PDF
+  // and to burn the QR + captions into the inside page).
+  let artworkPromise = null;
+  function loadImageElement(src) {
+    return new Promise((resolve, reject) => {
+      const img = new Image();
+      img.onload = () => resolve(img);
+      img.onerror = () => reject(new Error(`Could not load ${src}`));
+      img.src = src;
+    });
+  }
+  function loadArtwork() {
+    if (!artworkPromise) {
+      artworkPromise = Promise.all([loadImageElement('love.png'), loadImageElement('love-inside.png')])
+        .then(([front, inside]) => ({ front, inside }));
+    }
+    return artworkPromise;
+  }
+
+  // Draws the inside artwork + QR + captions onto a full-resolution canvas
+  // (matching the source artwork's pixel size, ~300dpi for A4) and returns it.
+  function buildInsidePageCanvas(insideImg, id) {
+    const canvas = document.createElement('canvas');
+    canvas.width = insideImg.naturalWidth;
+    canvas.height = insideImg.naturalHeight;
+    const ctx = canvas.getContext('2d');
+    ctx.drawImage(insideImg, 0, 0, canvas.width, canvas.height);
+
+    // QR code, rendered via qrcode.js into its own canvas so we can draw
+    // it straight onto the composite without an extra image-load round trip.
+    const qrSize = Math.round(canvas.width * 0.15);
+    const tempContainer = document.createElement('div');
+    tempContainer.style.position = 'fixed';
+    tempContainer.style.left = '-9999px';
+    document.body.appendChild(tempContainer);
+    new QRCode(tempContainer, { text: buildWatchUrl(id), width: qrSize, height: qrSize, correctLevel: QRCode.CorrectLevel.M });
+    const qrCanvas = tempContainer.querySelector('canvas');
+    const qrX = Math.round(canvas.width * 0.61);
+    const qrY = Math.round(canvas.height * 0.56);
+    // White backing so the QR stays scannable over the cream background.
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(qrX - 8, qrY - 8, qrSize + 16, qrSize + 16);
+    ctx.drawImage(qrCanvas, qrX, qrY, qrSize, qrSize);
+    document.body.removeChild(tempContainer);
+
+    // Captions below the QR — canvas text uses the browser's normal font
+    // fallback, so the Amharic line renders the same as it does on-screen.
+    ctx.textAlign = 'center';
+    const centerX = qrX + qrSize / 2;
+    ctx.fillStyle = '#333333';
+    ctx.font = `600 ${Math.round(canvas.width * 0.0097)}px 'DM Sans', sans-serif`;
+    ctx.fillText('ስካን አድርገው መልዕክትዎን ይላኩ/ይቀበሉ፡፡', centerX, qrY + qrSize + Math.round(canvas.width * 0.018));
+    ctx.fillText('Scan to send/receive your message', centerX, qrY + qrSize + Math.round(canvas.width * 0.033));
+    ctx.fillStyle = '#555555';
+    ctx.font = `700 ${Math.round(canvas.width * 0.0085)}px monospace`;
+    ctx.fillText(id, centerX, qrY + qrSize + Math.round(canvas.width * 0.047));
+
+    return canvas;
+  }
+
+  async function downloadPostcardsPdf() {
+    if (selectedIds.size === 0) return;
+    const ids = sortIdsAscending([...selectedIds]);
+    const pdfBtn = document.getElementById('pdf-selected-btn');
+    const originalLabel = pdfBtn.textContent;
+    pdfBtn.disabled = true;
+    pdfBtn.textContent = '⏳ Building PDF...';
+
+    try {
+      await document.fonts.ready;
+      const { front, inside } = await loadArtwork();
+      const { jsPDF } = window.jspdf;
+      const dims = PAGE_DIMENSIONS[pageSizeChoice];
+      const doc = new jsPDF({ orientation: 'landscape', unit: 'mm', format: pageSizeChoice });
+
+      ids.forEach((id, i) => {
+        if (i > 0) doc.addPage(pageSizeChoice, 'landscape');
+        doc.addImage(front, 'PNG', 0, 0, dims.w, dims.h, undefined, 'FAST');
+        doc.addPage(pageSizeChoice, 'landscape');
+        const insideCanvas = buildInsidePageCanvas(inside, id);
+        doc.addImage(insideCanvas.toDataURL('image/jpeg', 0.95), 'JPEG', 0, 0, dims.w, dims.h);
+      });
+
+      const stamp = new Date().toISOString().slice(0, 10);
+      doc.save(`postcards-${pageSizeChoice}-${stamp}.pdf`);
+      markPcPrinted(ids);
+      renderGrid();
+    } catch (err) {
+      console.error(err);
+      alert(`⚠️ Could not build the PDF: ${err.message}`);
+    } finally {
+      pdfBtn.disabled = selectedIds.size === 0;
+      pdfBtn.textContent = originalLabel;
+    }
   }
 
   // Quick check that the two artwork files are reachable next to this page.
