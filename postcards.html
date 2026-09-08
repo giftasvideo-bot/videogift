@@ -74,15 +74,15 @@
     }
     .filter-btn.active { background: var(--gold); color: #fff; border-color: var(--gold); }
 
-    .type-bar { display: flex; gap: 8px; margin-bottom: 16px; flex-wrap: wrap; align-items: center; }
+    .type-bar { display: flex; gap: 10px; margin-bottom: 16px; flex-wrap: wrap; align-items: center; }
     .type-bar .type-label { font-size: 0.8rem; color: var(--muted); margin-right: 2px; }
-    .type-btn {
-      padding: 8px 16px; border: 1px solid var(--cream); border-radius: 20px;
-      background: #fff; color: var(--ink); font-size: 0.85rem; cursor: pointer;
-      font-family: 'DM Sans', sans-serif; font-weight: 500; transition: all 0.15s;
-      display: inline-flex; align-items: center; gap: 6px;
+    .type-select {
+      padding: 10px 16px; border: 1px solid var(--cream); border-radius: 8px;
+      background: #fff; color: var(--ink); font-size: 0.9rem; cursor: pointer;
+      font-family: 'DM Sans', sans-serif; font-weight: 500;
+      min-width: 200px;
     }
-    .type-btn.active { background: var(--gold); color: #fff; border-color: var(--gold); }
+    .type-select:focus { outline: none; border-color: var(--gold); }
 
     .toolbar { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; margin-bottom: 18px; }
     .toolbar .spacer { flex: 1; }
@@ -233,14 +233,15 @@
   function renderTypeBar() {
     const bar = document.getElementById('type-bar');
     bar.innerHTML = '<span class="type-label">Postcard design:</span>' +
+      '<select class="type-select" id="type-select" onchange="setPostcardType(this.value)">' +
       Object.entries(POSTCARD_TYPES).map(([key, t]) =>
-        `<button class="type-btn${key === currentType ? ' active' : ''}" onclick="setPostcardType('${key}')">${t.label}</button>`
-      ).join('');
+        `<option value="${key}"${key === currentType ? ' selected' : ''}>${t.label}</option>`
+      ).join('') +
+      '</select>';
   }
   function setPostcardType(key) {
     if (!POSTCARD_TYPES[key]) return;
     currentType = key;
-    renderTypeBar();
     checkAssets();
   }
 
