@@ -1,0 +1,431 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Forever 27 | Postcard Printing</title>
+  <link rel="icon" type="image/png" sizes="32x32" href="/favicons/favicon-32x32.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/favicons/favicon-16x16.png">
+  <link rel="apple-touch-icon" sizes="180x180" href="/favicons/apple-touch-icon.png">
+  <link rel="shortcut icon" href="/favicons/favicon.ico">
+  <link rel="manifest" href="/favicons/site.webmanifest">
+  <meta name="theme-color" content="#c9933a">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,700;1,400&family=DM+Sans:wght@300;400;500;700&display=swap" rel="stylesheet">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+  <style>
+    :root {
+      --ink: #0d0d0d;
+      --paper: #faf7f2;
+      --gold: #c9933a;
+      --gold-light: #e8b86d;
+      --cream: #f0ead8;
+      --muted: #7a7060;
+      --success-bg: #e8f5e9;
+      --success-text: #2e7d32;
+      --pending-bg: #fff3e0;
+      --pending-text: #ef6c00;
+    }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      background-color: var(--paper);
+      color: var(--ink);
+      font-family: 'DM Sans', sans-serif;
+      padding: 40px 20px;
+      min-height: 100vh;
+    }
+    .dashboard { position: relative; z-index: 1; max-width: 1100px; margin: 0 auto; }
+    .header { text-align: center; margin-bottom: 32px; }
+    .logo { font-family: 'Playfair Display', serif; font-size: 2rem; margin-bottom: 8px; }
+    .logo span { color: var(--gold); font-style: italic; }
+    h1 { font-family: 'Playfair Display', serif; font-size: 1.6rem; margin-bottom: 8px; }
+    .header-links { margin-top: 12px; display: flex; gap: 10px; justify-content: center; }
+
+    .card-section {
+      background: #ffffff; border: 1px solid var(--cream);
+      border-radius: 12px; padding: 30px; margin-bottom: 30px;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.01);
+    }
+    h2 { font-family: 'Playfair Display', serif; font-size: 1.3rem; margin-bottom: 16px; display: flex; align-items: center; gap: 10px; }
+
+    .btn {
+      padding: 12px 24px; background: var(--gold); color: #ffffff;
+      border: none; border-radius: 6px; font-weight: 500; cursor: pointer;
+      transition: background 0.2s; font-family: 'DM Sans', sans-serif;
+      display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+    }
+    .btn:hover { background: var(--gold-light); }
+    .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+    .btn-secondary { background: var(--cream); color: var(--ink); }
+    .btn-secondary:hover { background: #e5dec9; }
+
+    .notice-box {
+      background: #e8f5e9; border: 1px solid #a5d6a7; border-radius: 8px;
+      padding: 12px 16px; font-size: 0.85rem; color: #2e7d32; margin-bottom: 16px;
+    }
+    .notice-box.warn { background: #fff3e0; border-color: #ffcc80; color: #ef6c00; }
+
+    .filter-bar { display: flex; gap: 8px; margin-bottom: 16px; flex-wrap: wrap; align-items: center; }
+    .filter-btn {
+      padding: 6px 14px; border: 1px solid var(--cream); border-radius: 20px;
+      background: #fff; color: var(--muted); font-size: 0.8rem; cursor: pointer;
+      font-family: 'DM Sans', sans-serif; font-weight: 500; transition: all 0.15s;
+    }
+    .filter-btn.active { background: var(--gold); color: #fff; border-color: var(--gold); }
+
+    .toolbar { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; margin-bottom: 18px; }
+    .toolbar .spacer { flex: 1; }
+    .selected-count { font-size: 0.85rem; color: var(--muted); }
+
+    .qr-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+      gap: 16px;
+    }
+    .pc-tile {
+      border: 1px solid var(--cream); border-radius: 10px; padding: 14px;
+      background: var(--paper); display: flex; flex-direction: column; gap: 8px;
+      cursor: pointer; transition: border-color 0.15s, background 0.15s;
+    }
+    .pc-tile:hover { border-color: var(--gold-light); }
+    .pc-tile.selected { border-color: var(--gold); background: #fff8ec; }
+    .pc-tile-top { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+    .pc-id { font-family: monospace; font-weight: 700; font-size: 0.92rem; }
+    .pc-badges { display: flex; flex-wrap: wrap; gap: 6px; }
+    .pc-badge {
+      display: inline-block; padding: 2px 8px; border-radius: 6px;
+      font-size: 0.65rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em;
+    }
+    .pc-badge.sold { background: #fff8e1; color: #7a6020; }
+    .pc-badge.unsold { background: #f5f5f5; color: #9e9e9e; }
+    .pc-badge.printed { background: var(--success-bg); color: var(--success-text); }
+    .pc-badge.not-printed { background: var(--pending-bg); color: var(--pending-text); }
+
+    /* === Printable postcard pages (built inside the popup window) === */
+    .pc-print-page {
+      width: 297mm; height: 210mm; position: relative; overflow: hidden;
+      page-break-after: always;
+    }
+    .pc-print-page:last-child { page-break-after: auto; }
+    .pc-print-page img.pc-bg {
+      position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; display: block;
+    }
+    .pc-qr-overlay {
+      position: absolute;
+      left: 61%; top: 56%;
+      width: 15%;
+      display: flex; flex-direction: column; align-items: center; text-align: center;
+    }
+    .pc-qr-overlay img { width: 100%; height: auto; display: block; background: #fff; }
+    .pc-qr-overlay .pc-caption {
+      margin-top: 6px; font-family: 'DM Sans', sans-serif; font-weight: 600;
+      font-size: 9px; line-height: 1.3; color: #333;
+    }
+    .pc-qr-overlay .pc-id-caption {
+      margin-top: 2px; font-family: monospace; font-weight: 700; font-size: 8px; color: #555;
+    }
+  </style>
+</head>
+<body>
+
+<script>
+  // Auth guard — same admin session used by admin.html
+  const SESSION_KEY = 'f27_admin_auth';
+  function getSession() { return JSON.parse(sessionStorage.getItem(SESSION_KEY) || 'null'); }
+  function getAuthToken() {
+    const s = getSession();
+    return (s && s.token && s.expires > Date.now()) ? s.token : null;
+  }
+  (async function authGuard() {
+    const token = getAuthToken();
+    if (!token) { window.location.replace('login.html'); return; }
+    try {
+      const BACKEND = localStorage.getItem('videogift_api_url') || 'https://videogift-backend-3.onrender.com';
+      const res = await fetch(`${BACKEND}/api/admin/verify`, { headers: { 'Authorization': `Bearer ${token}` } });
+      if (!res.ok) { sessionStorage.removeItem(SESSION_KEY); window.location.replace('login.html'); }
+    } catch (err) {
+      console.warn('Token verification skipped — backend unreachable.');
+    }
+  })();
+</script>
+
+<div class="dashboard">
+  <div class="header">
+    <div class="logo">Forever<span>27</span></div>
+    <h1>💌 Postcard Print Layout</h1>
+    <div class="header-links">
+      <button class="btn btn-secondary" style="font-size:0.8rem; padding:8px 18px;" onclick="window.location.href='admin.html'">← Back to Dashboard</button>
+    </div>
+  </div>
+
+  <div class="card-section">
+    <h2>🖨️ Print Postcards</h2>
+    <div class="notice-box">
+      This page reuses the card IDs already in your registry. Each printed postcard is two A4-landscape sheets: the front cover artwork, then the inside artwork with that card's QR code added in the blank area next to the message.
+    </div>
+    <div class="notice-box warn" id="assets-warning" style="display:none;">
+      ⚠️ Couldn't load <strong>love.png</strong> / <strong>love-inside.png</strong>. Make sure both files are uploaded to the same folder as this page, then reload.
+    </div>
+
+    <div class="filter-bar">
+      <button class="filter-btn active" id="filter-unsold" onclick="setFilter('unsold')">Unsold <span id="count-unsold"></span></button>
+      <button class="filter-btn" id="filter-all" onclick="setFilter('all')">All <span id="count-all"></span></button>
+      <button class="filter-btn" id="filter-sold" onclick="setFilter('sold')">Sold <span id="count-sold"></span></button>
+      <button class="filter-btn" id="filter-pc-no" onclick="setFilter('pc-no')">🔴 Postcard not printed <span id="count-pc-no"></span></button>
+      <button class="filter-btn" id="filter-pc-yes" onclick="setFilter('pc-yes')">✅ Postcard printed <span id="count-pc-yes"></span></button>
+    </div>
+
+    <div class="toolbar">
+      <button class="btn btn-secondary" onclick="selectAllVisible()">☑️ Select all shown</button>
+      <button class="btn btn-secondary" onclick="clearSelection()">Clear selection</button>
+      <div class="spacer"></div>
+      <span class="selected-count" id="selected-count">0 selected</span>
+      <button class="btn" id="print-selected-btn" onclick="printSelectedPostcards()">🖨️ Print Selected Postcards</button>
+    </div>
+
+    <div class="qr-grid" id="pc-grid-container"></div>
+  </div>
+</div>
+
+<script>
+  let BACKEND_API_BASE = localStorage.getItem('videogift_api_url') || 'https://videogift-backend-3.onrender.com';
+  let localRegistry = [];
+  let buyerMap = {};
+  let currentFilter = 'unsold';
+  let selectedIds = new Set();
+
+  // Separate printed-tracking key so marking a postcard as printed never
+  // touches the existing video-card "printed" flags used by admin.html.
+  const PC_PRINTED_KEY = 'f27_postcard_printed_ids';
+  function getPcPrintedMap() {
+    try { return JSON.parse(localStorage.getItem(PC_PRINTED_KEY)) || {}; }
+    catch { return {}; }
+  }
+  function setPcPrintedMap(map) { localStorage.setItem(PC_PRINTED_KEY, JSON.stringify(map)); }
+  function markPcPrinted(ids) {
+    const map = getPcPrintedMap();
+    ids.forEach(id => { map[id] = true; });
+    setPcPrintedMap(map);
+  }
+
+  function authHeaders(extra = {}) {
+    const token = getAuthToken();
+    return { 'Content-Type': 'application/json', ...(token ? { 'Authorization': `Bearer ${token}` } : {}), ...extra };
+  }
+  async function apiFetch(url, options = {}) {
+    const res = await fetch(url, { ...options, headers: authHeaders(options.headers || {}) });
+    if (res.status === 401) {
+      sessionStorage.removeItem(SESSION_KEY);
+      window.location.replace('login.html');
+      throw new Error('Session expired.');
+    }
+    return res;
+  }
+
+  function isCardSold(id) {
+    const buyer = buyerMap[id];
+    return !!(buyer && (buyer.buyerName || buyer.buyerContact || buyer.buyerNote || (buyer.price !== null && buyer.price !== undefined)));
+  }
+  function sortIdsAscending(ids) {
+    return [...ids].sort((a, b) => a.localeCompare(b, undefined, { numeric: true }));
+  }
+  function buildWatchUrl(id) {
+    // Strip this file's own name from the path so it works under any filename/folder.
+    const base = window.location.origin + window.location.pathname.replace(/[^\/]*$/, '');
+    return `${base}watch.html?id=${id}`;
+  }
+
+  async function loadCardsFromDatabase() {
+    const grid = document.getElementById('pc-grid-container');
+    grid.innerHTML = `<div style="grid-column:1/-1; text-align:center; color:var(--muted); padding:40px;">⏳ Loading cards from database...</div>`;
+    try {
+      const response = await apiFetch(`${BACKEND_API_BASE}/api/admin/cards`);
+      if (!response.ok) throw new Error('Failed to load cards from database.');
+      const data = await response.json();
+      localRegistry = data.ids || [];
+      buyerMap = data.buyers || {};
+    } catch (err) {
+      console.warn('Could not load cards from DB:', err);
+      localRegistry = [];
+      buyerMap = {};
+    }
+    renderGrid();
+  }
+
+  function setFilter(filter) {
+    currentFilter = filter;
+    ['unsold', 'all', 'sold', 'pc-no', 'pc-yes'].forEach(f => {
+      document.getElementById(`filter-${f}`).classList.toggle('active', f === filter);
+    });
+    renderGrid();
+  }
+
+  function visibleIdsForFilter() {
+    const pcMap = getPcPrintedMap();
+    return sortIdsAscending(localRegistry).filter(id => {
+      if (currentFilter === 'unsold') return !isCardSold(id);
+      if (currentFilter === 'sold') return isCardSold(id);
+      if (currentFilter === 'pc-no') return !pcMap[id];
+      if (currentFilter === 'pc-yes') return !!pcMap[id];
+      return true;
+    });
+  }
+
+  function updateFilterCounts() {
+    const pcMap = getPcPrintedMap();
+    const unsold = localRegistry.filter(id => !isCardSold(id)).length;
+    const sold = localRegistry.length - unsold;
+    const pcYes = localRegistry.filter(id => pcMap[id]).length;
+    const pcNo = localRegistry.length - pcYes;
+    document.getElementById('count-all').textContent = `(${localRegistry.length})`;
+    document.getElementById('count-unsold').textContent = `(${unsold})`;
+    document.getElementById('count-sold').textContent = `(${sold})`;
+    document.getElementById('count-pc-no').textContent = `(${pcNo})`;
+    document.getElementById('count-pc-yes').textContent = `(${pcYes})`;
+  }
+
+  function updateSelectedCount() {
+    document.getElementById('selected-count').textContent = `${selectedIds.size} selected`;
+    document.getElementById('print-selected-btn').disabled = selectedIds.size === 0;
+  }
+
+  function toggleSelect(id) {
+    if (selectedIds.has(id)) selectedIds.delete(id); else selectedIds.add(id);
+    renderGrid();
+  }
+  function selectAllVisible() {
+    visibleIdsForFilter().forEach(id => selectedIds.add(id));
+    renderGrid();
+  }
+  function clearSelection() {
+    selectedIds.clear();
+    renderGrid();
+  }
+
+  function renderGrid() {
+    const grid = document.getElementById('pc-grid-container');
+    grid.innerHTML = '';
+    updateFilterCounts();
+    updateSelectedCount();
+
+    if (localRegistry.length === 0) {
+      grid.innerHTML = `<div style="grid-column:1/-1; text-align:center; color:var(--muted); padding:40px;">No registered cards found. Generate some in the main dashboard first.</div>`;
+      return;
+    }
+
+    const ids = visibleIdsForFilter();
+    if (ids.length === 0) {
+      grid.innerHTML = `<div style="grid-column:1/-1; text-align:center; color:var(--muted); padding:40px;">No cards match this filter.</div>`;
+      return;
+    }
+
+    const pcMap = getPcPrintedMap();
+    ids.forEach(id => {
+      const sold = isCardSold(id);
+      const pcPrinted = !!pcMap[id];
+      const tile = document.createElement('div');
+      tile.className = 'pc-tile' + (selectedIds.has(id) ? ' selected' : '');
+      tile.onclick = () => toggleSelect(id);
+      tile.innerHTML = `
+        <div class="pc-tile-top">
+          <input type="checkbox" ${selectedIds.has(id) ? 'checked' : ''} onclick="event.stopPropagation(); toggleSelect('${id}')">
+          <span class="pc-id">${id}</span>
+        </div>
+        <div class="pc-badges">
+          <span class="pc-badge ${sold ? 'sold' : 'unsold'}">${sold ? 'Sold' : 'Unsold'}</span>
+          <span class="pc-badge ${pcPrinted ? 'printed' : 'not-printed'}">${pcPrinted ? 'Postcard printed' : 'Not printed'}</span>
+        </div>`;
+      grid.appendChild(tile);
+    });
+  }
+
+  // Renders a QR code for `text` into a detached container and returns a PNG data URL.
+  function generateQrDataUrl(text, size) {
+    const tempContainer = document.createElement('div');
+    tempContainer.style.position = 'fixed';
+    tempContainer.style.left = '-9999px';
+    tempContainer.style.top = '-9999px';
+    document.body.appendChild(tempContainer);
+    new QRCode(tempContainer, { text, width: size, height: size, correctLevel: QRCode.CorrectLevel.M });
+    const canvas = tempContainer.querySelector('canvas');
+    const dataUrl = canvas ? canvas.toDataURL('image/png') : null;
+    document.body.removeChild(tempContainer);
+    return dataUrl;
+  }
+
+  function printSelectedPostcards() {
+    if (selectedIds.size === 0) return;
+    const ids = sortIdsAscending([...selectedIds]);
+
+    const pagesHtml = ids.map(id => {
+      const qrDataUrl = generateQrDataUrl(buildWatchUrl(id), 260);
+      return `
+        <div class="pc-print-page">
+          <img class="pc-bg" src="love.png" alt="Front">
+        </div>
+        <div class="pc-print-page">
+          <img class="pc-bg" src="love-inside.png" alt="Inside">
+          <div class="pc-qr-overlay">
+            <img src="${qrDataUrl}" alt="QR">
+            <div class="pc-caption">ስካን አድርገው መልዕክትዎን ይላኩ/ይቀበሉ፡፡<br>Scan to send/receive your message</div>
+            <div class="pc-id-caption">${id}</div>
+          </div>
+        </div>`;
+    }).join('');
+
+    const printWin = window.open('', '_blank', 'width=900,height=700');
+    if (!printWin) {
+      alert('⚠️ Your browser blocked the print popup. Please allow popups for this site and try again.');
+      return;
+    }
+
+    printWin.document.write(`
+      <!DOCTYPE html>
+      <html><head><title>Print Postcards</title>
+      <style>
+        @page { size: A4 landscape; margin: 0; }
+        html, body { height: 100%; }
+        * { margin:0; padding:0; box-sizing:border-box; }
+        body { font-family: 'DM Sans', sans-serif; }
+        .pc-print-page {
+          width: 297mm; height: 210mm; position: relative; overflow: hidden;
+          page-break-after: always;
+        }
+        .pc-print-page:last-child { page-break-after: auto; }
+        .pc-print-page img.pc-bg {
+          position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; display: block;
+        }
+        .pc-qr-overlay {
+          position: absolute; left: 61%; top: 56%; width: 15%;
+          display: flex; flex-direction: column; align-items: center; text-align: center;
+        }
+        .pc-qr-overlay img { width: 100%; height: auto; display: block; background: #fff; }
+        .pc-qr-overlay .pc-caption { margin-top: 6px; font-weight: 600; font-size: 9px; line-height: 1.3; color: #333; }
+        .pc-qr-overlay .pc-id-caption { margin-top: 2px; font-family: monospace; font-weight: 700; font-size: 8px; color: #555; }
+      </style>
+      </head><body>${pagesHtml}</body></html>
+    `);
+    printWin.document.close();
+
+    printWin.onload = () => { printWin.focus(); printWin.print(); };
+    printWin.addEventListener('afterprint', () => {
+      markPcPrinted(ids);
+      renderGrid();
+      printWin.close();
+    });
+  }
+
+  // Quick check that the two artwork files are reachable next to this page.
+  (function checkAssets() {
+    let missing = 0;
+    ['love.png', 'love-inside.png'].forEach(src => {
+      const img = new Image();
+      img.onerror = () => { missing++; document.getElementById('assets-warning').style.display = 'block'; };
+      img.src = src;
+    });
+  })();
+
+  loadCardsFromDatabase();
+</script>
+</body>
+</html>
