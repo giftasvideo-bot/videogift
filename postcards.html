@@ -74,6 +74,16 @@
     }
     .filter-btn.active { background: var(--gold); color: #fff; border-color: var(--gold); }
 
+    .type-bar { display: flex; gap: 8px; margin-bottom: 16px; flex-wrap: wrap; align-items: center; }
+    .type-bar .type-label { font-size: 0.8rem; color: var(--muted); margin-right: 2px; }
+    .type-btn {
+      padding: 8px 16px; border: 1px solid var(--cream); border-radius: 20px;
+      background: #fff; color: var(--ink); font-size: 0.85rem; cursor: pointer;
+      font-family: 'DM Sans', sans-serif; font-weight: 500; transition: all 0.15s;
+      display: inline-flex; align-items: center; gap: 6px;
+    }
+    .type-btn.active { background: var(--gold); color: #fff; border-color: var(--gold); }
+
     .toolbar { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; margin-bottom: 18px; }
     .toolbar .spacer { flex: 1; }
     .selected-count { font-size: 0.85rem; color: var(--muted); }
@@ -162,12 +172,14 @@
   <div class="card-section">
     <h2>🖨️ Print Postcards</h2>
     <div class="notice-box">
-      This page reuses the card IDs already in your registry. Each postcard is two A4-landscape sheets: the front cover artwork, then the inside artwork with that card's QR code added in the blank area next to the message.
+      Pick a postcard design below (Love, Graduation, Birthday), then select the card IDs to print. Each postcard is two A4-landscape sheets: the front cover artwork, then the inside artwork with that card's QR code added in the blank area next to the message. All cards in one print/PDF job use the currently selected design — switch designs and print again for a different batch.
       <br><br>
       <strong>Sending to a print shop?</strong> Use "⬇️ Download Print PDF" — it builds an actual PDF with fixed A4 pages and full-resolution artwork baked in, so the layout can't be thrown off by anyone's local print settings. The "🖨️ Print" button is fine for a quick office/home test print instead. Note: the PDF is generated in RGB, not CMYK — check with your print shop if they specifically require CMYK files.
     </div>
-    <div class="notice-box warn" id="assets-warning" style="display:none;">
-      ⚠️ Couldn't load <strong>love.png</strong> / <strong>love-inside.png</strong>. Make sure both files are uploaded to the same folder as this page, then reload.
+    <div class="notice-box warn" id="assets-warning" style="display:none;"></div>
+
+    <div class="type-bar" id="type-bar">
+      <span class="type-label">Postcard design:</span>
     </div>
 
     <div class="filter-bar">
@@ -206,6 +218,30 @@
     pageSizeChoice = size;
     document.getElementById('size-a4').classList.toggle('active', size === 'a4');
     document.getElementById('size-a5').classList.toggle('active', size === 'a5');
+  }
+
+  // --- Postcard designs (front/inside artwork per type) -------------------
+  // Add a new design by adding an entry here — file naming convention is
+  // `<key>.png` (front cover) and `<key>-inside.png` (inside, QR goes here).
+  const POSTCARD_TYPES = {
+    love:       { label: '❤️ Love',       front: 'love.png',       inside: 'love-inside.png' },
+    graduation: { label: '🎓 Graduation', front: 'graduation.png', inside: 'graduation-inside.png' },
+    birthday:   { label: '🎂 Birthday',   front: 'birthday.png',   inside: 'birthday-inside.png' },
+  };
+  let currentType = 'love';
+
+  function renderTypeBar() {
+    const bar = document.getElementById('type-bar');
+    bar.innerHTML = '<span class="type-label">Postcard design:</span>' +
+      Object.entries(POSTCARD_TYPES).map(([key, t]) =>
+        `<button class="type-btn${key === currentType ? ' active' : ''}" onclick="setPostcardType('${key}')">${t.label}</button>`
+      ).join('');
+  }
+  function setPostcardType(key) {
+    if (!POSTCARD_TYPES[key]) return;
+    currentType = key;
+    renderTypeBar();
+    checkAssets();
   }
 
   // Separate printed-tracking key so marking a postcard as printed never
@@ -373,15 +409,16 @@
     const ids = sortIdsAscending([...selectedIds]);
     const dims = PAGE_DIMENSIONS[pageSizeChoice];
     const cssSizeName = pageSizeChoice === 'a5' ? 'A5' : 'A4';
+    const design = POSTCARD_TYPES[currentType];
 
     const pagesHtml = ids.map(id => {
       const qrDataUrl = generateQrDataUrl(buildWatchUrl(id), 260);
       return `
         <div class="pc-print-page">
-          <img class="pc-bg" src="love.png" alt="Front">
+          <img class="pc-bg" src="${design.front}" alt="Front">
         </div>
         <div class="pc-print-page">
-          <img class="pc-bg" src="love-inside.png" alt="Inside">
+          <img class="pc-bg" src="${design.inside}" alt="Inside">
           <div class="pc-qr-overlay">
             <img src="${qrDataUrl}" alt="QR">
             <div class="pc-caption">ስካን አድርገው መልዕክትዎን ይላኩ/ይቀበሉ፡፡<br>Scan to send/receive your message</div>
@@ -436,7 +473,7 @@
   // Loads love.png / love-inside.png once as real <img> elements so we can
   // draw them into <canvas> (needed to embed full-res pixels into the PDF
   // and to burn the QR + captions into the inside page).
-  let artworkPromise = null;
+  const artworkPromiseCache = {};
   function loadImageElement(src) {
     return new Promise((resolve, reject) => {
       const img = new Image();
@@ -445,12 +482,13 @@
       img.src = src;
     });
   }
-  function loadArtwork() {
-    if (!artworkPromise) {
-      artworkPromise = Promise.all([loadImageElement('love.png'), loadImageElement('love-inside.png')])
+  function loadArtwork(typeKey) {
+    if (!artworkPromiseCache[typeKey]) {
+      const design = POSTCARD_TYPES[typeKey];
+      artworkPromiseCache[typeKey] = Promise.all([loadImageElement(design.front), loadImageElement(design.inside)])
         .then(([front, inside]) => ({ front, inside }));
     }
-    return artworkPromise;
+    return artworkPromiseCache[typeKey];
   }
 
   // Draws the inside artwork + QR + captions onto a full-resolution canvas
@@ -504,7 +542,7 @@
 
     try {
       await document.fonts.ready;
-      const { front, inside } = await loadArtwork();
+      const { front, inside } = await loadArtwork(currentType);
       const { jsPDF } = window.jspdf;
       const dims = PAGE_DIMENSIONS[pageSizeChoice];
       const doc = new jsPDF({ orientation: 'landscape', unit: 'mm', format: pageSizeChoice });
@@ -530,16 +568,33 @@
     }
   }
 
-  // Quick check that the two artwork files are reachable next to this page.
-  (function checkAssets() {
-    let missing = 0;
-    ['love.png', 'love-inside.png'].forEach(src => {
+  // Checks that the currently selected design's two artwork files are
+  // reachable next to this page. Re-run whenever the type selector changes.
+  function checkAssets() {
+    const warningBox = document.getElementById('assets-warning');
+    warningBox.style.display = 'none';
+    const design = POSTCARD_TYPES[currentType];
+    const files = [design.front, design.inside];
+    let missing = [];
+    let checked = 0;
+    files.forEach(src => {
       const img = new Image();
-      img.onerror = () => { missing++; document.getElementById('assets-warning').style.display = 'block'; };
+      const done = (ok) => {
+        checked++;
+        if (!ok) missing.push(src);
+        if (checked === files.length && missing.length > 0) {
+          warningBox.innerHTML = `⚠️ Couldn't load ${missing.map(f => `<strong>${f}</strong>`).join(' / ')}. Make sure ${missing.length > 1 ? 'both files are' : 'this file is'} uploaded to the same folder as this page, then reload.`;
+          warningBox.style.display = 'block';
+        }
+      };
+      img.onload = () => done(true);
+      img.onerror = () => done(false);
       img.src = src;
     });
-  })();
+  }
 
+  renderTypeBar();
+  checkAssets();
   loadCardsFromDatabase();
 </script>
 </body>
