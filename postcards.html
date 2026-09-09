@@ -220,28 +220,72 @@
     document.getElementById('size-a5').classList.toggle('active', size === 'a5');
   }
 
-  // --- Postcard designs (front/inside artwork per type) -------------------
-  // Add a new design by adding an entry here — file naming convention is
-  // `<key>.png` (front cover) and `<key>-inside.png` (inside, QR goes here).
+  // --- Postcard designs (front/inside artwork per category/variant) -------
+  // Each category has one or more variants. File naming convention:
+  // single-variant category → `<categoryKey>.png` / `<categoryKey>-inside.png`
+  // multi-variant category  → `<categoryKey>-<variantKey>.png` / `<categoryKey>-<variantKey>-inside.png`
   const POSTCARD_TYPES = {
-    love:       { label: '❤️ Love',       front: 'love.png',       inside: 'love-inside.png' },
-    graduation: { label: '🎓 Graduation', front: 'graduation.png', inside: 'graduation-inside.png' },
-    birthday:   { label: '🎂 Birthday',   front: 'birthday.png',   inside: 'birthday-inside.png' },
+    love:       { label: '❤️ Love', variants: [
+      { key: 'default', label: '❤️ Love', front: 'love.png', inside: 'love-inside.png' },
+    ]},
+    graduation: { label: '🎓 Graduation', variants: [
+      { key: 'default', label: '🎓 Graduation', front: 'graduation.png', inside: 'graduation-inside.png' },
+    ]},
+    birthday:   { label: '🎂 Birthday', variants: [
+      { key: 'default', label: '🎂 Birthday', front: 'birthday.png', inside: 'birthday-inside.png' },
+    ]},
+    holiday:    { label: '🎄 Holiday', variants: [
+      { key: 'new_year', label: '🎉 New Year', front: 'holiday-new_year.png', inside: 'holiday-new_year-inside.png' },
+      { key: 'meskel',   label: '☦️ Meskel',    front: 'holiday-meskel.png',   inside: 'holiday-meskel-inside.png' },
+    ]},
+    condolence: { label: '🕊️ Condolence', variants: [
+      { key: 'default', label: '🕊️ Condolence', front: 'condolence.png', inside: 'condolence-inside.png' },
+    ]},
+    sorry:      { label: '🙏 I\'m Sorry', variants: [
+      { key: 'default', label: '🙏 I\'m Sorry', front: 'sorry.png', inside: 'sorry-inside.png' },
+    ]},
   };
-  let currentType = 'love';
+  let currentCategory = 'love';
+  let currentVariant = 'default';
+
+  // The design object ({label, front, inside}) currently in effect.
+  function getCurrentDesign() {
+    const cat = POSTCARD_TYPES[currentCategory];
+    return cat.variants.find(v => v.key === currentVariant) || cat.variants[0];
+  }
+  // Unique cache/lookup key for the current selection.
+  function currentDesignKey() {
+    return `${currentCategory}:${currentVariant}`;
+  }
 
   function renderTypeBar() {
     const bar = document.getElementById('type-bar');
-    bar.innerHTML = '<span class="type-label">Postcard design:</span>' +
-      '<select class="type-select" id="type-select" onchange="setPostcardType(this.value)">' +
+    const cat = POSTCARD_TYPES[currentCategory];
+    let html = '<span class="type-label">Postcard design:</span>' +
+      '<select class="type-select" id="type-select" onchange="setPostcardCategory(this.value)">' +
       Object.entries(POSTCARD_TYPES).map(([key, t]) =>
-        `<option value="${key}"${key === currentType ? ' selected' : ''}>${t.label}</option>`
+        `<option value="${key}"${key === currentCategory ? ' selected' : ''}>${t.label}</option>`
       ).join('') +
       '</select>';
+    if (cat.variants.length > 1) {
+      html += '<select class="type-select" id="variant-select" onchange="setPostcardVariant(this.value)">' +
+        cat.variants.map(v =>
+          `<option value="${v.key}"${v.key === currentVariant ? ' selected' : ''}>${v.label}</option>`
+        ).join('') +
+        '</select>';
+    }
+    html += '<button class="btn" style="font-size:0.85rem; padding:10px 18px;" onclick="printDesignForFilter()">🖨️ Print Selected Design</button>';
+    bar.innerHTML = html;
   }
-  function setPostcardType(key) {
+  function setPostcardCategory(key) {
     if (!POSTCARD_TYPES[key]) return;
-    currentType = key;
+    currentCategory = key;
+    currentVariant = POSTCARD_TYPES[key].variants[0].key;
+    renderTypeBar();
+    checkAssets();
+  }
+  function setPostcardVariant(key) {
+    currentVariant = key;
     checkAssets();
   }
 
@@ -407,10 +451,25 @@
 
   function printSelectedPostcards() {
     if (selectedIds.size === 0) return;
-    const ids = sortIdsAscending([...selectedIds]);
+    printPostcardsForIds(sortIdsAscending([...selectedIds]));
+  }
+
+  // One-click entry point next to the design dropdown: prints every card
+  // currently shown by the active filter (Unsold/All/etc.) for the
+  // selected design — no manual checkbox selection required.
+  function printDesignForFilter() {
+    const ids = visibleIdsForFilter();
+    if (ids.length === 0) {
+      alert('No cards match the current filter to print.');
+      return;
+    }
+    printPostcardsForIds(ids);
+  }
+
+  function printPostcardsForIds(ids) {
     const dims = PAGE_DIMENSIONS[pageSizeChoice];
     const cssSizeName = pageSizeChoice === 'a5' ? 'A5' : 'A4';
-    const design = POSTCARD_TYPES[currentType];
+    const design = getCurrentDesign();
 
     const pagesHtml = ids.map(id => {
       const qrDataUrl = generateQrDataUrl(buildWatchUrl(id), 260);
@@ -483,13 +542,12 @@
       img.src = src;
     });
   }
-  function loadArtwork(typeKey) {
-    if (!artworkPromiseCache[typeKey]) {
-      const design = POSTCARD_TYPES[typeKey];
-      artworkPromiseCache[typeKey] = Promise.all([loadImageElement(design.front), loadImageElement(design.inside)])
+  function loadArtwork(design, cacheKey) {
+    if (!artworkPromiseCache[cacheKey]) {
+      artworkPromiseCache[cacheKey] = Promise.all([loadImageElement(design.front), loadImageElement(design.inside)])
         .then(([front, inside]) => ({ front, inside }));
     }
-    return artworkPromiseCache[typeKey];
+    return artworkPromiseCache[cacheKey];
   }
 
   // Draws the inside artwork + QR + captions onto a full-resolution canvas
@@ -543,7 +601,7 @@
 
     try {
       await document.fonts.ready;
-      const { front, inside } = await loadArtwork(currentType);
+      const { front, inside } = await loadArtwork(getCurrentDesign(), currentDesignKey());
       const { jsPDF } = window.jspdf;
       const dims = PAGE_DIMENSIONS[pageSizeChoice];
       const doc = new jsPDF({ orientation: 'landscape', unit: 'mm', format: pageSizeChoice });
@@ -574,7 +632,7 @@
   function checkAssets() {
     const warningBox = document.getElementById('assets-warning');
     warningBox.style.display = 'none';
-    const design = POSTCARD_TYPES[currentType];
+    const design = getCurrentDesign();
     const files = [design.front, design.inside];
     let missing = [];
     let checked = 0;
