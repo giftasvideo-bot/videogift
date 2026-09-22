@@ -387,6 +387,13 @@
       <input type="text" id="buyer-contact-input" placeholder="e.g. 0911 234 567">
     </div>
     <div class="form-field">
+      <label for="buyer-product-type-input">What was sold</label>
+      <select id="buyer-product-type-input">
+        <option value="qr_only">QR code only (no physical postcard)</option>
+        <option value="postcard">Postcard + QR code</option>
+      </select>
+    </div>
+    <div class="form-field">
       <label for="buyer-price-input">Price (optional)</label>
       <input type="text" inputmode="decimal" id="buyer-price-input" placeholder="e.g. 500">
     </div>
@@ -444,6 +451,7 @@
         <thead>
           <tr>
             <th>Card ID</th>
+            <th>Product</th>
             <th>Buyer</th>
             <th>Contact</th>
             <th>Price</th>
@@ -799,6 +807,7 @@
     if (buyer.buyerName) parts.push(`<strong>${escapeHtml(buyer.buyerName)}</strong>`);
     if (buyer.buyerContact) parts.push(escapeHtml(buyer.buyerContact));
     let line = `🧾 Sold to: ${parts.join(' · ') || '—'}`;
+    line += ` <span style="opacity:0.8;">· ${buyer.productType === 'postcard' ? '💌 Postcard' : '📱 QR only'}</span>`;
     if (buyer.price !== null && buyer.price !== undefined) {
       line += ` <span style="color:var(--gold);font-weight:600;">· ${formatPrice(buyer.price)}</span>`;
     }
@@ -825,6 +834,7 @@
     document.getElementById('buyer-modal-id').textContent = id;
     document.getElementById('buyer-name-input').value = buyer.buyerName || '';
     document.getElementById('buyer-contact-input').value = buyer.buyerContact || '';
+    document.getElementById('buyer-product-type-input').value = buyer.productType || 'qr_only';
     document.getElementById('buyer-price-input').value = (buyer.price !== null && buyer.price !== undefined) ? buyer.price : '';
     document.getElementById('buyer-note-input').value = buyer.buyerNote || '';
 
@@ -848,6 +858,7 @@
     const id = buyerModalCardId;
     const buyerName = document.getElementById('buyer-name-input').value.trim();
     const buyerContact = document.getElementById('buyer-contact-input').value.trim();
+    const productType = document.getElementById('buyer-product-type-input').value; // 'qr_only' | 'postcard'
     const priceRaw = document.getElementById('buyer-price-input').value.trim();
     const note = document.getElementById('buyer-note-input').value.trim();
     const dateRaw = document.getElementById('buyer-sold-date-input').value; // "YYYY-MM-DD" or ""
@@ -873,7 +884,7 @@
     try {
       const res = await apiFetch(`${BACKEND_API_BASE}/api/gift/${id}/buyer`, {
         method: 'PATCH',
-        body: JSON.stringify({ buyerName, buyerContact, note, price, soldAt })
+        body: JSON.stringify({ buyerName, buyerContact, note, price, soldAt, productType })
       });
       const data = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(data.error || 'Server error');
@@ -883,7 +894,8 @@
         buyerContact,
         buyerNote: note,
         price: price,
-        soldAt
+        soldAt,
+        productType
       };
       closeBuyerModal();
       renderDashboardGrid();
@@ -1067,12 +1079,14 @@
 
     const withPrice = sales.filter(s => s.price !== null && s.price !== undefined && !isNaN(Number(s.price)));
     const totalRevenue = withPrice.reduce((sum, s) => sum + Number(s.price), 0);
+    const postcardCount = sales.filter(s => s.productType === 'postcard').length;
 
     subtitle.textContent = `${sales.length} card${sales.length === 1 ? '' : 's'} sold.`;
     summary.innerHTML = `
       <div class="sales-stat"><div class="stat-value">${sales.length}</div><div class="stat-label">Cards sold</div></div>
       <div class="sales-stat"><div class="stat-value">${formatPrice(totalRevenue)}</div><div class="stat-label">Total revenue${withPrice.length < sales.length ? ' (priced sales)' : ''}</div></div>
       <div class="sales-stat"><div class="stat-value">${withPrice.length ? formatPrice(totalRevenue / withPrice.length) : '—'}</div><div class="stat-label">Avg. price</div></div>
+      <div class="sales-stat"><div class="stat-value">${sales.length - postcardCount} / ${postcardCount}</div><div class="stat-label">QR only / Postcard</div></div>
     `;
 
     renderSalesTrend();
@@ -1082,6 +1096,7 @@
       const soldDate = s.soldAt && !isNaN(new Date(s.soldAt)) ? new Date(s.soldAt).toLocaleDateString() : '—';
       row.innerHTML = `
         <td class="id-cell">${escapeHtml(s.id)}</td>
+        <td>${s.productType === 'postcard' ? '💌 Postcard' : '📱 QR only'}</td>
         <td>${escapeHtml(s.buyerName || '—')}</td>
         <td>${escapeHtml(s.buyerContact || '—')}</td>
         <td class="price-cell">${(s.price !== null && s.price !== undefined && !isNaN(Number(s.price))) ? formatPrice(s.price) : '—'}</td>
@@ -1113,6 +1128,7 @@
     const worksheet = workbook.addWorksheet('Sales');
     worksheet.columns = [
       { header: 'Card ID', key: 'id', width: 16 },
+      { header: 'Product', key: 'productType', width: 14 },
       { header: 'Buyer', key: 'buyerName', width: 24 },
       { header: 'Contact', key: 'buyerContact', width: 22 },
       { header: 'Price', key: 'price', width: 12 },
@@ -1127,6 +1143,7 @@
       if (priceNum !== null) totalRevenue += priceNum;
       worksheet.addRow({
         id: s.id,
+        productType: s.productType === 'postcard' ? 'Postcard' : 'QR only',
         buyerName: s.buyerName || '',
         buyerContact: s.buyerContact || '',
         price: priceNum !== null ? priceNum : '',

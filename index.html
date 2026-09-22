@@ -246,31 +246,46 @@
 
       <div class="postcard-grid">
         <div class="postcard-item">
-          <img src="ethiopiaan love.jpg" width="124" height="137" onclick="openLightbox(['love-outside.png','love-inside.png'],'Love')">
+          <img src="ethiopiaan love.jpg" width="124" height="137" onclick="openLightboxCategory('love')">
           <div class="postcard-title" data-i18n="postcard_love">Love</div>
         </div>
         <div class="postcard-item">
-          <img src="new-year.png" width="124" height="137" onclick="openLightbox(['new year post.png','new-year-inside.png'],'Holiday')">
+          <img src="new year post.png" width="124" height="137" onclick="openLightboxCategory('holiday')">
           <div class="postcard-title" data-i18n="postcard_holiday">Holiday</div>
         </div>
         <div class="postcard-item">
-          <img src="weddings.png" width="124" height="137" onclick="openLightbox(['wedding-front.png','wedding-inside.png'],'Wedding')">
-          <div class="postcard-title" data-i18n="wedding.png">Wedding</div>
+          <img src="weddings.png" width="124" height="137" onclick="openLightboxCategory('wedding')">
+          <div class="postcard-title" data-i18n="postcard_wedding">Wedding/Anniversary</div>
         </div>
         <div class="postcard-item">
-          <img src="graduation1.jpg" width="124" height="137" onclick="openLightbox(['graduation-front.png','wedding inside.png'],'Graduation')">
+          <img src="graduation1.jpg" width="124" height="137" onclick="openLightboxCategory('graduation')">
           <div class="postcard-title" data-i18n="postcard_graduation">Graduation</div>
         </div>
-        
-        
-         <div class="postcard-item">
-          <img src="kid girl birthday.jpg" width="100" height="137" onclick="openLightbox(['kid girl birthday.jpg','birthday-wish.jpg'],'Birthday')">
+
+        <div class="postcard-item">
+          <img src="kid girl birthday.jpg" width="124" height="137" onclick="openLightboxCategory('birthday')">
           <div class="postcard-title" data-i18n="postcard_birthday">Birthday</div>
         </div>
-       
+
         <div class="postcard-item">
-          <img src="momtobecover.jpg" width="124" height="137" onclick="openLightbox(['momtobeoutside.jpg','momtobeinside.jpg'],'Mom to be')">
+          <img src="momtobecover.jpg" width="124" height="137" onclick="openLightboxCategory('momtobe')">
           <div class="postcard-title" data-i18n="postcard_momtobe">Mom to be</div>
+        </div>
+        <div class="postcard-item">
+          <img src="friendship.png" width="124" height="137" onclick="openLightboxCategory('friendship')">
+          <div class="postcard-title" data-i18n="postcard_friendship">Friendship</div>
+        </div>
+        <div class="postcard-item">
+          <img src="sorry.png" width="124" height="137" onclick="openLightboxCategory('sorry')">
+          <div class="postcard-title" data-i18n="postcard_sorry">I'm Sorry</div>
+        </div>
+        <div class="postcard-item">
+          <img src="thankyou.png" width="124" height="137" onclick="openLightboxCategory('thankyou')">
+          <div class="postcard-title" data-i18n="postcard_thankyou">Thank You</div>
+        </div>
+        <div class="postcard-item">
+          <img src="family.png" width="124" height="137" onclick="openLightboxCategory('family')">
+          <div class="postcard-title" data-i18n="postcard_family">Family</div>
         </div>
       </div>
     </div>
@@ -454,11 +469,25 @@
         postcards_title: '✉️ Sample Postcards',
         postcards_desc: 'Explore some of our signature visual prints. Each postcard layout comes with an integrated structural location for a unique QR scan token.',
         postcard_birthday: 'Birthday',
+        postcard_birthday_boy: 'Boy',
+        postcard_birthday_girl: 'Girl',
+        postcard_birthday_woman: 'Woman',
+        postcard_birthday_man: 'Man',
+        postcard_birthday_couple: 'Couple',
         postcard_graduation: 'Graduation',
-        postcard_wedding: 'Wedding',
+        postcard_wedding: 'Wedding/Anniversary',
+        postcard_thankyou: 'Thank You',
+        postcard_family: 'Family',
+        postcard_design_1: 'Design 1',
+        postcard_design_2: 'Design 2',
+        postcard_design_3: 'Design 3',
         postcard_holiday: 'Holiday',
-		postcard_Love: 'Love',
-		postcard_Momtobe: 'Mom to be',
+        postcard_holiday_newyear: 'New Year',
+        postcard_holiday_meskel: 'Meskel',
+		postcard_love: 'Love',
+		postcard_momtobe: 'Mom to be',
+        postcard_friendship: 'Friendship',
+        postcard_sorry: "I'm Sorry",
         lightbox_front: 'Front',
         lightbox_back: 'Back',
         lightbox_home: 'Home',
@@ -519,11 +548,25 @@
         postcards_title: '✉️ ናሙና ፖስትካርዶች',
         postcards_desc: 'ከልዩ የእይታ ህትመቶቻችን አንዳንዶቹን ይመልከቱ። እያንዳንዱ የፖስትካርድ አቀማመጥ ለልዩ QR ቅኝት የተዋቀረና የተዋሃደ ቦታ አለው።',
         postcard_birthday: 'የልደት ቀን',
+        postcard_birthday_boy: 'ወንድ ልጅ',
+        postcard_birthday_girl: 'ሴት ልጅ',
+        postcard_birthday_woman: 'ሴት',
+        postcard_birthday_man: 'ወንድ',
+        postcard_birthday_couple: 'ጥንዶች',
         postcard_graduation: 'ምረቃ',
-        postcard_wedding: 'ሰርግ',
+        postcard_wedding: 'ሰርግ/ጋብቻ በዓል',
+        postcard_thankyou: 'አመሰግናለሁ',
+        postcard_family: 'ቤተሰብ',
+        postcard_design_1: 'ንድፍ 1',
+        postcard_design_2: 'ንድፍ 2',
+        postcard_design_3: 'ንድፍ 3',
         postcard_holiday: 'ልዩ ልዩ በዓላት',
+        postcard_holiday_newyear: 'አዲስ ዓመት',
+        postcard_holiday_meskel: 'መስቀል',
 		postcard_love: 'ፍቅር',
 		postcard_momtobe: 'እናት ያድርግሽ',
+        postcard_friendship: 'ወዳጅነት',
+        postcard_sorry: 'ይቅርታ',
         lightbox_front: 'ፊት',
         lightbox_back: 'ጀርባ',
         lightbox_home: 'መነሻ',
@@ -630,11 +673,71 @@
     let lbImages = [];
     let lbIndex = 0;
     let lbTitle = '';
+    let lbTitleKey = '';
 
+    // Categories with more than one design. Each item is a front/back pair;
+    // labelKey is looked up in `translations` at render time so switching
+    // language while the lightbox is open updates these captions too.
+    const POSTCARD_CATEGORIES = {
+      birthday: {
+        titleKey: 'postcard_birthday',
+        items: [
+          { labelKey: 'postcard_birthday_boy',    front: 'birthday-boy.png',        back: 'birthday-boy-inside.png' },
+          { labelKey: 'postcard_birthday_girl',   front: 'kid girl birthday.jpg',    back: 'birthday-wish.jpg' },
+          { labelKey: 'postcard_birthday_woman',  front: 'birthday-woman.png',       back: 'birthday-woman-inside.png' },
+          { labelKey: 'postcard_birthday_man',    front: 'birthday-man.png',         back: 'birthday-man-inside.png' },
+          { labelKey: 'postcard_birthday_couple', front: 'birthday-couple.png',      back: 'birthday-couple-inside.png' },
+        ]
+      },
+      holiday: {
+        titleKey: 'postcard_holiday',
+        items: [
+          { labelKey: 'postcard_holiday_newyear', front: 'new year post.png',   back: 'new-year-inside.png' },
+          { labelKey: 'postcard_holiday_meskel',  front: 'holiday-meskel.png',  back: 'holiday-meskel-inside.png' },
+        ]
+      },
+      love:       { titleKey: 'postcard_love',       items: threeDesigns('love') },
+      wedding:    { titleKey: 'postcard_wedding',    items: threeDesigns('wedding') },
+      graduation: { titleKey: 'postcard_graduation', items: threeDesigns('graduation') },
+      momtobe:    { titleKey: 'postcard_momtobe',    items: threeDesigns('momtobe') },
+      friendship: { titleKey: 'postcard_friendship', items: threeDesigns('friendship') },
+      sorry:      { titleKey: 'postcard_sorry',      items: threeDesigns('sorry') },
+      thankyou:   { titleKey: 'postcard_thankyou',   items: threeDesigns('thankyou') },
+      family:     { titleKey: 'postcard_family',     items: threeDesigns('family') },
+    };
+
+    // Generates the standard 3-design item list for a category key, using
+    // the `<key>-1.png` / `<key>-1-inside.png` naming convention.
+    function threeDesigns(key) {
+      return [1, 2, 3].map(n => ({
+        labelKey: `postcard_design_${n}`,
+        front: `${key}-${n}.png`,
+        back: `${key}-${n}-inside.png`,
+      }));
+    }
+    // Single design, just front/back — used by most categories.
     function openLightbox(images, title) {
       lbImages = Array.isArray(images) ? images : [images];
       lbIndex = 0;
       lbTitle = title;
+      lbTitleKey = '';
+      renderLightbox();
+      document.getElementById('lightbox-overlay').classList.add('open');
+    }
+
+    // Multiple designs under one category (e.g. Birthday, Holiday) — flattens
+    // every variant's front+back into one browsable sequence.
+    function openLightboxCategory(categoryKey) {
+      const category = POSTCARD_CATEGORIES[categoryKey];
+      if (!category) return;
+      lbImages = [];
+      category.items.forEach(item => {
+        lbImages.push({ src: item.front, labelKey: item.labelKey, sideKey: 'lightbox_front' });
+        lbImages.push({ src: item.back,  labelKey: item.labelKey, sideKey: 'lightbox_back' });
+      });
+      lbIndex = 0;
+      lbTitleKey = category.titleKey;
+      lbTitle = '';
       renderLightbox();
       document.getElementById('lightbox-overlay').classList.add('open');
     }
@@ -643,11 +746,25 @@
       const dict = translations[currentLang];
       const multi = lbImages.length > 1;
       const img = document.getElementById('lightbox-img');
-      img.src = lbImages[lbIndex];
-      img.alt = lbTitle;
+      const current = lbImages[lbIndex];
+      const isStructured = typeof current === 'object';
+      const title = lbTitleKey ? (dict[lbTitleKey] || lbTitleKey) : lbTitle;
 
-      const sideLabel = lbIndex === 0 ? dict.lightbox_front : dict.lightbox_back;
-      document.getElementById('lightbox-caption').textContent = multi ? `${lbTitle} — ${sideLabel}` : lbTitle;
+      img.src = isStructured ? current.src : current;
+      img.alt = title;
+
+      let caption;
+      if (!multi) {
+        caption = title;
+      } else if (isStructured) {
+        const variantLabel = dict[current.labelKey] || current.labelKey;
+        const sideLabel = dict[current.sideKey] || current.sideKey;
+        caption = `${title} — ${variantLabel} (${sideLabel})`;
+      } else {
+        const sideLabel = lbIndex === 0 ? dict.lightbox_front : dict.lightbox_back;
+        caption = `${title} — ${sideLabel}`;
+      }
+      document.getElementById('lightbox-caption').textContent = caption;
 
       document.getElementById('lightbox-prev').style.display = multi ? 'flex' : 'none';
       document.getElementById('lightbox-next').style.display = multi ? 'flex' : 'none';

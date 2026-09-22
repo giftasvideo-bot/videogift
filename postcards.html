@@ -232,7 +232,11 @@
       { key: 'default', label: '🎓 Graduation', front: 'graduation.png', inside: 'graduation-inside.png' },
     ]},
     birthday:   { label: '🎂 Birthday', variants: [
-      { key: 'default', label: '🎂 Birthday', front: 'birthday.png', inside: 'birthday-inside.png' },
+      { key: 'boy',   label: '👦 Boy',   front: 'birthday-boy.png',   inside: 'birthday-boy-inside.png' },
+      { key: 'girl',  label: '👧 Girl',  front: 'birthday-girl.png',  inside: 'birthday-girl-inside.png' },
+      { key: 'woman', label: '👩 Woman', front: 'birthday-woman.png', inside: 'birthday-woman-inside.png' },
+      { key: 'man',   label: '👨 Man',   front: 'birthday-man.png',   inside: 'birthday-man-inside.png' },
+      { key: 'couple', label: '💑 Couple', front: 'birthday-couple.png', inside: 'birthday-couple-inside.png' },
     ]},
     holiday:    { label: '🎄 Holiday', variants: [
       { key: 'new_year', label: '🎉 New Year', front: 'holiday-new_year.png', inside: 'holiday-new_year-inside.png' },
@@ -249,6 +253,9 @@
     ]},
     wedding:    { label: '💍 Wedding', variants: [
       { key: 'default', label: '💍 Wedding', front: 'wedding.png', inside: 'wedding-inside.png' },
+    ]},
+    bride_to_be: { label: '👰 Bride to Be', variants: [
+      { key: 'default', label: '👰 Bride to Be', front: 'bride-to-be.png', inside: 'bride-to-be-inside.png' },
     ]},
   };
   let currentCategory = 'love';
@@ -297,16 +304,33 @@
 
   // Separate printed-tracking key so marking a postcard as printed never
   // touches the existing video-card "printed" flags used by admin.html.
+  // NOTE: this lives in localStorage only — it's per-browser, not synced to
+  // Supabase. See the note further down (syncPrintedDesignToBackend) for
+  // what's needed to persist this server-side instead.
   const PC_PRINTED_KEY = 'f27_postcard_printed_ids';
   function getPcPrintedMap() {
     try { return JSON.parse(localStorage.getItem(PC_PRINTED_KEY)) || {}; }
     catch { return {}; }
   }
   function setPcPrintedMap(map) { localStorage.setItem(PC_PRINTED_KEY, JSON.stringify(map)); }
-  function markPcPrinted(ids) {
+  function markPcPrinted(ids, category, variant) {
     const map = getPcPrintedMap();
-    ids.forEach(id => { map[id] = true; });
+    const printedAt = new Date().toISOString();
+    ids.forEach(id => {
+      map[id] = { printed: true, category: category || null, variant: variant || null, printedAt };
+      syncPrintedDesignToBackend(id, category, variant, printedAt);
+    });
     setPcPrintedMap(map);
+  }
+
+  // Best-effort call to persist the design tag server-side. This endpoint
+  // doesn't exist yet — see the note in the chat for the server.js/Supabase
+  // changes needed to make this actually stick instead of silently 404-ing.
+  function syncPrintedDesignToBackend(id, category, variant, printedAt) {
+    apiFetch(`${BACKEND_API_BASE}/api/admin/cards/${encodeURIComponent(id)}/design`, {
+      method: 'PATCH',
+      body: JSON.stringify({ design_category: category || null, design_variant: variant || null, printed_at: printedAt }),
+    }).catch(() => { /* backend endpoint not implemented yet — local tracking still works */ });
   }
 
   function authHeaders(extra = {}) {
@@ -424,7 +448,12 @@
     const pcMap = getPcPrintedMap();
     ids.forEach(id => {
       const sold = isCardSold(id);
-      const pcPrinted = !!pcMap[id];
+      const pcEntry = pcMap[id];
+      const pcPrinted = !!pcEntry;
+      // Older entries were just `true`; newer ones are an object with design info.
+      const designLabel = (pcEntry && typeof pcEntry === 'object' && pcEntry.category)
+        ? ` (${pcEntry.category}${pcEntry.variant && pcEntry.variant !== 'default' ? ' — ' + pcEntry.variant : ''})`
+        : '';
       const tile = document.createElement('div');
       tile.className = 'pc-tile' + (selectedIds.has(id) ? ' selected' : '');
       tile.onclick = () => toggleSelect(id);
@@ -435,7 +464,7 @@
         </div>
         <div class="pc-badges">
           <span class="pc-badge ${sold ? 'sold' : 'unsold'}">${sold ? 'Sold' : 'Unsold'}</span>
-          <span class="pc-badge ${pcPrinted ? 'printed' : 'not-printed'}">${pcPrinted ? 'Postcard printed' : 'Not printed'}</span>
+          <span class="pc-badge ${pcPrinted ? 'printed' : 'not-printed'}" title="${designLabel}">${pcPrinted ? 'Postcard printed' + designLabel : 'Not printed'}</span>
         </div>`;
       grid.appendChild(tile);
     });
@@ -529,7 +558,7 @@
 
     printWin.onload = () => { printWin.focus(); printWin.print(); };
     printWin.addEventListener('afterprint', () => {
-      markPcPrinted(ids);
+      markPcPrinted(ids, currentCategory, currentVariant);
       renderGrid();
       printWin.close();
     });
@@ -622,7 +651,7 @@
 
       const stamp = new Date().toISOString().slice(0, 10);
       doc.save(`postcards-${pageSizeChoice}-${stamp}.pdf`);
-      markPcPrinted(ids);
+      markPcPrinted(ids, currentCategory, currentVariant);
       renderGrid();
     } catch (err) {
       console.error(err);

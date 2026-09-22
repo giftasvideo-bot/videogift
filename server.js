@@ -330,12 +330,13 @@ app.post('/api/upload', (req, res, next) => {
 //   ALTER TABLE gifts ADD COLUMN buyer_note text;
 //   ALTER TABLE gifts ADD COLUMN sale_price numeric;
 //   ALTER TABLE gifts ADD COLUMN sold_at timestamptz;
+//   ALTER TABLE gifts ADD COLUMN product_type text; -- 'qr_only' | 'postcard'
 // Lets the admin note who a physical card was sold to. Stored on the same
 // gift row so it stays in sync across every device viewing the dashboard,
 // instead of living only in one browser's localStorage.
 app.patch('/api/gift/:id/buyer', requireAuth, async (req, res) => {
   const giftId = req.params.id;
-  const { buyerName, buyerContact, note, price } = req.body || {};
+  const { buyerName, buyerContact, note, price, productType } = req.body || {};
 
   if (!buyerName && !buyerContact && !note && (price === undefined || price === null || price === '')) {
     return res.status(400).json({ error: 'Provide at least a buyer name, contact, price, or note.' });
@@ -348,6 +349,11 @@ app.patch('/api/gift/:id/buyer', requireAuth, async (req, res) => {
       return res.status(400).json({ error: 'Price must be a valid non-negative number.' });
     }
   }
+
+  // Default to QR-only since that's the primary product — a physical
+  // postcard is the exception, not the default.
+  const validProductTypes = ['qr_only', 'postcard'];
+  const resolvedProductType = validProductTypes.includes(productType) ? productType : 'qr_only';
 
   try {
     const { data: existing, error: lookupErr } = await supabase
@@ -363,7 +369,8 @@ app.patch('/api/gift/:id/buyer', requireAuth, async (req, res) => {
         buyer_contact: buyerContact || null,
         buyer_note: note || null,
         sale_price: salePrice,
-        sold_at: new Date().toISOString()
+        sold_at: new Date().toISOString(),
+        product_type: resolvedProductType
       })
       .eq('id', giftId)
       .select()
@@ -377,13 +384,51 @@ app.patch('/api/gift/:id/buyer', requireAuth, async (req, res) => {
   }
 });
 
+// -- RECORD PRINTED DESIGN (protected) --
+// NOTE: requires these columns on the `gifts` table in Supabase (run once):
+//   ALTER TABLE gifts ADD COLUMN design_category text;
+//   ALTER TABLE gifts ADD COLUMN design_variant text;
+//   ALTER TABLE gifts ADD COLUMN printed_at timestamptz;
+// Called by postcards.html right after a batch is printed/exported, so the
+// design used for a physical card is recorded centrally instead of only in
+// that browser's localStorage.
+app.patch('/api/admin/cards/:id/design', requireAuth, async (req, res) => {
+  const giftId = req.params.id;
+  const { design_category, design_variant, printed_at } = req.body || {};
+
+  try {
+    const { data: existing, error: lookupErr } = await supabase
+      .from('gifts').select('id').eq('id', giftId).single();
+    if (lookupErr || !existing) {
+      return res.status(404).json({ error: 'Gift not found.' });
+    }
+
+    const { data, error } = await supabase
+      .from('gifts')
+      .update({
+        design_category: design_category || null,
+        design_variant: design_variant || null,
+        printed_at: printed_at || new Date().toISOString()
+      })
+      .eq('id', giftId)
+      .select()
+      .single();
+
+    if (error) throw error;
+    res.status(200).json({ success: true, gift: data });
+  } catch (err) {
+    console.error('Record printed design error:', err.message);
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // -- CLEAR SALE / BUYER INFO (protected) --
 app.delete('/api/gift/:id/buyer', requireAuth, async (req, res) => {
   const giftId = req.params.id;
   try {
     const { error } = await supabase
       .from('gifts')
-      .update({ buyer_name: null, buyer_contact: null, buyer_note: null, sale_price: null, sold_at: null })
+      .update({ buyer_name: null, buyer_contact: null, buyer_note: null, sale_price: null, sold_at: null, product_type: null })
       .eq('id', giftId);
     if (error) throw error;
     res.status(200).json({ success: true });
@@ -537,7 +582,7 @@ app.get('/api/admin/cards', requireAuth, async (req, res) => {
   try {
     let { data, error } = await supabase
       .from('gifts')
-      .select('id, buyer_name, buyer_contact, buyer_note, sale_price, sold_at')
+      .select('id, buyer_name, buyer_contact, buyer_note, sale_price, sold_at, product_type')
       .order('id', { ascending: false });
 
     if (error) {
@@ -561,7 +606,8 @@ app.get('/api/admin/cards', requireAuth, async (req, res) => {
           buyerContact: row.buyer_contact || '',
           buyerNote: row.buyer_note || '',
           price: row.sale_price != null ? row.sale_price : null,
-          soldAt: row.sold_at || null
+          soldAt: row.sold_at || null,
+          productType: row.product_type || 'qr_only'
         };
       }
     });
