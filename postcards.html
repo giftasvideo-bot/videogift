@@ -312,7 +312,7 @@
           '</select>';
       }
     }
-    html += '<button class="btn" style="font-size:0.85rem; padding:10px 18px;" onclick="printDesignForFilter()">🖨️ Print Selected Design</button>';
+    html += '<button class="btn" style="font-size:0.85rem; padding:10px 18px;" onclick="printSelectedPostcards()">🖨️ Print Selected</button>';
     bar.innerHTML = html;
   }
   function setPostcardCategory(key) {
@@ -502,7 +502,6 @@
   }
 
   // Renders a QR code for `text` into a detached container and returns a PNG data URL.
-
   function generateQrDataUrl(text, size) {
     const tempContainer = document.createElement('div');
     tempContainer.style.position = 'fixed';
@@ -517,20 +516,11 @@
   }
 
   function printSelectedPostcards() {
-    if (selectedIds.size === 0) return;
-    printPostcardsForIds(sortIdsAscending([...selectedIds]));
-  }
-
-  // One-click entry point next to the design dropdown: prints every card
-  // currently shown by the active filter (Unsold/All/etc.) for the
-  // selected design — no manual checkbox selection required.
-  function printDesignForFilter() {
-    const ids = visibleIdsForFilter();
-    if (ids.length === 0) {
-      alert('No cards match the current filter to print.');
+    if (selectedIds.size === 0) {
+      alert('Check at least one card to print.');
       return;
     }
-    printPostcardsForIds(ids);
+    printPostcardsForIds(sortIdsAscending([...selectedIds]));
   }
 
   function printPostcardsForIds(ids) {
