@@ -224,13 +224,25 @@
   // Each category has one or more variants. File naming convention:
   // single-variant category → `<categoryKey>.png` / `<categoryKey>-inside.png`
   // multi-variant category  → `<categoryKey>-<variantKey>.png` / `<categoryKey>-<variantKey>-inside.png`
+  // --- Postcard designs (front/inside artwork per category/variant) -------
+  // Each category has one or more variants. File naming convention:
+  // single-design category  → `<categoryKey>.png` / `<categoryKey>-inside.png`
+  // multi-variant category  → `<categoryKey>-<variantKey>.png` / `<categoryKey>-<variantKey>-inside.png`
+  // "3 generic designs" categories use `<prefix>-1.png` / `<prefix>-1-inside.png`
+  // etc. — same convention as the gallery on index.html, so the same
+  // uploaded art files work in both places.
+  function threeVariants(prefix) {
+    return [1, 2, 3].map(n => ({
+      key: `design${n}`,
+      label: `🎨 Design ${n}`,
+      front: `${prefix}-${n}.png`,
+      inside: `${prefix}-${n}-inside.png`,
+    }));
+  }
+
   const POSTCARD_TYPES = {
-    love:       { label: '❤️ Love', variants: [
-      { key: 'default', label: '❤️ Love', front: 'love.png', inside: 'love-inside.png' },
-    ]},
-    graduation: { label: '🎓 Graduation', variants: [
-      { key: 'default', label: '🎓 Graduation', front: 'graduation.png', inside: 'graduation-inside.png' },
-    ]},
+    love:       { label: '❤️ Love',        variants: threeVariants('love') },
+    graduation: { label: '🎓 Graduation',  variants: threeVariants('graduation') },
     birthday:   { label: '🎂 Birthday', variants: [
       { key: 'boy',   label: '👦 Boy',   front: 'birthday-boy.png',   inside: 'birthday-boy-inside.png' },
       { key: 'girl',  label: '👧 Girl',  front: 'birthday-girl.png',  inside: 'birthday-girl-inside.png' },
@@ -242,24 +254,18 @@
       { key: 'new_year', label: '🎉 New Year', front: 'holiday-new_year.png', inside: 'holiday-new_year-inside.png' },
       { key: 'meskel',   label: '☦️ Meskel',    front: 'holiday-meskel.png',   inside: 'holiday-meskel-inside.png' },
     ]},
-    condolence: { label: '🕊️ Condolence', variants: [
-      { key: 'default', label: '🕊️ Condolence', front: 'condolence.png', inside: 'condolence-inside.png' },
-    ]},
-    sorry:      { label: '🙏 I\'m Sorry', variants: [
-      { key: 'default', label: '🙏 I\'m Sorry', front: 'sorry.png', inside: 'sorry-inside.png' },
-    ]},
-    mom_to_be:  { label: '🤰 Mom to Be', variants: [
-      { key: 'default', label: '🤰 Mom to Be', front: 'mom-to-be.png', inside: 'mom-to-be-inside.png' },
-    ]},
-    wedding:    { label: '💍 Wedding', variants: [
-      { key: 'default', label: '💍 Wedding', front: 'wedding.png', inside: 'wedding-inside.png' },
-    ]},
+    friendship: { label: '🤝 Friendship',  variants: threeVariants('friendship') },
+    sorry:      { label: '🙏 I\'m Sorry',  variants: threeVariants('sorry') },
+    mom_to_be:  { label: '🤰 Mom to Be',   variants: threeVariants('momtobe') },
+    wedding:    { label: '💍 Wedding/Anniversary', variants: threeVariants('wedding') },
     bride_to_be: { label: '👰 Bride to Be', variants: [
       { key: 'default', label: '👰 Bride to Be', front: 'bride-to-be.png', inside: 'bride-to-be-inside.png' },
     ]},
+    thankyou:   { label: '🙏 Thank You',   variants: threeVariants('thankyou') },
+    family:     { label: '👨‍👩‍👧‍👦 Family', variants: threeVariants('family') },
   };
   let currentCategory = 'love';
-  let currentVariant = 'default';
+  let currentVariant = 'design1';
   // 'postcard' = full front/inside artwork with QR overlay (current behavior).
   // 'qr_only'  = a plain sheet of QR-code labels, no postcard artwork at all —
   // for sales where only the QR code itself is sold, not a physical postcard.
@@ -496,6 +502,7 @@
   }
 
   // Renders a QR code for `text` into a detached container and returns a PNG data URL.
+
   function generateQrDataUrl(text, size) {
     const tempContainer = document.createElement('div');
     tempContainer.style.position = 'fixed';
