@@ -260,6 +260,10 @@
   };
   let currentCategory = 'love';
   let currentVariant = 'default';
+  // 'postcard' = full front/inside artwork with QR overlay (current behavior).
+  // 'qr_only'  = a plain sheet of QR-code labels, no postcard artwork at all —
+  // for sales where only the QR code itself is sold, not a physical postcard.
+  let printMode = 'postcard';
 
   // The design object ({label, front, inside}) currently in effect.
   function getCurrentDesign() {
@@ -271,21 +275,36 @@
     return `${currentCategory}:${currentVariant}`;
   }
 
+  function setPrintMode(mode) {
+    printMode = mode;
+    renderTypeBar();
+    checkAssets();
+  }
+
   function renderTypeBar() {
     const bar = document.getElementById('type-bar');
-    const cat = POSTCARD_TYPES[currentCategory];
-    let html = '<span class="type-label">Postcard design:</span>' +
-      '<select class="type-select" id="type-select" onchange="setPostcardCategory(this.value)">' +
-      Object.entries(POSTCARD_TYPES).map(([key, t]) =>
-        `<option value="${key}"${key === currentCategory ? ' selected' : ''}>${t.label}</option>`
-      ).join('') +
-      '</select>';
-    if (cat.variants.length > 1) {
-      html += '<select class="type-select" id="variant-select" onchange="setPostcardVariant(this.value)">' +
-        cat.variants.map(v =>
-          `<option value="${v.key}"${v.key === currentVariant ? ' selected' : ''}>${v.label}</option>`
+    let html = `
+      <span class="type-label">Print mode:</span>
+      <select class="type-select" id="mode-select" onchange="setPrintMode(this.value)">
+        <option value="postcard" ${printMode === 'postcard' ? 'selected' : ''}>💌 Full Postcard</option>
+        <option value="qr_only" ${printMode === 'qr_only' ? 'selected' : ''}>📱 QR Code Only</option>
+      </select>`;
+
+    if (printMode === 'postcard') {
+      const cat = POSTCARD_TYPES[currentCategory];
+      html += '<span class="type-label">Postcard design:</span>' +
+        '<select class="type-select" id="type-select" onchange="setPostcardCategory(this.value)">' +
+        Object.entries(POSTCARD_TYPES).map(([key, t]) =>
+          `<option value="${key}"${key === currentCategory ? ' selected' : ''}>${t.label}</option>`
         ).join('') +
         '</select>';
+      if (cat.variants.length > 1) {
+        html += '<select class="type-select" id="variant-select" onchange="setPostcardVariant(this.value)">' +
+          cat.variants.map(v =>
+            `<option value="${v.key}"${v.key === currentVariant ? ' selected' : ''}>${v.label}</option>`
+          ).join('') +
+          '</select>';
+      }
     }
     html += '<button class="btn" style="font-size:0.85rem; padding:10px 18px;" onclick="printDesignForFilter()">🖨️ Print Selected Design</button>';
     bar.innerHTML = html;
@@ -451,9 +470,15 @@
       const pcEntry = pcMap[id];
       const pcPrinted = !!pcEntry;
       // Older entries were just `true`; newer ones are an object with design info.
-      const designLabel = (pcEntry && typeof pcEntry === 'object' && pcEntry.category)
-        ? ` (${pcEntry.category}${pcEntry.variant && pcEntry.variant !== 'default' ? ' — ' + pcEntry.variant : ''})`
-        : '';
+      let designLabel = '';
+      let badgeVerb = 'Postcard printed';
+      if (pcEntry && typeof pcEntry === 'object' && pcEntry.category) {
+        if (pcEntry.category === 'qr_only') {
+          badgeVerb = 'QR only printed';
+        } else {
+          designLabel = ` (${pcEntry.category}${pcEntry.variant && pcEntry.variant !== 'default' ? ' — ' + pcEntry.variant : ''})`;
+        }
+      }
       const tile = document.createElement('div');
       tile.className = 'pc-tile' + (selectedIds.has(id) ? ' selected' : '');
       tile.onclick = () => toggleSelect(id);
@@ -464,7 +489,7 @@
         </div>
         <div class="pc-badges">
           <span class="pc-badge ${sold ? 'sold' : 'unsold'}">${sold ? 'Sold' : 'Unsold'}</span>
-          <span class="pc-badge ${pcPrinted ? 'printed' : 'not-printed'}" title="${designLabel}">${pcPrinted ? 'Postcard printed' + designLabel : 'Not printed'}</span>
+          <span class="pc-badge ${pcPrinted ? 'printed' : 'not-printed'}" title="${designLabel}">${pcPrinted ? badgeVerb + designLabel : 'Not printed'}</span>
         </div>`;
       grid.appendChild(tile);
     });
@@ -502,6 +527,10 @@
   }
 
   function printPostcardsForIds(ids) {
+    if (printMode === 'qr_only') {
+      printQrOnlySheet(ids);
+      return;
+    }
     const dims = PAGE_DIMENSIONS[pageSizeChoice];
     const cssSizeName = pageSizeChoice === 'a5' ? 'A5' : 'A4';
     const design = getCurrentDesign();
@@ -559,6 +588,57 @@
     printWin.onload = () => { printWin.focus(); printWin.print(); };
     printWin.addEventListener('afterprint', () => {
       markPcPrinted(ids, currentCategory, currentVariant);
+      renderGrid();
+      printWin.close();
+    });
+  }
+
+  // Plain QR-code-only label sheet — no postcard artwork. Labels flow in a
+  // grid and wrap onto extra pages automatically as needed.
+  function printQrOnlySheet(ids) {
+    const cssSizeName = pageSizeChoice === 'a5' ? 'A5' : 'A4';
+
+    const labelsHtml = ids.map(id => {
+      const qrDataUrl = generateQrDataUrl(buildWatchUrl(id), 260);
+      return `
+        <div class="qr-label">
+          <img src="${qrDataUrl}" alt="QR">
+          <div class="qr-label-caption">ስካን አድርገው መልዕክትዎን ይላኩ/ይቀበሉ፡፡<br>Scan to send/receive your message</div>
+          <div class="qr-label-id">${id}</div>
+        </div>`;
+    }).join('');
+
+    const printWin = window.open('', '_blank', 'width=900,height=700');
+    if (!printWin) {
+      alert('⚠️ Your browser blocked the print popup. Please allow popups for this site and try again.');
+      return;
+    }
+
+    printWin.document.write(`
+      <!DOCTYPE html>
+      <html><head><title>Print QR Codes</title>
+      <style>
+        @page { size: ${cssSizeName} landscape; margin: 8mm; }
+        * { margin:0; padding:0; box-sizing:border-box; }
+        body { font-family: 'DM Sans', sans-serif; }
+        .qr-sheet { display: flex; flex-wrap: wrap; align-content: flex-start; }
+        .qr-label {
+          width: 45mm; height: 55mm; margin: 4mm;
+          display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center;
+          border: 1px dashed #ccc; border-radius: 3mm;
+          page-break-inside: avoid;
+        }
+        .qr-label img { width: 28mm; height: 28mm; background: #fff; }
+        .qr-label-caption { margin-top: 3mm; font-weight: 600; font-size: 8px; line-height: 1.3; color: #333; padding: 0 2mm; }
+        .qr-label-id { margin-top: 2mm; font-family: monospace; font-weight: 700; font-size: 9px; color: #555; }
+      </style>
+      </head><body><div class="qr-sheet">${labelsHtml}</div></body></html>
+    `);
+    printWin.document.close();
+
+    printWin.onload = () => { printWin.focus(); printWin.print(); };
+    printWin.addEventListener('afterprint', () => {
+      markPcPrinted(ids, 'qr_only', null);
       renderGrid();
       printWin.close();
     });
@@ -636,22 +716,27 @@
 
     try {
       await document.fonts.ready;
-      const { front, inside } = await loadArtwork(getCurrentDesign(), currentDesignKey());
       const { jsPDF } = window.jspdf;
       const dims = PAGE_DIMENSIONS[pageSizeChoice];
       const doc = new jsPDF({ orientation: 'landscape', unit: 'mm', format: pageSizeChoice });
 
-      ids.forEach((id, i) => {
-        if (i > 0) doc.addPage(pageSizeChoice, 'landscape');
-        doc.addImage(front, 'PNG', 0, 0, dims.w, dims.h, undefined, 'FAST');
-        doc.addPage(pageSizeChoice, 'landscape');
-        const insideCanvas = buildInsidePageCanvas(inside, id);
-        doc.addImage(insideCanvas.toDataURL('image/jpeg', 0.95), 'JPEG', 0, 0, dims.w, dims.h);
-      });
+      if (printMode === 'qr_only') {
+        buildQrOnlySheetPdf(doc, ids, dims);
+        markPcPrinted(ids, 'qr_only', null);
+      } else {
+        const { front, inside } = await loadArtwork(getCurrentDesign(), currentDesignKey());
+        ids.forEach((id, i) => {
+          if (i > 0) doc.addPage(pageSizeChoice, 'landscape');
+          doc.addImage(front, 'PNG', 0, 0, dims.w, dims.h, undefined, 'FAST');
+          doc.addPage(pageSizeChoice, 'landscape');
+          const insideCanvas = buildInsidePageCanvas(inside, id);
+          doc.addImage(insideCanvas.toDataURL('image/jpeg', 0.95), 'JPEG', 0, 0, dims.w, dims.h);
+        });
+        markPcPrinted(ids, currentCategory, currentVariant);
+      }
 
       const stamp = new Date().toISOString().slice(0, 10);
       doc.save(`postcards-${pageSizeChoice}-${stamp}.pdf`);
-      markPcPrinted(ids, currentCategory, currentVariant);
       renderGrid();
     } catch (err) {
       console.error(err);
@@ -662,11 +747,53 @@
     }
   }
 
+  // Lays out a grid of QR-code labels (no artwork) across as many pages as
+  // needed. Mirrors the sizing used in printQrOnlySheet (45mm x 55mm cells).
+  function buildQrOnlySheetPdf(doc, ids, dims) {
+    const margin = 8, cellW = 49, cellH = 59; // includes the label's own 4mm margin
+    const cols = Math.max(1, Math.floor((dims.w - margin * 2) / cellW));
+    const rows = Math.max(1, Math.floor((dims.h - margin * 2) / cellH));
+    const perPage = cols * rows;
+
+    ids.forEach((id, i) => {
+      if (i > 0 && i % perPage === 0) doc.addPage(pageSizeChoice, 'landscape');
+      const posOnPage = i % perPage;
+      const col = posOnPage % cols;
+      const row = Math.floor(posOnPage / cols);
+      const x = margin + col * cellW;
+      const y = margin + row * cellH;
+
+      const qrPx = 300;
+      const tempContainer = document.createElement('div');
+      tempContainer.style.position = 'fixed';
+      tempContainer.style.left = '-9999px';
+      document.body.appendChild(tempContainer);
+      new QRCode(tempContainer, { text: buildWatchUrl(id), width: qrPx, height: qrPx, correctLevel: QRCode.CorrectLevel.M });
+      const qrCanvas = tempContainer.querySelector('canvas');
+      const qrDataUrl = qrCanvas.toDataURL('image/png');
+      document.body.removeChild(tempContainer);
+
+      const qrSizeMm = 28;
+      const qrX = x + (cellW - 4 - qrSizeMm) / 2;
+      doc.addImage(qrDataUrl, 'PNG', qrX, y + 4, qrSizeMm, qrSizeMm);
+
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(7);
+      doc.text('Scan to send/receive your message', x + (cellW - 4) / 2, y + qrSizeMm + 10, { align: 'center', maxWidth: cellW - 6 });
+      doc.setFontSize(8);
+      doc.text(id, x + (cellW - 4) / 2, y + qrSizeMm + 16, { align: 'center' });
+
+      doc.setDrawColor(200);
+      doc.roundedRect(x, y, cellW - 4, cellH - 4, 2, 2, 'S');
+    });
+  }
+
   // Checks that the currently selected design's two artwork files are
   // reachable next to this page. Re-run whenever the type selector changes.
   function checkAssets() {
     const warningBox = document.getElementById('assets-warning');
     warningBox.style.display = 'none';
+    if (printMode === 'qr_only') return; // no artwork files needed in this mode
     const design = getCurrentDesign();
     const files = [design.front, design.inside];
     let missing = [];
