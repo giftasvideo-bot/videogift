@@ -165,11 +165,11 @@
   }
   (async function authGuard() {
     const token = getAuthToken();
-    if (!token) { window.location.replace('login.html'); return; }
+    if (!token) { window.location.replace('login-postcards.html'); return; }
     try {
       const BACKEND = localStorage.getItem('videogift_api_url') || 'https://videogift-backend-3.onrender.com';
       const res = await fetch(`${BACKEND}/api/admin/verify`, { headers: { 'Authorization': `Bearer ${token}` } });
-      if (!res.ok) { sessionStorage.removeItem(SESSION_KEY); window.location.replace('login.html'); return; }
+      if (!res.ok) { sessionStorage.removeItem(SESSION_KEY); window.location.replace('login-postcards.html'); return; }
       const data = await res.json().catch(() => ({}));
       currentRole = data.role || null;
       if (currentRole !== 'admin') {
@@ -448,7 +448,7 @@
     const res = await fetch(url, { ...options, headers: authHeaders(options.headers || {}) });
     if (res.status === 401) {
       sessionStorage.removeItem(SESSION_KEY);
-      window.location.replace('login.html');
+      window.location.replace('login-postcards.html');
       throw new Error('Session expired.');
     }
     return res;
@@ -533,10 +533,11 @@
   }
 
   // A locked card (already printed) can't be selected for another print
-  // run unless you're an admin — mirrors the server-side check, so the UI
-  // never lets a staff account attempt something the backend will 409 on.
+  // run, full stop — including admin accounts. To print it again (e.g. a
+  // different design), an admin must explicitly hit "Unlock" on that card
+  // first; there's no other way around the lock.
   function isLocked(id) {
-    return !!printStatusMap[id] && currentRole !== 'admin';
+    return !!printStatusMap[id];
   }
   function toggleSelect(id) {
     if (isLocked(id)) return;
@@ -625,7 +626,6 @@
   // from another device a minute ago). Returns the IDs still OK to print,
   // or null if nothing is left to do.
   function guardAgainstLocked(ids) {
-    if (currentRole === 'admin') return ids;
     const blocked = ids.filter(id => printStatusMap[id]);
     const allowed = ids.filter(id => !printStatusMap[id]);
     if (blocked.length) {

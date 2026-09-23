@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Forever 27 | Postcard Login</title>
+  <link rel="icon" type="image/png" sizes="32x32" href="/favicons/favicon-32x32.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/favicons/favicon-16x16.png">
+  <link rel="apple-touch-icon" sizes="180x180" href="/favicons/apple-touch-icon.png">
+  <link rel="shortcut icon" href="/favicons/favicon.ico">
+  <link rel="manifest" href="/favicons/site.webmanifest">
+  <meta name="theme-color" content="#c9933a">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,700;1,400&family=DM+Sans:wght@300;400;500;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --ink: #0d0d0d;
+      --paper: #faf7f2;
+      --gold: #c9933a;
+      --gold-light: #e8b86d;
+      --cream: #f0ead8;
+      --muted: #7a7060;
+      --error-bg: #fdecea;
+      --error-text: #c0392b;
+    }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      background-color: var(--paper);
+      color: var(--ink);
+      font-family: 'DM Sans', sans-serif;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+    .login-card {
+      width: 100%; max-width: 380px; background: #ffffff;
+      border: 1px solid var(--cream); border-radius: 12px;
+      padding: 36px 32px; box-shadow: 0 4px 24px rgba(0,0,0,0.04);
+    }
+    .header { text-align: center; margin-bottom: 24px; }
+    .logo { font-family: 'Playfair Display', serif; font-size: 1.8rem; margin-bottom: 6px; }
+    .logo span { color: var(--gold); font-style: italic; }
+    .subtitle { font-size: 0.9rem; color: var(--muted); }
+    .subtitle .icon { margin-right: 4px; }
+
+    form { display: flex; flex-direction: column; gap: 14px; margin-top: 20px; }
+    label { font-size: 0.8rem; font-weight: 500; color: var(--muted); margin-bottom: 4px; display: block; }
+    input[type="text"], input[type="password"] {
+      width: 100%; padding: 11px 14px; border: 1px solid var(--cream);
+      border-radius: 6px; font-family: 'DM Sans', sans-serif; font-size: 0.95rem;
+      background: var(--paper); color: var(--ink);
+    }
+    input[type="text"]:focus, input[type="password"]:focus {
+      outline: none; border-color: var(--gold);
+    }
+
+    .btn {
+      padding: 12px 24px; background: var(--gold); color: #ffffff;
+      border: none; border-radius: 6px; font-weight: 500; cursor: pointer;
+      transition: background 0.2s; font-family: 'DM Sans', sans-serif;
+      font-size: 0.95rem; margin-top: 6px;
+    }
+    .btn:hover { background: var(--gold-light); }
+    .btn:disabled { opacity: 0.6; cursor: not-allowed; }
+
+    .error-box {
+      background: var(--error-bg); border: 1px solid #f5b7b1; color: var(--error-text);
+      border-radius: 6px; padding: 10px 14px; font-size: 0.85rem; display: none;
+    }
+    .error-box.show { display: block; }
+
+    .footer-note {
+      text-align: center; margin-top: 20px; font-size: 0.75rem; color: var(--muted);
+    }
+  </style>
+</head>
+<body>
+
+  <div class="login-card">
+    <div class="header">
+      <div class="logo">Forever<span>27</span></div>
+      <div class="subtitle"><span class="icon">💌</span>Postcard Printing Login</div>
+    </div>
+
+    <div id="error-box" class="error-box"></div>
+
+    <form id="login-form">
+      <div>
+        <label for="username">Username</label>
+        <input type="text" id="username" autocomplete="username" required>
+      </div>
+      <div>
+        <label for="password">Password</label>
+        <input type="password" id="password" autocomplete="current-password" required>
+      </div>
+      <button type="submit" class="btn" id="login-btn">Sign In</button>
+    </form>
+
+    <div class="footer-note">For staff printing postcards only.</div>
+  </div>
+
+  <script>
+    const SESSION_KEY = 'f27_admin_auth';
+    const BACKEND = localStorage.getItem('videogift_api_url') || 'https://videogift-backend-3.onrender.com';
+
+    // Already signed in? Skip straight to the printing tool.
+    (function redirectIfSignedIn() {
+      try {
+        const s = JSON.parse(sessionStorage.getItem(SESSION_KEY) || 'null');
+        if (s && s.token && s.expires > Date.now()) {
+          window.location.replace('postcards.html');
+        }
+      } catch (err) { /* ignore malformed session */ }
+    })();
+
+    const form = document.getElementById('login-form');
+    const errorBox = document.getElementById('error-box');
+    const loginBtn = document.getElementById('login-btn');
+
+    function showError(message) {
+      errorBox.textContent = message;
+      errorBox.classList.add('show');
+    }
+    function hideError() {
+      errorBox.classList.remove('show');
+      errorBox.textContent = '';
+    }
+
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      hideError();
+
+      const username = document.getElementById('username').value.trim();
+      const password = document.getElementById('password').value;
+      if (!username || !password) return;
+
+      loginBtn.disabled = true;
+      loginBtn.textContent = 'Signing in…';
+
+      try {
+        const res = await fetch(`${BACKEND}/api/admin/login`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ username, password })
+        });
+        const data = await res.json().catch(() => ({}));
+
+        if (!res.ok) {
+          showError(data.message || 'Incorrect username or password.');
+          return;
+        }
+
+        // JWTs from this endpoint are issued with an 8h expiry — mirror
+        // that client-side so the local check in postcards.html's auth
+        // guard lines up with when the backend will actually reject it.
+        const expires = Date.now() + 8 * 60 * 60 * 1000;
+        sessionStorage.setItem(SESSION_KEY, JSON.stringify({ token: data.token, expires }));
+
+        window.location.replace('postcards.html');
+      } catch (err) {
+        showError('Could not reach the server. Please try again.');
+      } finally {
+        loginBtn.disabled = false;
+        loginBtn.textContent = 'Sign In';
+      }
+    });
+  </script>
+
+</body>
+</html>
