@@ -60,6 +60,14 @@ const JWT_SECRET     = process.env.JWT_SECRET     || 'forever27-secret-change-th
 const ADMIN_USERNAME = process.env.ADMIN_USERNAME || 'admin';
 const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'forever27';
 
+// Second, lower-privilege account for whoever runs the postcard printing
+// page — separate login from the full admin dashboard. Set these in your
+// hosting env (Render, etc). This role can view cards and record prints,
+// but cannot touch sales/buyers, delete gifts, or purge storage, and
+// cannot reprint a card that's already locked (see requireAdmin below).
+const POSTCARD_USERNAME = process.env.POSTCARD_USERNAME || 'postcards';
+const POSTCARD_PASSWORD = process.env.POSTCARD_PASSWORD || 'change-this-postcards-password';
+
 // -- MULTER --
 const MAX_FILE_SIZE_MB = 150;
 const ALLOWED_VIDEO_MIMETYPES = new Set([
@@ -90,6 +98,7 @@ const upload = multer({
 });
 
 // -- AUTH MIDDLEWARE --
+// requireAuth: any signed-in account (admin OR postcard staff).
 function requireAuth(req, res, next) {
   const authHeader = req.headers['authorization'] || '';
   const token = authHeader.startsWith('Bearer ') ? authHeader.slice(7) : null;
@@ -102,6 +111,16 @@ function requireAuth(req, res, next) {
   }
 }
 
+// requireAdmin: full admin only. Chain after requireAuth on routes that
+// postcard-staff accounts should never reach (sales/buyer data, deleting
+// gifts, purging storage, generating new tokens, unlocking a print).
+function requireAdmin(req, res, next) {
+  if (!req.admin || req.admin.role !== 'admin') {
+    return res.status(403).json({ message: 'Admin access required for this action.' });
+  }
+  next();
+}
+
 // ----------------------------------------
 // ROUTES
 // ----------------------------------------
@@ -111,7 +130,7 @@ app.get('/', (req, res) => {
   res.status(200).send('?? Forever 27 API is running!');
 });
 
-// -- ADMIN LOGIN --
+// -- LOGIN (admin or postcard-staff — same endpoint, different accounts) --
 app.post('/api/admin/login', (req, res) => {
   const { username, password } = req.body || {};
 
@@ -119,14 +138,21 @@ app.post('/api/admin/login', (req, res) => {
     return res.status(400).json({ message: 'Username and password required.' });
   }
 
+  let role = null;
   if (username === ADMIN_USERNAME && password === ADMIN_PASSWORD) {
+    role = 'admin';
+  } else if (username === POSTCARD_USERNAME && password === POSTCARD_PASSWORD) {
+    role = 'postcard_staff';
+  }
+
+  if (role) {
     const token = jwt.sign(
-      { username, role: 'admin' },
+      { username, role },
       JWT_SECRET,
       { expiresIn: '8h' }
     );
-    console.log(`? Admin login: ${username}`);
-    return res.json({ token });
+    console.log(`Login: ${username} (${role})`);
+    return res.json({ token, role });
   }
 
   // Delay to prevent brute force timing attacks
@@ -137,7 +163,7 @@ app.post('/api/admin/login', (req, res) => {
 
 // -- VERIFY TOKEN --
 app.get('/api/admin/verify', requireAuth, (req, res) => {
-  res.json({ ok: true, user: req.admin.username });
+  res.json({ ok: true, user: req.admin.username, role: req.admin.role });
 });
 
 // -- GET GIFT BY ID --
@@ -163,7 +189,7 @@ app.get('/api/validate', async (req, res) => {
 });
 
 // -- ADMIN BATCH INSERT (protected) --
-app.post('/api/admin/batch-insert', requireAuth, async (req, res) => {
+app.post('/api/admin/batch-insert', requireAuth, requireAdmin, async (req, res) => {
   const { cards } = req.body;
   if (!cards || !Array.isArray(cards)) {
     return res.status(400).json({ error: 'Invalid data format.' });
@@ -334,7 +360,7 @@ app.post('/api/upload', (req, res, next) => {
 // Lets the admin note who a physical card was sold to. Stored on the same
 // gift row so it stays in sync across every device viewing the dashboard,
 // instead of living only in one browser's localStorage.
-app.patch('/api/gift/:id/buyer', requireAuth, async (req, res) => {
+app.patch('/api/gift/:id/buyer', requireAuth, requireAdmin, async (req, res) => {
   const giftId = req.params.id;
   const { buyerName, buyerContact, note, price, productType } = req.body || {};
 
@@ -392,15 +418,28 @@ app.patch('/api/gift/:id/buyer', requireAuth, async (req, res) => {
 // Called by postcards.html right after a batch is printed/exported, so the
 // design used for a physical card is recorded centrally instead of only in
 // that browser's localStorage.
+//
+// LOCK: once a card has a printed_at, it's locked — one QR code, one print.
+// A postcard_staff account gets a 409 if it tries to record a print on a
+// card that's already printed (whatever design). Only an admin account can
+// overwrite it (effectively unlock-and-reprint in one step), or use the
+// explicit DELETE unlock route below to clear it without reprinting.
 app.patch('/api/admin/cards/:id/design', requireAuth, async (req, res) => {
   const giftId = req.params.id;
   const { design_category, design_variant, printed_at } = req.body || {};
 
   try {
     const { data: existing, error: lookupErr } = await supabase
-      .from('gifts').select('id').eq('id', giftId).single();
+      .from('gifts').select('id, printed_at').eq('id', giftId).single();
     if (lookupErr || !existing) {
       return res.status(404).json({ error: 'Gift not found.' });
+    }
+
+    if (existing.printed_at && req.admin.role !== 'admin') {
+      return res.status(409).json({
+        error: 'This card is already printed and locked. Ask an admin to unlock it before reprinting.',
+        locked: true
+      });
     }
 
     const { data, error } = await supabase
@@ -422,8 +461,28 @@ app.patch('/api/admin/cards/:id/design', requireAuth, async (req, res) => {
   }
 });
 
+// -- UNLOCK A PRINTED CARD (admin only) --
+// Clears design_category/design_variant/printed_at so the card can be
+// printed again. Does not touch buyer/sale data.
+app.delete('/api/admin/cards/:id/design', requireAuth, requireAdmin, async (req, res) => {
+  const giftId = req.params.id;
+  try {
+    const { data, error } = await supabase
+      .from('gifts')
+      .update({ design_category: null, design_variant: null, printed_at: null })
+      .eq('id', giftId)
+      .select()
+      .single();
+    if (error) throw error;
+    res.status(200).json({ success: true, gift: data });
+  } catch (err) {
+    console.error('Unlock print error:', err.message);
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // -- CLEAR SALE / BUYER INFO (protected) --
-app.delete('/api/gift/:id/buyer', requireAuth, async (req, res) => {
+app.delete('/api/gift/:id/buyer', requireAuth, requireAdmin, async (req, res) => {
   const giftId = req.params.id;
   try {
     const { error } = await supabase
@@ -475,7 +534,7 @@ app.post('/api/gift/:id/view', async (req, res) => {
 });
 
 // -- DELETE VIDEO ONLY (protected) --
-app.delete('/api/gift/:id/video', requireAuth, async (req, res) => {
+app.delete('/api/gift/:id/video', requireAuth, requireAdmin, async (req, res) => {
   const giftId = req.params.id;
   try {
     // 1. Fetch current record
@@ -546,7 +605,7 @@ app.delete('/api/gift/:id/video', requireAuth, async (req, res) => {
 });
 
 // -- DELETE GIFT (protected) � also deletes its video from storage --
-app.delete('/api/gift/:id', requireAuth, async (req, res) => {
+app.delete('/api/gift/:id', requireAuth, requireAdmin, async (req, res) => {
   const giftId = req.params.id;
   if (!giftId) return res.status(400).json({ error: 'No ID provided.' });
   try {
@@ -582,14 +641,14 @@ app.get('/api/admin/cards', requireAuth, async (req, res) => {
   try {
     let { data, error } = await supabase
       .from('gifts')
-      .select('id, buyer_name, buyer_contact, buyer_note, sale_price, sold_at, product_type')
+      .select('id, buyer_name, buyer_contact, buyer_note, sale_price, sold_at, product_type, design_category, design_variant, printed_at')
       .order('id', { ascending: false });
 
     if (error) {
-      // Most likely cause: buyer_* columns don't exist yet on this table
-      // (see the migration note above the /api/gift/:id/buyer route).
+      // Most likely cause: buyer_*/design_* columns don't exist yet on this
+      // table (see the migration notes above the buyer/design routes).
       // Don't fail the whole card list over it — retry with just id.
-      console.warn('⚠️ /api/admin/cards: full select failed, retrying without buyer fields:', error.message);
+      console.warn('⚠️ /api/admin/cards: full select failed, retrying without buyer/design fields:', error.message);
       const fallback = await supabase.from('gifts').select('id').order('id', { ascending: false });
       data = fallback.data;
       error = fallback.error;
@@ -599,6 +658,7 @@ app.get('/api/admin/cards', requireAuth, async (req, res) => {
 
     const ids = (data || []).map(row => row.id);
     const buyers = {};
+    const printStatus = {};
     (data || []).forEach(row => {
       if (row.buyer_name || row.buyer_contact || row.buyer_note || row.sale_price != null) {
         buyers[row.id] = {
@@ -610,8 +670,16 @@ app.get('/api/admin/cards', requireAuth, async (req, res) => {
           productType: row.product_type || 'qr_only'
         };
       }
+      if (row.printed_at) {
+        printStatus[row.id] = {
+          category: row.design_category || null,
+          variant: row.design_variant || null,
+          printedAt: row.printed_at,
+          locked: true
+        };
+      }
     });
-    res.json({ ids, buyers });
+    res.json({ ids, buyers, printStatus, role: req.admin.role });
   } catch (err) {
     console.error('Failed to fetch card list:', err);
     res.status(500).json({ message: err.message });
@@ -620,7 +688,7 @@ app.get('/api/admin/cards', requireAuth, async (req, res) => {
 
 // -- PURGE ORPHANED STORAGE FILES (protected) --
 // Deletes all files in the R2 bucket that have no matching DB record
-app.delete('/api/admin/purge-storage', requireAuth, async (req, res) => {
+app.delete('/api/admin/purge-storage', requireAuth, requireAdmin, async (req, res) => {
   try {
     // 1. List all files in the videos/ prefix of the R2 bucket
     const listResult = await r2.send(new ListObjectsV2Command({

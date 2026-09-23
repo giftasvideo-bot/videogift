@@ -116,6 +116,13 @@
     .pc-badge.unsold { background: #f5f5f5; color: #9e9e9e; }
     .pc-badge.printed { background: var(--success-bg); color: var(--success-text); }
     .pc-badge.not-printed { background: var(--pending-bg); color: var(--pending-text); }
+    .pc-tile.locked { opacity: 0.65; cursor: not-allowed; }
+    .pc-unlock-btn {
+      margin-top: 8px; width: 100%; font-size: 0.72rem; padding: 5px 8px;
+      border: 1px solid var(--border, #e0d8c8); border-radius: 6px; background: #fff;
+      cursor: pointer; color: #7a5b20;
+    }
+    .pc-unlock-btn:hover { background: #fdf6e8; }
 
     /* === Printable postcard pages (built inside the popup window) === */
     .pc-print-page {
@@ -145,8 +152,12 @@
 <body>
 
 <script>
-  // Auth guard — same admin session used by admin.html
+  // Auth guard — same login system as admin.html, but this page also
+  // accepts the separate postcard-staff account. Full admins can still use
+  // it too. currentRole is set once verify() resolves and gates the
+  // admin-only unlock control further down.
   const SESSION_KEY = 'f27_admin_auth';
+  let currentRole = null;
   function getSession() { return JSON.parse(sessionStorage.getItem(SESSION_KEY) || 'null'); }
   function getAuthToken() {
     const s = getSession();
@@ -158,7 +169,13 @@
     try {
       const BACKEND = localStorage.getItem('videogift_api_url') || 'https://videogift-backend-3.onrender.com';
       const res = await fetch(`${BACKEND}/api/admin/verify`, { headers: { 'Authorization': `Bearer ${token}` } });
-      if (!res.ok) { sessionStorage.removeItem(SESSION_KEY); window.location.replace('login.html'); }
+      if (!res.ok) { sessionStorage.removeItem(SESSION_KEY); window.location.replace('login.html'); return; }
+      const data = await res.json().catch(() => ({}));
+      currentRole = data.role || null;
+      if (currentRole !== 'admin') {
+        const backLink = document.getElementById('back-to-dashboard-link');
+        if (backLink) backLink.style.display = 'none';
+      }
     } catch (err) {
       console.warn('Token verification skipped — backend unreachable.');
     }
@@ -170,7 +187,7 @@
     <div class="logo">Forever<span>27</span></div>
     <h1>💌 Postcard Print Layout</h1>
     <div class="header-links">
-      <button class="btn btn-secondary" style="font-size:0.8rem; padding:8px 18px;" onclick="window.location.href='admin.html'">← Back to Dashboard</button>
+      <button class="btn btn-secondary" id="back-to-dashboard-link" style="font-size:0.8rem; padding:8px 18px;" onclick="window.location.href='admin.html'">← Back to Dashboard</button>
     </div>
   </div>
 
@@ -352,35 +369,75 @@
     renderPreview();
   }
 
-  // Separate printed-tracking key so marking a postcard as printed never
-  // touches the existing video-card "printed" flags used by admin.html.
-  // NOTE: this lives in localStorage only — it's per-browser, not synced to
-  // Supabase. See the note further down (syncPrintedDesignToBackend) for
-  // what's needed to persist this server-side instead.
+  // Print/lock state. The DATABASE (via /api/admin/cards' printStatus) is
+  // the source of truth — once a card has printed_at set, the backend locks
+  // it: a postcard_staff account gets a 409 on any further print attempt for
+  // that ID, no matter which design. Only an admin account can reprint or
+  // explicitly unlock. localStorage is kept only as an offline fallback so
+  // the grid still shows something useful if the backend is unreachable.
   const PC_PRINTED_KEY = 'f27_postcard_printed_ids';
+  let printStatusMap = {}; // id -> {category, variant, printedAt, locked}
   function getPcPrintedMap() {
     try { return JSON.parse(localStorage.getItem(PC_PRINTED_KEY)) || {}; }
     catch { return {}; }
   }
   function setPcPrintedMap(map) { localStorage.setItem(PC_PRINTED_KEY, JSON.stringify(map)); }
-  function markPcPrinted(ids, category, variant) {
+
+  // Records a print for one ID. Since a locked ID can only ever move
+  // forward one at a time, calls are sent sequentially so a 409 on one card
+  // doesn't race with others; markPcPrinted() reports back which IDs were
+  // actually recorded vs rejected as already-locked.
+  async function markPcPrinted(ids, category, variant) {
     const map = getPcPrintedMap();
     const printedAt = new Date().toISOString();
-    ids.forEach(id => {
-      map[id] = { printed: true, category: category || null, variant: variant || null, printedAt };
-      syncPrintedDesignToBackend(id, category, variant, printedAt);
-    });
+    const locked = [];
+    for (const id of ids) {
+      const ok = await syncPrintedDesignToBackend(id, category, variant, printedAt);
+      if (ok) {
+        map[id] = { printed: true, category: category || null, variant: variant || null, printedAt };
+        printStatusMap[id] = { category: category || null, variant: variant || null, printedAt, locked: true };
+      } else {
+        locked.push(id);
+      }
+    }
     setPcPrintedMap(map);
+    renderGrid();
+    if (locked.length) {
+      alert(`🔒 ${locked.length} card${locked.length > 1 ? 's were' : ' was'} already printed and locked, so ${locked.length > 1 ? "they weren't" : "it wasn't"} recorded again:\n${locked.join(', ')}\n\nAn admin can unlock a card from its card tile if it genuinely needs a reprint.`);
+    }
   }
 
-  // Best-effort call to persist the design tag server-side. This endpoint
-  // doesn't exist yet — see the note in the chat for the server.js/Supabase
-  // changes needed to make this actually stick instead of silently 404-ing.
-  function syncPrintedDesignToBackend(id, category, variant, printedAt) {
-    apiFetch(`${BACKEND_API_BASE}/api/admin/cards/${encodeURIComponent(id)}/design`, {
-      method: 'PATCH',
-      body: JSON.stringify({ design_category: category || null, design_variant: variant || null, printed_at: printedAt }),
-    }).catch(() => { /* backend endpoint not implemented yet — local tracking still works */ });
+  // Persists the design tag server-side (the actual lock lives here, in the
+  // `gifts` table — see server.js). Returns true if it was recorded, false
+  // if the backend rejected it because the card is already locked.
+  async function syncPrintedDesignToBackend(id, category, variant, printedAt) {
+    try {
+      const res = await apiFetch(`${BACKEND_API_BASE}/api/admin/cards/${encodeURIComponent(id)}/design`, {
+        method: 'PATCH',
+        body: JSON.stringify({ design_category: category || null, design_variant: variant || null, printed_at: printedAt }),
+      });
+      if (res.status === 409) return false;
+      return res.ok;
+    } catch (err) {
+      return true; // backend unreachable — don't block the local/offline flow
+    }
+  }
+
+  // Admin-only: clears a card's lock so it can be printed again.
+  async function unlockCard(id) {
+    if (currentRole !== 'admin') return;
+    if (!confirm(`Unlock ${id}? It'll be printable again (any design).`)) return;
+    try {
+      const res = await apiFetch(`${BACKEND_API_BASE}/api/admin/cards/${encodeURIComponent(id)}/design`, { method: 'DELETE' });
+      if (!res.ok) throw new Error('Unlock failed.');
+      delete printStatusMap[id];
+      const map = getPcPrintedMap();
+      delete map[id];
+      setPcPrintedMap(map);
+      renderGrid();
+    } catch (err) {
+      alert(`⚠️ Could not unlock ${id}: ${err.message}`);
+    }
   }
 
   function authHeaders(extra = {}) {
@@ -419,6 +476,16 @@
       const data = await response.json();
       localRegistry = data.ids || [];
       buyerMap = data.buyers || {};
+      printStatusMap = data.printStatus || {};
+      if (!currentRole && data.role) currentRole = data.role;
+      // Merge server truth into the local cache so getPcPrintedMap() (used
+      // for the grid badges/filters) reflects the database, not just this
+      // browser's print history.
+      const localMap = getPcPrintedMap();
+      Object.entries(printStatusMap).forEach(([id, info]) => {
+        localMap[id] = { printed: true, category: info.category, variant: info.variant, printedAt: info.printedAt };
+      });
+      setPcPrintedMap(localMap);
     } catch (err) {
       console.warn('Could not load cards from DB:', err);
       localRegistry = [];
@@ -465,12 +532,19 @@
     document.getElementById('pdf-selected-btn').disabled = selectedIds.size === 0;
   }
 
+  // A locked card (already printed) can't be selected for another print
+  // run unless you're an admin — mirrors the server-side check, so the UI
+  // never lets a staff account attempt something the backend will 409 on.
+  function isLocked(id) {
+    return !!printStatusMap[id] && currentRole !== 'admin';
+  }
   function toggleSelect(id) {
+    if (isLocked(id)) return;
     if (selectedIds.has(id)) selectedIds.delete(id); else selectedIds.add(id);
     renderGrid();
   }
   function selectAllVisible() {
-    visibleIdsForFilter().forEach(id => selectedIds.add(id));
+    visibleIdsForFilter().forEach(id => { if (!isLocked(id)) selectedIds.add(id); });
     renderGrid();
   }
   function clearSelection() {
@@ -510,18 +584,23 @@
           designLabel = ` (${pcEntry.category}${pcEntry.variant && pcEntry.variant !== 'default' ? ' — ' + pcEntry.variant : ''})`;
         }
       }
+      const locked = isLocked(id);
       const tile = document.createElement('div');
-      tile.className = 'pc-tile' + (selectedIds.has(id) ? ' selected' : '');
+      tile.className = 'pc-tile' + (selectedIds.has(id) ? ' selected' : '') + (locked ? ' locked' : '');
       tile.onclick = () => toggleSelect(id);
+      const unlockBtn = (pcPrinted && currentRole === 'admin')
+        ? `<button class="pc-unlock-btn" title="Unlock — allow reprinting this card" onclick="event.stopPropagation(); unlockCard('${id}')">🔓 Unlock</button>`
+        : '';
       tile.innerHTML = `
         <div class="pc-tile-top">
-          <input type="checkbox" ${selectedIds.has(id) ? 'checked' : ''} onclick="event.stopPropagation(); toggleSelect('${id}')">
+          <input type="checkbox" ${selectedIds.has(id) ? 'checked' : ''} ${locked ? 'disabled' : ''} onclick="event.stopPropagation(); toggleSelect('${id}')">
           <span class="pc-id">${id}</span>
         </div>
         <div class="pc-badges">
           <span class="pc-badge ${sold ? 'sold' : 'unsold'}">${sold ? 'Sold' : 'Unsold'}</span>
-          <span class="pc-badge ${pcPrinted ? 'printed' : 'not-printed'}" title="${designLabel}">${pcPrinted ? badgeVerb + designLabel : 'Not printed'}</span>
-        </div>`;
+          <span class="pc-badge ${pcPrinted ? 'printed' : 'not-printed'}" title="${designLabel}">${pcPrinted ? (locked ? '🔒 ' : '') + badgeVerb + designLabel : 'Not printed'}</span>
+        </div>
+        ${unlockBtn}`;
       grid.appendChild(tile);
     });
   }
@@ -540,12 +619,30 @@
     return dataUrl;
   }
 
+  // Defense in depth: the UI already disables locked cards, but this
+  // re-checks right before anything actually prints, in case the lock
+  // state changed since the grid last loaded (e.g. someone else printed it
+  // from another device a minute ago). Returns the IDs still OK to print,
+  // or null if nothing is left to do.
+  function guardAgainstLocked(ids) {
+    if (currentRole === 'admin') return ids;
+    const blocked = ids.filter(id => printStatusMap[id]);
+    const allowed = ids.filter(id => !printStatusMap[id]);
+    if (blocked.length) {
+      alert(`🔒 ${blocked.length} of the selected card${ids.length > 1 ? 's' : ''} ${blocked.length > 1 ? 'are' : 'is'} already printed and locked, so ${blocked.length > 1 ? "they won't" : "it won't"} be included:\n${blocked.join(', ')}`);
+    }
+    if (allowed.length === 0) return null;
+    return allowed;
+  }
+
   function printSelectedPostcards() {
     if (selectedIds.size === 0) {
       alert('Check at least one card to print.');
       return;
     }
-    printPostcardsForIds(sortIdsAscending([...selectedIds]));
+    const ids = guardAgainstLocked(sortIdsAscending([...selectedIds]));
+    if (!ids) return;
+    printPostcardsForIds(ids);
   }
 
   function printPostcardsForIds(ids) {
@@ -730,7 +827,8 @@
 
   async function downloadPostcardsPdf() {
     if (selectedIds.size === 0) return;
-    const ids = sortIdsAscending([...selectedIds]);
+    const ids = guardAgainstLocked(sortIdsAscending([...selectedIds]));
+    if (!ids) return;
     const pdfBtn = document.getElementById('pdf-selected-btn');
     const originalLabel = pdfBtn.textContent;
     pdfBtn.disabled = true;

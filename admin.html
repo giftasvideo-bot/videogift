@@ -305,7 +305,9 @@
       return;
     }
 
-    // Verify token is still valid on the backend
+    // Verify token is still valid on the backend, and that it's a full
+    // admin account — the separate postcard-staff account only gets
+    // postcards.html, not this full dashboard (sales data, delete, etc.).
     try {
       const BACKEND = localStorage.getItem('videogift_api_url') || 'https://videogift-backend-3.onrender.com';
       const res = await fetch(`${BACKEND}/api/admin/verify`, {
@@ -315,6 +317,11 @@
       if (!res.ok) {
         sessionStorage.removeItem(SESSION_KEY);
         window.location.replace('login.html');
+        return;
+      }
+      const data = await res.json().catch(() => ({}));
+      if (data.role && data.role !== 'admin') {
+        window.location.replace('postcards.html');
       }
     } catch (err) {
       // If backend is unreachable, allow access if token hasn't expired locally
