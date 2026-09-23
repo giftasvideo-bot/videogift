@@ -192,12 +192,7 @@
   </div>
 
   <div class="card-section">
-    <h2>🖨️ Print Postcards</h2>
-    <div class="notice-box">
-      Pick a postcard design below (Love, Graduation, Birthday), then select the card IDs to print. Each postcard is two A4-landscape sheets: the front cover artwork, then the inside artwork with that card's QR code added in the blank area next to the message. All cards in one print/PDF job use the currently selected design — switch designs and print again for a different batch.
-      <br><br>
-      <strong>Sending to a print shop?</strong> Use "⬇️ Download Print PDF" — it builds an actual PDF with fixed A4 pages and full-resolution artwork baked in, so the layout can't be thrown off by anyone's local print settings. The "🖨️ Print" button is fine for a quick office/home test print instead. Note: the PDF is generated in RGB, not CMYK — check with your print shop if they specifically require CMYK files.
-    </div>
+    
     <div class="notice-box warn" id="assets-warning" style="display:none;"></div>
 
     <div class="type-bar" id="type-bar">
@@ -223,7 +218,7 @@
       <div class="spacer"></div>
       <span class="selected-count" id="selected-count">0 selected</span>
       <button class="btn btn-secondary pdf-btn" id="pdf-selected-btn" onclick="downloadPostcardsPdf()">⬇️ Download Print PDF</button>
-      <button class="btn" id="print-selected-btn" onclick="printSelectedPostcards()">🖨️ Print Selected Postcards</button>
+      
     </div>
 
     <div class="qr-grid" id="pc-grid-container"></div>
