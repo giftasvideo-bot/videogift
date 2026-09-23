@@ -76,6 +76,11 @@
 
     .type-bar { display: flex; gap: 10px; margin-bottom: 16px; flex-wrap: wrap; align-items: center; }
     .type-bar .type-label { font-size: 0.8rem; color: var(--muted); margin-right: 2px; }
+    .pc-preview { display: flex; gap: 14px; align-items: flex-start; margin: -4px 0 16px; padding: 12px; border: 1px solid var(--border, #e5ddd0); border-radius: 10px; background: var(--panel-bg, #faf6ee); }
+    .pc-preview .pc-preview-shot { text-align: center; }
+    .pc-preview .pc-preview-shot img { width: 120px; height: auto; border-radius: 4px; box-shadow: 0 1px 4px rgba(0,0,0,0.15); background: #fff; display: block; }
+    .pc-preview .pc-preview-shot span { display: block; margin-top: 4px; font-size: 0.72rem; color: var(--muted); }
+    .pc-preview .pc-preview-label { font-size: 0.78rem; color: var(--muted); align-self: center; }
     .type-select {
       padding: 10px 16px; border: 1px solid var(--cream); border-radius: 8px;
       background: #fff; color: var(--ink); font-size: 0.9rem; cursor: pointer;
@@ -182,6 +187,8 @@
       <span class="type-label">Postcard design:</span>
     </div>
 
+    <div class="pc-preview" id="pc-preview" style="display:none;"></div>
+
     <div class="filter-bar">
       <button class="filter-btn active" id="filter-unsold" onclick="setFilter('unsold')">Unsold <span id="count-unsold"></span></button>
       <button class="filter-btn" id="filter-all" onclick="setFilter('all')">All <span id="count-all"></span></button>
@@ -285,6 +292,22 @@
     printMode = mode;
     renderTypeBar();
     checkAssets();
+    renderPreview();
+  }
+
+  // Small live sample of the currently selected front/inside artwork, so you
+  // can see what "Love — Design 1" (etc.) actually looks like before printing
+  // a whole batch. Just thumbnails of the same files checkAssets() verifies.
+  function renderPreview() {
+    const box = document.getElementById('pc-preview');
+    if (printMode !== 'postcard') { box.style.display = 'none'; return; }
+    const design = getCurrentDesign();
+    box.style.display = 'flex';
+    box.innerHTML = `
+      <span class="pc-preview-label">Sample —<br>${POSTCARD_TYPES[currentCategory].label}<br>${design.label}</span>
+      <div class="pc-preview-shot"><img src="${design.front}" alt="Front sample"><span>Front</span></div>
+      <div class="pc-preview-shot"><img src="${design.inside}" alt="Inside sample"><span>Inside</span></div>
+    `;
   }
 
   function renderTypeBar() {
@@ -321,10 +344,12 @@
     currentVariant = POSTCARD_TYPES[key].variants[0].key;
     renderTypeBar();
     checkAssets();
+    renderPreview();
   }
   function setPostcardVariant(key) {
     currentVariant = key;
     checkAssets();
+    renderPreview();
   }
 
   // Separate printed-tracking key so marking a postcard as printed never
@@ -813,6 +838,7 @@
 
   renderTypeBar();
   checkAssets();
+  renderPreview();
   loadCardsFromDatabase();
 </script>
 </body>
