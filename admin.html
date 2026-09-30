@@ -1575,6 +1575,7 @@
           <button class="btn btn-secondary" data-act="edit">✏️ Edit</button>
           <button class="btn btn-secondary" data-act="qr">QR</button>
           <button class="btn btn-secondary" data-act="copy">Copy link</button>
+          <button class="btn btn-secondary" data-act="hostlink">🔑 Host edit link</button>
           <button class="btn btn-secondary" data-act="print">🖨️ Print cards</button>
           <button class="btn btn-secondary" data-act="replies">Replies</button>
           <button class="btn btn-secondary" data-act="toggle">${e.status === 'live' ? 'Disable' : 'Enable'}</button>
@@ -1728,7 +1729,15 @@ small{font-size:7.5pt;word-break:break-all;opacity:.8} .scan{font-size:9pt;font-
     const b = ev.target.closest('button[data-act]'); if (!b) return;
     const e = events.find(x => x.slug === b.parentElement.dataset.slug); if (!e) return;
     ({ edit: showEdit, qr: showQR, print: printOptions, replies: showReplies, toggle: toggle, delete: del,
-       copy: e => navigator.clipboard.writeText(evLink(e.slug)).then(() => say('Link copied.')) })[b.dataset.act](e);
+       copy: e => navigator.clipboard.writeText(evLink(e.slug)).then(() => say('Link copied.')),
+       hostlink: async e => {
+         try {
+           const d = await evApi('/api/admin/events/' + e.slug + '/edit-link');
+           const u = new URL('edit-event.html', location.href); u.search = '?e=' + e.slug; u.hash = 'k=' + d.edit_token;
+           await navigator.clipboard.writeText(u.href);
+           say('Host edit link copied. Send it only to the host of "' + e.title + '".');
+         } catch (x) { say(x.message); }
+       } })[b.dataset.act](e);
   });
 
   loadEvents();

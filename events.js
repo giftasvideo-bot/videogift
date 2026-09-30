@@ -223,7 +223,7 @@ module.exports = function ({ express, multer, supabase, r2, PutObjectCommand, De
     const Key = r2Key(u); if (!Key) return;
     try { await r2.send(new DeleteObjectCommand({ Bucket: R2_BUCKET_NAME, Key })); } catch (e) { console.error('R2 delete failed:', e.message); }
   }
-  router.post('/admin/events/:slug/edit', requireAuth, requireAdmin, (req, res) => {
+  const makeEditHandler = () => (req, res) => {
     up(req, res, async (err) => {
       if (err) return res.status(err.code === 'LIMIT_FILE_SIZE' ? 413 : 400).json({ error: err.code === 'LIMIT_FILE_SIZE' ? 'File too large (max 50 MB).' : 'Unsupported file type.' });
       try {
@@ -267,6 +267,36 @@ module.exports = function ({ express, multer, supabase, r2, PutObjectCommand, De
         res.json({ success: true });
       } catch (e) { res.status(500).json({ error: e.message }); }
     });
+  };
+  router.post('/admin/events/:slug/edit', requireAuth, requireAdmin, makeEditHandler());
+
+  // ---------- HOST SELF-SERVICE ----------
+  // The host holds a private edit link (contains their secret edit token). Same rules as the admin edit,
+  // but it can never change status (live/disabled), delete the event, or touch the card link.
+  const editHits = new Map();
+  async function hostAuth(req, res, next) {
+    if (throttled(req, 60, editHits)) return res.status(429).json({ error: 'Too many attempts. Please wait a few minutes and try again.' });
+    const { data: ev } = await supabase.from('events').select('edit_token').eq('slug', req.params.slug).single();
+    const t = String(req.headers['x-edit-token'] || '');
+    if (!ev || !ev.edit_token || t.length !== ev.edit_token.length || !crypto.timingSafeEqual(Buffer.from(t), Buffer.from(ev.edit_token)))
+      return res.status(403).json({ error: 'This edit link is not valid.' });
+    next();
+  }
+  // Load the event for the host's edit page
+  router.get('/events/:slug', hostAuth, async (req, res) => {
+    const { data, error } = await supabase.from('events')
+      .select('slug,type,title,host_names,event_date,venue,map_url,message,days,photo_url,photo_urls,video_url,rsvp_enabled,status')
+      .eq('slug', req.params.slug).single();
+    if (error || !data) return res.status(404).json({ error: 'Event not found.' });
+    res.json(data);
+  });
+  router.post('/events/:slug/edit', hostAuth, makeEditHandler());
+
+  // Admin can fetch a host's edit token to send them their private edit link again
+  router.get('/admin/events/:slug/edit-link', requireAuth, requireAdmin, async (req, res) => {
+    const { data: ev } = await supabase.from('events').select('edit_token').eq('slug', req.params.slug).single();
+    if (!ev) return res.status(404).json({ error: 'Event not found.' });
+    res.json({ edit_token: ev.edit_token });
   });
 
   return router;

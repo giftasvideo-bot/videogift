@@ -81,7 +81,10 @@
       <a class="btn alt" id="view" target="_blank" rel="noopener">Preview page</a>
       <button class="btn alt" id="rs" type="button">View replies</button>
     </div>
-    <p><small>Save this private edit key. It's the only way to see replies: <b id="key"></b></small></p>
+    <p><b>Your private edit link.</b> Keep it safe. Anyone who has it can change this invitation and see the replies.</p>
+    <code id="editLink"></code>
+    <div class="row"><button class="btn alt" id="copyEdit" type="button">Copy edit link</button><a class="btn alt" id="editGo" target="_blank" rel="noopener">Open edit page</a></div>
+    <p><small>Lost the link? The shop can send it to you again.</small></p>
     <ul id="rsvps"></ul>
   </section>
 </main>
@@ -140,7 +143,10 @@ $('f').onsubmit = async e => {
     const svg = qr.createSvgTag({ cellSize:8, margin:4, scalable:true });
     $('qr').innerHTML = svg;
     $('dl').href = URL.createObjectURL(new Blob([svg], { type:'image/svg+xml' }));
-    $('link').textContent = url.href; $('view').href = url.href; $('key').textContent = d.edit_token;
+    $('link').textContent = url.href; $('view').href = url.href;
+    const eu = new URL('edit-event.html', location.href); eu.search = '?e=' + d.slug; eu.hash = 'k=' + d.edit_token;
+    $('editLink').textContent = eu.href; $('editGo').href = eu.href;
+    $('copyEdit').onclick = () => navigator.clipboard.writeText(eu.href).then(() => { $('copyEdit').textContent = 'Copied'; });
     $('f').style.display = 'none'; $('result').style.display = 'block'; $('cardNote').hidden = !$('code').value.trim();
   } catch (x) { $('err').textContent = x.message; }
   $('go').disabled = false; $('go').textContent = 'Create invitation';
