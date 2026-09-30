@@ -89,7 +89,7 @@ module.exports = function ({ express, multer, supabase, r2, PutObjectCommand, De
   // List all events with reply counts (admin + postcard staff can read)
   router.get('/admin/events', requireAuth, async (req, res) => {
     const { data, error } = await supabase.from('events')
-      .select('id,slug,type,title,host_names,event_date,venue,status,photo_url,video_url,created_at')
+      .select('id,slug,type,title,host_names,event_date,venue,map_url,message,rsvp_enabled,status,photo_url,video_url,created_at')
       .order('created_at', { ascending: false });
     if (error) return res.status(500).json({ error: error.message });
     const { data: rs } = await supabase.from('event_rsvps').select('event_id,attending,guests');
@@ -128,6 +128,38 @@ module.exports = function ({ express, multer, supabase, r2, PutObjectCommand, De
     const { error } = await supabase.from('events').delete().eq('slug', req.params.slug);
     if (error) return res.status(500).json({ error: error.message });
     res.json({ success: true });
+  });
+
+  // Edit event details / replace media - admin only (multipart form)
+  const r2Key = u => (u && u.startsWith(R2_PUBLIC_URL_BASE + '/')) ? decodeURIComponent(u.slice(R2_PUBLIC_URL_BASE.length + 1)) : null;
+  async function dropFile(u) {
+    const Key = r2Key(u); if (!Key) return;
+    try { await r2.send(new DeleteObjectCommand({ Bucket: R2_BUCKET_NAME, Key })); } catch (e) { console.error('R2 delete failed:', e.message); }
+  }
+  router.post('/admin/events/:slug/edit', requireAuth, requireAdmin, (req, res) => {
+    up(req, res, async (err) => {
+      if (err) return res.status(err.code === 'LIMIT_FILE_SIZE' ? 413 : 400).json({ error: err.code === 'LIMIT_FILE_SIZE' ? 'File too large (max 50 MB).' : 'Unsupported file type.' });
+      try {
+        const { data: ev } = await supabase.from('events').select('*').eq('slug', req.params.slug).single();
+        if (!ev) return res.status(404).json({ error: 'Event not found.' });
+        const b = req.body || {}, files = req.files || {}, upd = {};
+        if (b.title !== undefined) { if (!b.title.trim()) return res.status(400).json({ error: 'Title is required.' }); upd.title = b.title.trim().slice(0, 120); }
+        if (b.type !== undefined && TYPES.includes(b.type)) upd.type = b.type;
+        if (b.host_names !== undefined) upd.host_names = b.host_names.slice(0, 120);
+        if (b.venue !== undefined) upd.venue = b.venue.slice(0, 200);
+        if (b.message !== undefined) upd.message = b.message.slice(0, 1000);
+        if (b.map_url !== undefined) upd.map_url = /^https?:\/\//.test(b.map_url) ? b.map_url : null;
+        if (b.event_date !== undefined) upd.event_date = b.event_date ? new Date(b.event_date).toISOString() : null;
+        if (b.rsvp_enabled !== undefined || upd.type) upd.rsvp_enabled = (upd.type || ev.type) !== 'memorial' && (b.rsvp_enabled === undefined ? ev.rsvp_enabled : b.rsvp_enabled === 'true');
+        if (files.photo) { upd.photo_url = await putFile(files.photo[0], ev.slug); await dropFile(ev.photo_url); }
+        else if (b.remove_photo === '1') { upd.photo_url = null; await dropFile(ev.photo_url); }
+        if (files.video) { upd.video_url = await putFile(files.video[0], ev.slug); await dropFile(ev.video_url); }
+        else if (b.remove_video === '1') { upd.video_url = null; await dropFile(ev.video_url); }
+        const { error } = await supabase.from('events').update(upd).eq('slug', ev.slug);
+        if (error) throw error;
+        res.json({ success: true });
+      } catch (e) { res.status(500).json({ error: e.message }); }
+    });
   });
 
   return router;

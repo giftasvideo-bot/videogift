@@ -373,6 +373,10 @@
     #ev-modal-body code { display:block; word-break:break-all; font-size:0.75rem; margin:8px 0; color:var(--muted); }
     #ev-modal-body select, #ev-modal-body input[type="number"] { width:100%; padding:10px 14px; border:1px solid var(--cream); border-radius:8px; background:var(--paper); font-family:'DM Sans',sans-serif; font-size:0.9rem; }
     #ev-modal-body ul { padding-left:18px; margin-top:10px; }
+    #ev-modal-body .ev-f input:not([type="checkbox"]):not([type="file"]), #ev-modal-body .ev-f select, #ev-modal-body .ev-f textarea { width:100%; padding:9px 12px; border:1px solid var(--cream); border-radius:8px; background:var(--paper); font-family:'DM Sans',sans-serif; font-size:0.88rem; }
+    #ev-modal-body .ev-f { margin-bottom:12px; } #ev-modal-body .ev-f label { display:block; font-size:0.8rem; font-weight:500; margin-bottom:5px; }
+    #ev-modal-body .ev-thumb { max-width:100%; max-height:110px; border-radius:6px; display:block; margin-bottom:6px; }
+    #ev-edit-form { max-height:70vh; overflow-y:auto; padding-right:4px; }
   </style>
   <div class="card-section" id="events-section">
     <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:16px; flex-wrap:wrap; gap:12px;">
@@ -1461,6 +1465,7 @@
           <div class="ev-meta">${esc(e.type)}${e.host_names ? ' · ' + esc(e.host_names) : ''}${e.event_date ? ' · ' + esc(new Date(e.event_date).toLocaleDateString()) : ''} · ${e.replies} replies, ${e.coming} coming</div>
         </div>
         <div class="ev-acts" data-slug="${esc(e.slug)}">
+          <button class="btn btn-secondary" data-act="edit">✏️ Edit</button>
           <button class="btn btn-secondary" data-act="qr">QR</button>
           <button class="btn btn-secondary" data-act="copy">Copy link</button>
           <button class="btn btn-secondary" data-act="print">🖨️ Print cards</button>
@@ -1525,6 +1530,45 @@ small{font-size:7.5pt;word-break:break-all;opacity:.8} .scan{font-size:9pt;font-
 <script>window.onload=function(){setTimeout(function(){window.print()},600)}<\/script></body></html>`);
     w.document.close();
   }
+  function showEdit(e) {
+    const loc = d => { if (!d) return ''; const t = new Date(d); t.setMinutes(t.getMinutes() - t.getTimezoneOffset()); return t.toISOString().slice(0, 16); };
+    const types = ['wedding', 'birthday', 'church', 'memorial', 'general'];
+    openModal(`<h3>Edit event</h3><div class="modal-subtitle">The QR code and link stay the same.</div>
+      <form id="ev-edit-form">
+        <div class="ev-f"><label>Type</label><select name="type">${types.map(t => `<option value="${t}"${t === e.type ? ' selected' : ''}>${t}</option>`).join('')}</select></div>
+        <div class="ev-f"><label>Title</label><input type="text" name="title" required maxlength="120" value="${esc(e.title)}"></div>
+        <div class="ev-f"><label>Hosts</label><input type="text" name="host_names" maxlength="120" value="${esc(e.host_names)}"></div>
+        <div class="ev-f"><label>Date and time</label><input type="datetime-local" name="event_date" value="${loc(e.event_date)}"></div>
+        <div class="ev-f"><label>Venue</label><input type="text" name="venue" maxlength="200" value="${esc(e.venue)}"></div>
+        <div class="ev-f"><label>Map link</label><input type="url" name="map_url" value="${esc(e.map_url)}"></div>
+        <div class="ev-f"><label>Message</label><textarea name="message" maxlength="1000">${esc(e.message)}</textarea></div>
+        <div class="ev-f"><label><input type="checkbox" name="rsvp_enabled" ${e.rsvp_enabled ? 'checked' : ''}> Allow guest replies (RSVP)</label></div>
+        <div class="ev-f"><label>Photo</label>${e.photo_url ? `<img class="ev-thumb" src="${esc(e.photo_url)}" alt=""><label><input type="checkbox" name="remove_photo"> Remove current photo</label>` : '<small>No photo yet.</small>'}<input type="file" name="photo" accept="image/jpeg,image/png,image/webp"></div>
+        <div class="ev-f"><label>Video</label>${e.video_url ? `<video class="ev-thumb" src="${esc(e.video_url)}" controls preload="metadata"></video><label><input type="checkbox" name="remove_video"> Remove current video</label>` : '<small>No video yet.</small>'}<input type="file" name="video" accept="video/mp4,video/quicktime,video/webm"></div>
+        <div class="modal-actions"><button class="btn" type="submit" id="ev-save">Save changes</button></div>
+        <div class="ev-meta" id="ev-save-msg" role="status"></div>
+      </form>`);
+    $('ev-edit-form').onsubmit = async ev => {
+      ev.preventDefault();
+      const f = ev.target, fd = new FormData();
+      ['type', 'title', 'host_names', 'venue', 'map_url', 'message'].forEach(k => fd.set(k, f[k].value));
+      fd.set('event_date', f.event_date.value ? new Date(f.event_date.value).toISOString() : '');
+      fd.set('rsvp_enabled', f.rsvp_enabled.checked ? 'true' : 'false');
+      if (f.remove_photo && f.remove_photo.checked) fd.set('remove_photo', '1');
+      if (f.remove_video && f.remove_video.checked) fd.set('remove_video', '1');
+      if (f.photo.files[0]) fd.set('photo', f.photo.files[0]);
+      if (f.video.files[0]) fd.set('video', f.video.files[0]);
+      $('ev-save').disabled = true; $('ev-save-msg').textContent = 'Saving…';
+      try {
+        const r = await fetch(BACKEND_API_BASE + '/api/admin/events/' + e.slug + '/edit', { method: 'POST', headers: { Authorization: 'Bearer ' + getAuthToken() }, body: fd });
+        if (r.status === 401) { sessionStorage.removeItem(SESSION_KEY); location.replace('login.html'); return; }
+        const d = await r.json().catch(() => ({}));
+        if (!r.ok) throw new Error(d.error || ('Save failed (' + r.status + ').'));
+        closeEvModal(); say('Event updated.'); loadEvents();
+      } catch (x) { $('ev-save-msg').textContent = x.message; $('ev-save').disabled = false; }
+    };
+  }
+
   async function toggle(e) {
     const next = e.status === 'live' ? 'disabled' : 'live';
     if (next === 'disabled' && !confirm('Disable this event? Its QR code will show "not found" until you enable it again.')) return;
@@ -1540,7 +1584,7 @@ small{font-size:7.5pt;word-break:break-all;opacity:.8} .scan{font-size:9pt;font-
   $('ev-list').addEventListener('click', ev => {
     const b = ev.target.closest('button[data-act]'); if (!b) return;
     const e = events.find(x => x.slug === b.parentElement.dataset.slug); if (!e) return;
-    ({ qr: showQR, print: printOptions, replies: showReplies, toggle: toggle, delete: del,
+    ({ edit: showEdit, qr: showQR, print: printOptions, replies: showReplies, toggle: toggle, delete: del,
        copy: e => navigator.clipboard.writeText(evLink(e.slug)).then(() => say('Link copied.')) })[b.dataset.act](e);
   });
 
