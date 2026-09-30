@@ -23,6 +23,8 @@
   .btn.alt { background:transparent; color:var(--accent); border:2px solid var(--accent); }
   .btn:disabled { opacity:.5; }
   input:focus-visible, select:focus-visible, textarea:focus-visible, .btn:focus-visible { outline:3px solid var(--ink); outline-offset:2px; }
+  .box { border:1px solid var(--line); border-radius:8px; padding:14px; display:grid; gap:10px; background:#fff; margin-bottom:16px; }
+  .box[hidden] { display:none; }
   #result { display:none; background:#fff; border:1px solid var(--line); border-radius:8px; padding:22px; }
   #qr svg { width:220px; height:220px; display:block; margin:12px 0; }
   code { word-break:break-all; display:block; background:var(--bg); padding:8px; border-radius:4px; margin:8px 0; }
@@ -41,6 +43,18 @@
 <main>
   <h1>Create your invitation</h1>
   <p class="lead">Add your photo, video, and details. You'll get a QR code to print on your cards.</p>
+
+  <div id="existing" class="box" hidden>
+    <b id="existingMsg"></b>
+    <div class="row"><a class="btn alt" id="exView" target="_blank" rel="noopener">View invitation</a></div>
+  </div>
+  <p><button class="btn alt" id="editBtn" type="button">Edit invitation</button></p>
+  <div id="pasteBox" class="box" hidden>
+    <label>Paste your private edit link
+      <input id="pasteLink" autocomplete="off" spellcheck="false" placeholder="https://…/edit-event.html?e=…#k=…"></label>
+    <div class="row"><button class="btn" id="pasteGo" type="button">Open edit page</button></div>
+    <small>You received this link when you created your invitation. Lost it? The shop can send it again.</small>
+  </div>
 
   <form id="f">
     <label id="codeLbl">Card code <small>(printed on your event card)</small>
@@ -83,7 +97,7 @@
     </div>
     <p><b>Your private edit link.</b> Keep it safe. Anyone who has it can change this invitation and see the replies.</p>
     <code id="editLink"></code>
-    <div class="row"><button class="btn alt" id="copyEdit" type="button">Copy edit link</button><a class="btn alt" id="editGo" target="_blank" rel="noopener">Open edit page</a></div>
+    <div class="row"><button class="btn alt" id="copyEdit" type="button">Copy edit link</button><a class="btn alt" id="editGo" target="_blank" rel="noopener">Edit invitation</a></div>
     <p><small>Lost the link? The shop can send it to you again.</small></p>
     <ul id="rsvps"></ul>
   </section>
@@ -118,6 +132,52 @@ function syncType() {
 document.querySelector('[name=type]').onchange = syncType;
 $('addDay').onclick = () => { if ($('days').children.length < MAX_DAYS) addDay(); };
 syncType();
+
+// ---------- Edit an existing invitation ----------
+const editPage = (slug, token) => { const u = new URL('edit-event.html', location.href); u.search = '?e=' + slug; u.hash = 'k=' + token; return u.href; };
+const showPaste = msg => { $('pasteBox').hidden = false; if (msg) { $('existingMsg').textContent = msg; $('existing').hidden = false; } $('pasteLink').focus(); };
+
+async function cardStatus(code) {
+  try { return await (await fetch(`${API}/api/event-code/${encodeURIComponent(code)}/status`)).json(); }
+  catch { return {}; }
+}
+async function openEditFor(slug) {
+  if (!admToken) return showPaste('An invitation already exists for this card. Paste your private edit link below to change it.');
+  try {
+    const r = await fetch(`${API}/api/admin/events/${encodeURIComponent(slug)}/edit-link`, { headers:{ Authorization:'Bearer ' + admToken } });
+    const d = await r.json();
+    if (!r.ok) throw new Error(d.error || 'Could not open the edit page.');
+    window.open(editPage(slug, d.edit_token), '_blank');
+  } catch (x) { $('err').textContent = x.message; }
+}
+$('editBtn').onclick = async () => {
+  $('err').textContent = '';
+  const code = $('code').value.trim();
+  if (!code) return showPaste();
+  const s = await cardStatus(code);
+  if (s.state === 'created') return openEditFor(s.slug);
+  if (s.state === 'ready') { $('err').textContent = 'No invitation has been created with this card yet. Fill in the form below to create it.'; return; }
+  showPaste();
+};
+$('pasteGo').onclick = () => {
+  try {
+    const u = new URL($('pasteLink').value.trim());
+    const e = u.searchParams.get('e'), k = new URLSearchParams(u.hash.replace(/^#/, '')).get('k');
+    if (!e || !k) throw 0;
+    location.href = editPage(e, k);
+  } catch { $('err').textContent = 'That does not look like an edit link. Paste the full link you were given.'; }
+};
+// If this card already has an invitation, say so instead of showing an empty form
+(async () => {
+  const code = $('code').value.trim();
+  if (!code) return;
+  const s = await cardStatus(code);
+  if (s.state !== 'created') return;
+  $('f').style.display = 'none';
+  $('existingMsg').textContent = 'This card already has an invitation.';
+  const u = new URL('event.html', location.href); u.search = '?e=' + s.slug; $('exView').href = u.href;
+  $('existing').hidden = false;
+})();
 
 $('f').onsubmit = async e => {
   e.preventDefault(); $('err').textContent = ''; $('go').disabled = true; $('go').textContent = 'Uploading…';
