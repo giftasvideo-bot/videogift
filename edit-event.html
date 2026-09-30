@@ -40,6 +40,9 @@
   .row { display:flex; gap:10px; flex-wrap:wrap; }
   #rsvps li { margin:4px 0; }
   .bad { padding:80px 0; text-align:center; }
+  .gal { display:grid; grid-template-columns:repeat(auto-fill,minmax(120px,1fr)); gap:10px; }
+  .gal .thumb { max-width:100%; aspect-ratio:1; object-fit:cover; }
+  .gal label.inline { font-size:.85rem; }
 </style>
 </head>
 <body>
@@ -79,6 +82,11 @@
         <b>Photos</b> <small>(up to 3, shown as a slideshow. JPG, PNG or WebP, up to 50 MB each)</small>
         <div id="photos"></div>
         <input type="file" name="photo" multiple accept="image/jpeg,image/png,image/webp">
+      </div>
+      <div class="box wedOnly" id="galleryBox" hidden>
+        <b>Additional photos</b> <small>(up to 20, shown in the "Photos" section. JPG, PNG or WebP, up to 50 MB each)</small>
+        <div id="gallery" class="gal"></div>
+        <input type="file" name="gallery" multiple accept="image/jpeg,image/png,image/webp">
       </div>
       <div class="box">
         <b>Video</b> <small>(MP4, MOV or WebM, up to 50 MB)</small>
@@ -174,6 +182,16 @@ function fill(e) {
     const c = document.createElement('input'); c.type = 'checkbox'; c.className = 'rm-photo'; c.value = u;
     l.append(c, ' Remove this photo'); d.append(i, l); $('photos').append(d);
   });
+  const gal = Array.isArray(e.gallery_urls) ? e.gallery_urls : [];
+  $('gallery').textContent = '';
+  if (!gal.length) { const s = document.createElement('small'); s.textContent = 'No additional photos yet.'; $('gallery').append(s); }
+  gal.forEach(u => {
+    const d = document.createElement('div');
+    const i = document.createElement('img'); i.className = 'thumb'; i.src = u; i.alt = ''; i.loading = 'lazy';
+    const l = document.createElement('label'); l.className = 'inline';
+    const c = document.createElement('input'); c.type = 'checkbox'; c.className = 'rm-gallery'; c.value = u;
+    l.append(c, ' Remove'); d.append(i, l); $('gallery').append(d);
+  });
   $('video').textContent = '';
   if (e.video_url) {
     const v = document.createElement('video'); v.className = 'thumb'; v.src = e.video_url; v.controls = true; v.preload = 'metadata';
@@ -228,6 +246,13 @@ $('f').onsubmit = async e => {
   const keep = photos.filter(u => !removed.includes(u)), added = [...f.photo.files];
   if (keep.length + added.length > 3) return say('Maximum 3 photos. Remove one first or choose fewer files.', 'err');
   fd.set('keep_photos', JSON.stringify(keep)); added.forEach(x => fd.append('photo', x));
+  if (isWed()) {
+    const gal = Array.isArray(ev.gallery_urls) ? ev.gallery_urls : [];
+    const rmG = [...document.querySelectorAll('.rm-gallery')].filter(c => c.checked).map(c => c.value);
+    const keepG = gal.filter(u => !rmG.includes(u)), addG = [...f.gallery.files];
+    if (keepG.length + addG.length > 20) return say('Maximum 20 additional photos. Remove some or choose fewer files.', 'err');
+    fd.set('keep_gallery', JSON.stringify(keepG)); addG.forEach(x => fd.append('gallery', x));
+  }
   if (f.video.files[0]) fd.set('video', f.video.files[0]);
   else if ($('rmVideo') && $('rmVideo').checked) fd.set('remove_video', '1');
 
@@ -237,7 +262,7 @@ $('f').onsubmit = async e => {
     const d = await r.json().catch(() => ({}));
     if (!r.ok) throw new Error(d.error || 'Save failed (' + r.status + ').');
     say('Saved. Your invitation is updated.', 'ok');
-    f.photo.value = ''; f.video.value = '';
+    f.photo.value = ''; f.video.value = ''; f.gallery.value = '';
     await load();
     say('Saved. Your invitation is updated.', 'ok');
   } catch (x) { say(x.message, 'err'); }
