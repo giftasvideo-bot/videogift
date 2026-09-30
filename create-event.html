@@ -82,7 +82,8 @@ $('f').onsubmit = async e => {
   if (fd.get('event_date')) fd.set('event_date', new Date(fd.get('event_date')).toISOString());
   try {
     const r = await fetch(`${API}/api/events`, { method:'POST', body:fd });
-    const d = await r.json();
+    let d = {};
+    try { d = await r.json(); } catch { throw new Error('The server did not accept the request (status ' + r.status + '). The events API may not be deployed yet.'); }
     if (!r.ok) throw new Error(d.error || 'Upload failed.');
     cur = d;
     const url = new URL('event.html', location.href); url.search = '?e=' + d.slug;
