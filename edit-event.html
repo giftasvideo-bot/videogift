@@ -32,7 +32,7 @@
   #daysBox[hidden] { display:none; }
   .dayrow { display:grid; grid-template-columns:1fr 1fr; gap:8px; padding-bottom:10px; margin-bottom:10px; border-bottom:1px dashed var(--line); }
   .dayrow .full { grid-column:1/-1; }
-  .wedOnly[hidden] { display:none; }
+  .wedOnly[hidden], .dayrow [hidden], #hostLbl[hidden], #rsvpLbl[hidden] { display:none; }
   .dayrow button { justify-self:start; }
   #msg { min-height:1.4em; font-weight:500; }
   #msg.err { color:#a12a2a; }
