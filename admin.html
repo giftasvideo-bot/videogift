@@ -868,6 +868,8 @@
             ? `<button class="btn btn-secondary" onclick="openCreateEvent('${id}')">🎉 Create Event</button><button class="btn btn-secondary" onclick="toggleEventCard('${id}')">✕ Unmark</button>`
             : printed
             ? `<button class="btn btn-secondary" disabled title="Printed cards cannot be used for events">🔒 Printed · no event</button>`
+            : (isSold && !(buyer && buyer.productType === 'event'))
+            ? `<button class="btn btn-secondary" disabled title="Sold cards cannot be used for events">🧾 Sold · no event</button>`
             : `<button class="btn btn-secondary" onclick="useForEvent('${id}')">🎉 Use for Event</button>`}
           <button class="btn btn-action-sold ${isSold ? 'is-sold' : ''}" onclick="openBuyerModal('${id}')">${isSold ? '🧾 Edit Sale' : '🧾 Record Sale'}</button>
           <button class="btn btn-action-delete-video" id="delvid-${id}" onclick="deleteVideoOnly('${id}')">🎬 Delete Video</button>
@@ -955,6 +957,7 @@
   // One click: mark the card as an event card, then open the create form with its code filled in.
   async function useForEvent(id) {
     if (getPrintedMap()[id]) { alert('Card ' + id + ' is printed and cannot be used for an event.'); return; }
+    if (isCardSold(id) && (buyerMap[id] || {}).productType !== 'event') { alert('Card ' + id + ' is sold and cannot be used for an event.'); return; }
     const win = window.open('', '_blank'); // opened first so the browser doesn't block the popup
     try {
       const done = await setEventCard(id, true);
