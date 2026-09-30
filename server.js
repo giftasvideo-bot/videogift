@@ -56,7 +56,7 @@ const r2 = new S3Client({
 });
 
 // -- EVENTS / INVITATIONS API --
-app.use('/api', require('./events')({ express, multer, supabase, r2, PutObjectCommand, DeleteObjectCommand, R2_BUCKET_NAME, R2_PUBLIC_URL_BASE, requireAuth, requireAdmin }));
+app.use('/api', require('./events')({ express, multer, supabase, r2, PutObjectCommand, DeleteObjectCommand, R2_BUCKET_NAME, R2_PUBLIC_URL_BASE, requireAuth, requireAdmin, verifyToken }));
 
 // -- JWT CONFIG --
 const JWT_SECRET     = process.env.JWT_SECRET     || 'forever27-secret-change-this';
@@ -117,6 +117,10 @@ function requireAuth(req, res, next) {
 // requireAdmin: full admin only. Chain after requireAuth on routes that
 // postcard-staff accounts should never reach (sales/buyer data, deleting
 // gifts, purging storage, generating new tokens, unlocking a print).
+// verifyToken: used by events.js to detect an admin session on the public
+// create-event route (lets admins skip the card code).
+function verifyToken(t) { return jwt.verify(t, JWT_SECRET); }
+
 function requireAdmin(req, res, next) {
   if (!req.admin || req.admin.role !== 'admin') {
     return res.status(403).json({ message: 'Admin access required for this action.' });
@@ -359,7 +363,7 @@ app.post('/api/upload', (req, res, next) => {
 //   ALTER TABLE gifts ADD COLUMN buyer_note text;
 //   ALTER TABLE gifts ADD COLUMN sale_price numeric;
 //   ALTER TABLE gifts ADD COLUMN sold_at timestamptz;
-//   ALTER TABLE gifts ADD COLUMN product_type text; -- 'qr_only' | 'postcard'
+//   ALTER TABLE gifts ADD COLUMN product_type text; -- 'qr_only' | 'postcard' | 'event'
 // Lets the admin note who a physical card was sold to. Stored on the same
 // gift row so it stays in sync across every device viewing the dashboard,
 // instead of living only in one browser's localStorage.
@@ -381,7 +385,7 @@ app.patch('/api/gift/:id/buyer', requireAuth, requireAdmin, async (req, res) => 
 
   // Default to QR-only since that's the primary product — a physical
   // postcard is the exception, not the default.
-  const validProductTypes = ['qr_only', 'postcard'];
+  const validProductTypes = ['qr_only', 'postcard', 'event'];
   const resolvedProductType = validProductTypes.includes(productType) ? productType : 'qr_only';
 
   try {
