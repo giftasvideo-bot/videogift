@@ -32,7 +32,7 @@
   #daysBox[hidden] { display:none; }
   .dayrow { display:grid; grid-template-columns:1fr 1fr; gap:8px; padding-bottom:10px; margin-bottom:10px; border-bottom:1px dashed var(--line); }
   .dayrow .full { grid-column:1/-1; }
-  .wedOnly[hidden], .dayrow [hidden], #hostLbl[hidden], #rsvpLbl[hidden] { display:none; }
+  .wedOnly[hidden], .dayrow [hidden], #hostLbl[hidden], #rsvpLbl[hidden], #themeLbl[hidden], #galleryBox[hidden] { display:none; }
   .dayrow button { justify-self:start; }
   #msg { min-height:1.4em; font-weight:500; }
   #msg.err { color:#a12a2a; }
@@ -68,8 +68,8 @@
       <label>Title <input name="title" required maxlength="120"></label>
       <label id="hostLbl">Hosts <small>(optional)</small><input name="host_names" maxlength="120"></label>
       <label class="wedOnly" hidden>About us <small>(your story, shown in the "About us" section)</small><textarea name="about" maxlength="2000"></textarea></label>
-      <label class="wedOnly" hidden>Background color
-        <select name="theme"><option value="white">White</option><option value="black">Black</option><option value="grey">Grey</option><option value="cream">Cream</option><option value="navy">Navy</option><option value="burgundy">Burgundy</option></select></label>
+      <label id="themeLbl" hidden>Background color
+        <select name="theme"></select></label>
       <div class="two">
         <label><span id="dateTxt">Date and time</span> <small id="dateHint">(seminars: optional)</small><input type="datetime-local" name="event_date" id="evDate"></label>
         <label>Venue <input name="venue" maxlength="200"></label>
@@ -83,8 +83,8 @@
         <div id="photos"></div>
         <input type="file" name="photo" multiple accept="image/jpeg,image/png,image/webp">
       </div>
-      <div class="box wedOnly" id="galleryBox" hidden>
-        <b>Additional photos</b> <small>(up to 20, shown in the "Photos" section. JPG, PNG or WebP, up to 50 MB each)</small>
+      <div class="box" id="galleryBox" hidden>
+        <b id="galName">Additional photos</b> <small id="galHint">(up to 20, shown in the "Photos" section. JPG, PNG or WebP, up to 50 MB each)</small>
         <div id="gallery" class="gal"></div>
         <input type="file" name="gallery" multiple accept="image/jpeg,image/png,image/webp">
       </div>
@@ -121,6 +121,18 @@ const say = (t, cls) => { $('msg').textContent = t; $('msg').className = cls || 
 const h = { 'x-edit-token': token || '' };
 
 const isWed = () => $('f').type.value === 'wedding';
+const isBday = () => $('f').type.value === 'birthday';
+const THEMES = {
+  wedding:[['white','White'],['black','Black'],['grey','Grey'],['cream','Cream'],['navy','Navy'],['burgundy','Burgundy']],
+  birthday:[['pink','Pink'],['blue','Blue'],['white','White']]
+};
+let themeFor = null;
+function fillThemes() {
+  const t = $('f').type.value, sel = $('f').theme;
+  if (!THEMES[t] || themeFor === t) return;
+  themeFor = t; sel.textContent = '';
+  THEMES[t].forEach(([v, n]) => sel.append(new Option(n, v)));
+}
 function addDay(v = {}) {
   const n = $('days').children.length + 1;
   const r = document.createElement('div'); r.className = 'dayrow';
@@ -157,13 +169,18 @@ const syncType = () => {
   if ((sem || wed) && !$('days').children.length) addDay();
   labelRows();
   $('rsvpLbl').hidden = $('f').type.value === 'memorial';
+  const bday = isBday();
+  fillThemes(); $('themeLbl').hidden = !(wed || bday);
+  $('galleryBox').hidden = !(wed || bday);
+  $('galName').textContent = bday ? 'Gallery photos' : 'Additional photos';
+  $('galHint').textContent = '(up to 20, shown in the "' + (bday ? 'Gallery' : 'Photos') + '" section. JPG, PNG or WebP, up to 50 MB each)';
 };
 const localDT = d => { if (!d) return ''; const t = new Date(d); t.setMinutes(t.getMinutes() - t.getTimezoneOffset()); return t.toISOString().slice(0, 16); };
 
 function fill(e) {
   ev = e;
   const f = $('f');
-  f.type.value = e.type; f.about.value = e.about || ''; if (e.theme) f.theme.value = e.theme; f.title.value = e.title || ''; f.host_names.value = e.host_names || '';
+  f.type.value = e.type; f.about.value = e.about || ''; f.title.value = e.title || ''; f.host_names.value = e.host_names || '';
   const dl0 = (Array.isArray(e.days) ? e.days : []).filter(d => d && d.date);
   f.event_date.type = e.type === 'wedding' ? 'date' : 'datetime-local';
   f.event_date.value = e.type === 'wedding' ? (dl0.length ? dl0[0].date : localDT(e.event_date).slice(0, 10)) : localDT(e.event_date); f.venue.value = e.venue || ''; f.map_url.value = e.map_url || '';
@@ -171,6 +188,7 @@ function fill(e) {
   $('days').textContent = '';
   (Array.isArray(e.days) ? e.days : []).filter(d => d && d.date).forEach(addDay);
   syncType();
+  if (e.theme) f.theme.value = e.theme;
 
   const photos = (e.photo_urls && e.photo_urls.length) ? e.photo_urls : (e.photo_url ? [e.photo_url] : []);
   $('photos').textContent = '';
@@ -223,8 +241,9 @@ $('f').onsubmit = async e => {
   ['type', 'title', 'host_names', 'venue', 'map_url', 'message'].forEach(k => fd.set(k, f[k].value));
   fd.set('rsvp_enabled', f.rsvp_enabled.checked ? 'true' : 'false');
   let evDate = f.event_date.value;
+  if (isWed() || isBday()) fd.set('theme', f.theme.value);
   if (isWed()) {
-    fd.set('about', f.about.value); fd.set('theme', f.theme.value);
+    fd.set('about', f.about.value);
     if (!evDate) return say('Please choose the wedding date.', 'err');
     const days = readDays().filter(d => d.time || d.title || d.end);
     days.forEach(d => { d.date = evDate; });
@@ -246,7 +265,7 @@ $('f').onsubmit = async e => {
   const keep = photos.filter(u => !removed.includes(u)), added = [...f.photo.files];
   if (keep.length + added.length > 3) return say('Maximum 3 photos. Remove one first or choose fewer files.', 'err');
   fd.set('keep_photos', JSON.stringify(keep)); added.forEach(x => fd.append('photo', x));
-  if (isWed()) {
+  if (isWed() || isBday()) {
     const gal = Array.isArray(ev.gallery_urls) ? ev.gallery_urls : [];
     const rmG = [...document.querySelectorAll('.rm-gallery')].filter(c => c.checked).map(c => c.value);
     const keepG = gal.filter(u => !rmG.includes(u)), addG = [...f.gallery.files];

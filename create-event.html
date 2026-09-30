@@ -37,7 +37,7 @@
   .dayrow { display:grid; grid-template-columns:1fr 1fr; gap:8px; padding-bottom:10px; margin-bottom:10px; border-bottom:1px dashed var(--line); }
   .dayrow .full { grid-column:1/-1; }
   .dayrow button { justify-self:start; }
-  .wedOnly[hidden], .dayrow [hidden], #hostLbl[hidden] { display:none; }
+  .wedOnly[hidden], .dayrow [hidden], #hostLbl[hidden], #galLbl[hidden], #themeBox[hidden] { display:none; }
   .swatches { border:1px solid var(--line); border-radius:8px; padding:10px 14px 14px; display:flex; gap:14px; flex-wrap:wrap; align-items:center; }
   .swatches legend { font-weight:500; padding:0 6px; }
   .swatches label { display:block; position:relative; cursor:pointer; }
@@ -82,21 +82,16 @@
       <div id="days"></div>
       <button class="btn alt" id="addDay" type="button">+ Add day</button>
     </fieldset>
-    <fieldset class="wedOnly swatches" hidden>
+    <fieldset class="swatches" id="themeBox" hidden>
       <legend>Background color</legend>
-      <label title="White"><input type="radio" name="theme" value="white"><span style="background:#fff"></span></label>
-      <label title="Black"><input type="radio" name="theme" value="black"><span style="background:#1c1c1c"></span></label>
-      <label title="Grey"><input type="radio" name="theme" value="grey"><span style="background:#e9e9e9"></span></label>
-      <label title="Cream"><input type="radio" name="theme" value="cream" checked><span style="background:#f3ecdc"></span></label>
-      <label title="Navy"><input type="radio" name="theme" value="navy"><span style="background:#22384f"></span></label>
-      <label title="Burgundy"><input type="radio" name="theme" value="burgundy"><span style="background:#6b2233"></span></label>
+      <div id="themeOpts" style="display:flex;gap:14px;flex-wrap:wrap"></div>
     </fieldset>
     <label id="hostLbl">Hosts <small>(optional)</small><input name="host_names" maxlength="120" placeholder="Together with their families"></label>
     <label>Venue <input name="venue" maxlength="200"></label>
     <label>Map link <small>(Google Maps share link)</small><input type="url" name="map_url" placeholder="https://maps.app.goo.gl/…"></label>
     <label>Message <small>(optional)</small><textarea name="message" maxlength="1000"></textarea></label>
     <label><span id="photoLbl">Photos</span> <small>(up to 3, shown as a slideshow. JPG, PNG or WebP, up to 50 MB each)</small><input type="file" name="photo" multiple accept="image/jpeg,image/png,image/webp"></label>
-    <label class="wedOnly" hidden>Additional photos <small>(up to 20, shown in the "Photos" section)</small><input type="file" name="gallery" multiple accept="image/jpeg,image/png,image/webp"></label>
+    <label id="galLbl" hidden><span id="galTxt">Additional photos</span> <small id="galHint">(up to 20, shown in the "Photos" section. JPG, PNG or WebP, up to 50 MB each)</small><input type="file" name="gallery" multiple accept="image/jpeg,image/png,image/webp"></label>
     <label>Video <small>(MP4, MOV or WebM, up to 50 MB. Shorter videos load faster for guests.)</small><input type="file" name="video" accept="video/mp4,video/quicktime,video/webm"></label>
     <label style="display:flex;gap:10px;align-items:center"><input type="checkbox" name="rsvp_enabled" id="rsvpOn" checked style="width:auto"> Let guests reply (RSVP)</label>
     <p id="err" role="alert"></p>
@@ -155,6 +150,24 @@ function readDays() {
 }
 const typeVal = () => document.querySelector('[name=type]').value;
 const isWed = () => typeVal() === 'wedding';
+const isBday = () => typeVal() === 'birthday';
+const THEMES = {
+  wedding:[['white','White','#fff'],['black','Black','#1c1c1c'],['grey','Grey','#e9e9e9'],['cream','Cream','#f3ecdc'],['navy','Navy','#22384f'],['burgundy','Burgundy','#6b2233']],
+  birthday:[['pink','Pink','#ffb3d1'],['blue','Blue','#8ec1ff'],['white','White','#ffffff']]
+};
+let themeFor = null;
+function renderThemes() {
+  const t = typeVal();
+  if (!THEMES[t] || themeFor === t) return;
+  themeFor = t; const box = $('themeOpts'); box.textContent = '';
+  THEMES[t].forEach(([v, name, col], i) => {
+    const l = document.createElement('label'); l.title = name;
+    const r = document.createElement('input'); r.type = 'radio'; r.name = 'theme'; r.value = v; r.setAttribute('aria-label', name);
+    r.checked = t === 'wedding' ? v === 'cream' : i === 0;
+    const sp = document.createElement('span'); sp.style.background = col;
+    l.append(r, sp); box.append(l);
+  });
+}
 function syncType() {
   const sem = typeVal() === 'seminar', wed = isWed();
   $('daysBox').hidden = !(sem || wed);
@@ -166,7 +179,12 @@ function syncType() {
   if (ed.type !== want) { ed.type = want; ed.value = ''; }
   $('dateTxt').textContent = wed ? 'Wedding date' : 'Date and time';
   $('dateHint').hidden = wed; ed.required = wed;
-  $('photoLbl').textContent = wed ? 'Main photos' : 'Photos';
+  const bday = isBday();
+  $('photoLbl').textContent = (wed || bday) ? 'Main photos' : 'Photos';
+  $('themeBox').hidden = !(wed || bday); renderThemes();
+  $('galLbl').hidden = !(wed || bday);
+  $('galTxt').textContent = bday ? 'Gallery photos' : 'Additional photos';
+  $('galHint').textContent = '(up to 20, shown in the "' + (bday ? 'Gallery' : 'Photos') + '" section. JPG, PNG or WebP, up to 50 MB each)';
   if ((sem || wed) && !$('days').children.length) addDay();
   labelRows();
 }
@@ -225,11 +243,13 @@ $('f').onsubmit = async e => {
   const fd = new FormData(e.target);
   if (fd.getAll('photo').filter(f => f.size).length > 3) { $('err').textContent = 'Please choose up to 3 photos.'; $('go').disabled = false; $('go').textContent = 'Create invitation'; return; }
   if (fd.getAll('gallery').filter(f => f.size).length > 20) { $('err').textContent = 'Please choose up to 20 additional photos.'; $('go').disabled = false; $('go').textContent = 'Create invitation'; return; }
-  if (fd.get('type') !== 'wedding') fd.delete('theme'); else fd.delete('host_names');
+  if (!['wedding', 'birthday'].includes(fd.get('type'))) fd.delete('theme');
+  if (fd.get('type') === 'wedding') fd.delete('host_names');
+  { const gal = [...$('f').gallery.files].filter(f => f.size); fd.delete('gallery');
+    if (['wedding', 'birthday'].includes(fd.get('type'))) gal.forEach(f => fd.append('gallery', f)); }
   fd.set('rsvp_enabled', $('rsvpOn').checked ? 'true' : 'false');
   for (const k of ['photo', 'video']) { const f = fd.get(k); if (f && !f.size) fd.delete(k); }
   if (fd.get('type') === 'wedding') {
-    fd.delete('gallery'); $('f').gallery.files.length && [...$('f').gallery.files].forEach(f => fd.append('gallery', f));
     const wd = fd.get('event_date');
     const days = readDays().filter(d => d.time || d.title || d.end);
     days.forEach(d => { d.date = wd; });
