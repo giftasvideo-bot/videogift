@@ -826,7 +826,9 @@
         <div class="card-actions" style="flex-wrap:wrap; gap:6px;">
           <button class="btn btn-print-toggle ${printed ? 'is-printed' : ''}" onclick="togglePrinted('${id}')">${printed ? '✅ Printed' : '🖨️ Mark Printed'}</button>
           <button class="btn btn-secondary" onclick="copyWatchLink('${id}')">🔗 Link</button>
-          <button class="btn btn-secondary" onclick="toggleEventCard('${id}')">${eventSet.has(id) ? '🎉 Event ✓ (unmark)' : '🎉 Mark as Event'}</button>
+          ${eventSet.has(id)
+            ? `<button class="btn btn-secondary" onclick="openCreateEvent('${id}')">🎉 Create Event</button><button class="btn btn-secondary" onclick="toggleEventCard('${id}')">✕ Unmark</button>`
+            : `<button class="btn btn-secondary" onclick="useForEvent('${id}')">🎉 Use for Event</button>`}
           <button class="btn btn-action-sold ${isSold ? 'is-sold' : ''}" onclick="openBuyerModal('${id}')">${isSold ? '🧾 Edit Sale' : '🧾 Record Sale'}</button>
           <button class="btn btn-action-delete-video" id="delvid-${id}" onclick="deleteVideoOnly('${id}')">🎬 Delete Video</button>
           <button class="btn btn-action-delete" onclick="deleteCardRow('${id}')">🗑️ Card</button>
@@ -874,6 +876,30 @@
     if (isNaN(n)) return '';
     // No fixed currency symbol assumed — just format the number cleanly.
     return n % 1 === 0 ? n.toLocaleString() : n.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  }
+
+  function openCreateEvent(id) {
+    window.open('create-event.html?code=' + encodeURIComponent(id), '_blank');
+  }
+
+  // One click: mark the card as an event card, then open the create form with its code filled in.
+  async function useForEvent(id) {
+    const win = window.open('', '_blank'); // opened first so the browser doesn't block the popup
+    try {
+      const res = await apiFetch(`${BACKEND_API_BASE}/api/gift/${id}/event-card`, {
+        method: 'PATCH',
+        body: JSON.stringify({ enabled: true })
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.error || 'Server error');
+      eventSet.add(id);
+      renderDashboardGrid();
+      syncStatusesWithDatabase();
+      if (win) win.location.href = 'create-event.html?code=' + encodeURIComponent(id);
+    } catch (err) {
+      if (win) win.close();
+      alert('Could not use this card for an event: ' + err.message);
+    }
   }
 
   async function toggleEventCard(id) {
