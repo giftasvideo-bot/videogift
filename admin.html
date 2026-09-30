@@ -377,6 +377,41 @@
     </div>
     <div class="qr-grid" id="cards-grid-container"></div>
   </div>
+
+  <style>
+    .ev-row { display:flex; justify-content:space-between; align-items:center; gap:12px; flex-wrap:wrap; padding:14px 0; border-bottom:1px solid var(--cream); }
+    .ev-row:last-child { border-bottom:none; }
+    .ev-title { font-weight:500; }
+    .ev-meta { font-size:0.8rem; color:var(--muted); }
+    .ev-acts { display:flex; gap:6px; flex-wrap:wrap; }
+    .ev-acts .btn { font-size:0.78rem; padding:6px 12px; }
+    .ev-badge { display:inline-block; padding:1px 9px; border-radius:10px; font-size:0.72rem; background:var(--success-bg); color:var(--success-text); margin-left:6px; }
+    .ev-badge.disabled { background:#fde8e8; color:#a12a2a; }
+    #ev-modal-body img.ev-qr { width:220px; height:220px; display:block; margin:12px auto; }
+    #ev-modal-body code { display:block; word-break:break-all; font-size:0.75rem; margin:8px 0; color:var(--muted); }
+    #ev-modal-body select, #ev-modal-body input[type="number"] { width:100%; padding:10px 14px; border:1px solid var(--cream); border-radius:8px; background:var(--paper); font-family:'DM Sans',sans-serif; font-size:0.9rem; }
+    #ev-modal-body ul { padding-left:18px; margin-top:10px; }
+  </style>
+  <div class="card-section" id="events-section">
+    <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:16px; flex-wrap:wrap; gap:12px;">
+      <h2>🎉 Event Invitations</h2>
+      <div style="display:flex;gap:10px;flex-wrap:wrap;">
+        <button class="btn btn-secondary" onclick="window.open('create-event.html','_blank')">➕ New Event</button>
+        <button class="btn btn-secondary" onclick="loadEvents()">🔄 Refresh</button>
+      </div>
+    </div>
+    <div class="form-group"><input type="text" id="ev-search" placeholder="Search title, host or venue" oninput="renderEvents()"></div>
+    <div class="ev-meta" id="ev-msg" role="status">Loading…</div>
+    <div id="ev-list"></div>
+  </div>
+</div>
+
+<!-- Event Modal (QR / replies / print options) -->
+<div class="modal-overlay" id="ev-modal">
+  <div class="modal-box">
+    <button class="modal-close" onclick="closeEvModal()">✕</button>
+    <div id="ev-modal-body"></div>
+  </div>
 </div>
 
 <!-- Sold-To / Buyer Info Modal -->
@@ -1390,6 +1425,126 @@
 
   loadCardsFromDatabase();
   setInterval(syncStatusesWithDatabase, 4000);
+</script>
+<script>
+// ===== Event invitations (admin) — uses this page's existing login session =====
+(function () {
+  const $ = id => document.getElementById(id);
+  const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[c]));
+  const evLink = slug => { const u = new URL('event.html', location.href); u.search = '?e=' + slug; return u.href; };
+  let events = [];
+
+  async function evApi(path, opt) {
+    const r = await apiFetch(BACKEND_API_BASE + path, opt || {});
+    const d = await r.json().catch(() => ({}));
+    if (!r.ok) throw new Error(d.error || d.message || ('Request failed (' + r.status + ')'));
+    return d;
+  }
+  function qrDataUrl(text, size) {
+    const box = document.createElement('div');
+    new QRCode(box, { text, width: size, height: size, correctLevel: QRCode.CorrectLevel.H });
+    const c = box.querySelector('canvas');
+    return c ? c.toDataURL('image/png') : box.querySelector('img').src;
+  }
+  const say = t => { $('ev-msg').textContent = t; };
+  function openModal(html) { $('ev-modal-body').innerHTML = html; $('ev-modal').classList.add('open'); }
+  window.closeEvModal = () => $('ev-modal').classList.remove('open');
+
+  window.renderEvents = function () {
+    const q = $('ev-search').value.toLowerCase(), box = $('ev-list');
+    const list = events.filter(e => [e.title, e.host_names, e.venue].join(' ').toLowerCase().includes(q));
+    box.innerHTML = list.map(e => `
+      <div class="ev-row">
+        <div>
+          <div class="ev-title">${esc(e.title)}<span class="ev-badge ${esc(e.status)}">${esc(e.status)}</span></div>
+          <div class="ev-meta">${esc(e.type)}${e.host_names ? ' · ' + esc(e.host_names) : ''}${e.event_date ? ' · ' + esc(new Date(e.event_date).toLocaleDateString()) : ''} · ${e.replies} replies, ${e.coming} coming</div>
+        </div>
+        <div class="ev-acts" data-slug="${esc(e.slug)}">
+          <button class="btn btn-secondary" data-act="qr">QR</button>
+          <button class="btn btn-secondary" data-act="copy">Copy link</button>
+          <button class="btn btn-secondary" data-act="print">🖨️ Print cards</button>
+          <button class="btn btn-secondary" data-act="replies">Replies</button>
+          <button class="btn btn-secondary" data-act="toggle">${e.status === 'live' ? 'Disable' : 'Enable'}</button>
+          <button class="btn btn-secondary" data-act="delete" style="color:#a12a2a;">Delete</button>
+        </div>
+      </div>`).join('');
+    if (!list.length) box.innerHTML = '';
+  };
+
+  window.loadEvents = async function () {
+    say('Loading…');
+    try {
+      events = await evApi('/api/admin/events');
+      say(events.length ? events.length + ' events' : 'No events yet.');
+      renderEvents();
+    } catch (x) { say(x.message); }
+  };
+
+  function showQR(e) {
+    const url = evLink(e.slug), img = qrDataUrl(url, 400);
+    openModal(`<h3>${esc(e.title)}</h3><div class="modal-subtitle">Invitation QR code</div>
+      <img class="ev-qr" src="${img}" alt="QR code"><code>${esc(url)}</code>
+      <div class="modal-actions"><a class="btn" download="qr-${esc(e.slug)}.png" href="${img}" style="text-align:center;text-decoration:none;">Download PNG</a></div>`);
+  }
+  async function showReplies(e) {
+    try {
+      const rows = await evApi('/api/admin/events/' + e.slug + '/rsvps');
+      openModal(`<h3>${esc(e.title)}</h3><div class="modal-subtitle">Guest replies</div><ul>` +
+        (rows.length ? rows.map(r => `<li>${esc(r.guest_name)}: ${r.attending ? 'coming (' + (r.guests || 1) + ')' : 'not coming'}</li>`).join('') : '<li>No replies yet.</li>') + '</ul>');
+    } catch (x) { say(x.message); }
+  }
+  function printOptions(e) {
+    openModal(`<h3>Print invitation cards</h3><div class="modal-subtitle">${esc(e.title)}</div>
+      <div class="form-field"><label for="ev-qty">Number of cards</label><input type="number" id="ev-qty" min="1" max="500" value="4"></div>
+      <div class="form-field"><label for="ev-lay">Layout</label><select id="ev-lay"><option value="card">Card, A6 (4 per A4 page)</option><option value="tag">Small tag, 90×55 mm (10 per page)</option></select></div>
+      <div class="modal-actions"><button class="btn" id="ev-go-print">Open print view</button></div>`);
+    $('ev-go-print').onclick = () => printCards(e, Math.min(Math.max(parseInt($('ev-qty').value) || 1, 1), 500), $('ev-lay').value);
+  }
+  function printCards(e, n, layout) {
+    if (e.status !== 'live') { alert('This event is disabled. Enable it before printing so the QR codes work.'); return; }
+    const url = evLink(e.slug), img = qrDataUrl(url, 400), tag = layout === 'tag';
+    const when = e.event_date ? new Date(e.event_date).toLocaleString([], { dateStyle: 'long', timeStyle: 'short' }) : '';
+    const one = tag
+      ? `<div class="card ${esc(e.type)} tag"><img src="${img}" alt=""><div><h2>${esc(e.title)}</h2>${when ? `<p>${esc(when)}</p>` : ''}<p class="scan">Scan for photo, video and details</p><small>${esc(url)}</small></div></div>`
+      : `<div class="card ${esc(e.type)}"><h2>${esc(e.title)}</h2>${e.host_names ? `<p>${esc(e.host_names)}</p>` : ''}${when ? `<p>${esc(when)}</p>` : ''}${e.venue ? `<p>${esc(e.venue)}</p>` : ''}<img src="${img}" alt=""><p class="scan">Scan to see your invitation</p><small>${esc(url)}</small></div>`;
+    const w = window.open('', '_blank', 'width=900,height=700');
+    if (!w) { alert('Please allow pop-ups to print.'); return; }
+    w.document.write(`<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Print invitation cards</title>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,700&family=DM+Sans:wght@400;500&family=Noto+Sans+Ethiopic:wght@400;600&display=swap" rel="stylesheet">
+<style>
+@page{size:A4;margin:0} *{box-sizing:border-box} body{margin:0;font-family:'DM Sans','Noto Sans Ethiopic',sans-serif;color:#123c40}
+.sheet{display:grid;grid-template-columns:repeat(2,${tag ? '90mm' : '105mm'});justify-content:center}
+.card{width:105mm;height:148mm;padding:9mm;display:flex;flex-direction:column;align-items:center;text-align:center;border:.2mm dashed #bbb;overflow:hidden;break-inside:avoid}
+.card.tag{width:90mm;height:55mm;padding:4mm;flex-direction:row;gap:4mm;text-align:left}
+h2{font:700 19pt/1.1 'Fraunces','Noto Sans Ethiopic',serif;margin:4mm 0 2mm} .tag h2{font-size:12pt;margin:0 0 1mm}
+p{margin:0 0 1.5mm;font-size:10pt} .card img{width:52mm;height:52mm;margin:auto 0 2mm} .tag img{width:38mm;height:38mm;margin:0;flex:none}
+small{font-size:7.5pt;word-break:break-all;opacity:.8} .scan{font-size:9pt;font-weight:500}
+.wedding{border-top:3mm solid #b08d57}.birthday{border-top:3mm solid #1f3fbf}.church{border-top:3mm solid #2f6b52}.memorial{border-top:3mm solid #555}.general{border-top:3mm solid #0f5257}
+</style></head><body><div class="sheet">${one.repeat(n)}</div>
+<script>window.onload=function(){setTimeout(function(){window.print()},600)}<\/script></body></html>`);
+    w.document.close();
+  }
+  async function toggle(e) {
+    const next = e.status === 'live' ? 'disabled' : 'live';
+    if (next === 'disabled' && !confirm('Disable this event? Its QR code will show "not found" until you enable it again.')) return;
+    try { await evApi('/api/admin/events/' + e.slug, { method: 'PATCH', body: JSON.stringify({ status: next }) }); e.status = next; say('Status set to ' + next + '.'); renderEvents(); }
+    catch (x) { say(x.message); }
+  }
+  async function del(e) {
+    if (!confirm('Delete "' + e.title + '" and its photo and video? Printed QR codes will stop working. This cannot be undone.')) return;
+    try { await evApi('/api/admin/events/' + e.slug, { method: 'DELETE' }); events = events.filter(x => x !== e); say('Event deleted.'); renderEvents(); }
+    catch (x) { say(x.message); }
+  }
+
+  $('ev-list').addEventListener('click', ev => {
+    const b = ev.target.closest('button[data-act]'); if (!b) return;
+    const e = events.find(x => x.slug === b.parentElement.dataset.slug); if (!e) return;
+    ({ qr: showQR, print: printOptions, replies: showReplies, toggle: toggle, delete: del,
+       copy: e => navigator.clipboard.writeText(evLink(e.slug)).then(() => say('Link copied.')) })[b.dataset.act](e);
+  });
+
+  loadEvents();
+})();
 </script>
 </body>
 </html>
