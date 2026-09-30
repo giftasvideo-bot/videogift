@@ -73,6 +73,7 @@
         <option value="seminar">Seminar / multi-day</option><option value="church">Church / religious</option><option value="memorial">Memorial</option>
         <option value="general">Other</option>
       </select></label>
+    <label>Date and time <small>(optional if you add a schedule below)</small><input type="datetime-local" name="event_date"></label>
     <fieldset id="daysBox" hidden>
       <legend id="daysLegend">Seminar days</legend>
       <small id="daysHelp">Add each day with its own title. You can change titles later.</small>
@@ -90,10 +91,7 @@
     </fieldset>
     <label>Title <input name="title" required maxlength="120" placeholder="Selam & Dawit's Wedding"></label>
     <label>Hosts <small>(optional)</small><input name="host_names" maxlength="120" placeholder="Together with their families"></label>
-    <div class="two">
-      <label>Date and time <small>(optional if you add a program below)</small><input type="datetime-local" name="event_date"></label>
-      <label>Venue <input name="venue" maxlength="200"></label>
-    </div>
+    <label>Venue <input name="venue" maxlength="200"></label>
     <label>Map link <small>(Google Maps share link)</small><input type="url" name="map_url" placeholder="https://maps.app.goo.gl/…"></label>
     <label class="wedOnly" hidden>About us <small>(your story, shown in the "About us" section)</small><textarea name="about" maxlength="2000"></textarea></label>
     <label>Message <small>(optional)</small><textarea name="message" maxlength="1000"></textarea></label>
@@ -134,7 +132,8 @@ if (admToken) { $('code').required = false; $('codeLbl').firstChild.textContent 
 function addDay(v = {}) {
   const n = $('days').children.length + 1;
   const r = document.createElement('div'); r.className = 'dayrow';
-  r.innerHTML = '<label>Date <input type="date" class="d-date"></label><label>Start time <input type="time" class="d-time"></label>' +
+  r.innerHTML = '<label class="full">Date <input type="date" class="d-date"></label><label>Start time <input type="time" class="d-time"></label>' +
+    '<label>End time <small>(optional)</small><input type="time" class="d-end"></label>' +
     '<label class="full">Title for this day <input class="d-title" maxlength="120"></label><button class="btn alt" type="button">Remove day</button>';
   const prev = $('days').lastElementChild; r.querySelector('.d-date').value = v.date || (prev ? prev.querySelector('.d-date').value : ''); r.querySelector('.d-time').value = v.time || '';
   r.querySelector('.d-title').value = v.title || ''; r.querySelector('.d-title').placeholder = isWed() ? 'e.g. Church ceremony' : 'Day ' + n + ': e.g. Opening and Vision';
@@ -143,17 +142,15 @@ function addDay(v = {}) {
 }
 function labelRows() {
   const w = isWed();
-  [...$('days').children].forEach(r => {
-    r.querySelector('label').firstChild.textContent = 'Date ';
-    r.querySelectorAll('label')[1].firstChild.textContent = w ? 'Time ' : 'Start time ';
-    r.querySelector('label.full').firstChild.textContent = w ? 'What happens at this time ' : 'Title for this day ';
+  [...$('days').children].forEach((r, i) => {
+    r.querySelector('.d-title').parentElement.firstChild.textContent = w ? 'What happens at this time ' : 'Title for this day ';
     r.querySelector('button').textContent = w ? 'Remove' : 'Remove day';
-    r.querySelector('.d-title').placeholder = w ? 'e.g. Church ceremony, Photos, Reception' : 'Day ' + ([...$('days').children].indexOf(r) + 1) + ': e.g. Opening and Vision';
+    r.querySelector('.d-title').placeholder = w ? 'e.g. Church ceremony, Photos, Reception' : 'Day ' + (i + 1) + ': e.g. Opening and Vision';
   });
   $('addDay').textContent = w ? '+ Add to schedule' : '+ Add day';
 }
 function readDays() {
-  return [...$('days').children].map(r => ({ date:r.querySelector('.d-date').value, time:r.querySelector('.d-time').value, title:r.querySelector('.d-title').value.trim() }));
+  return [...$('days').children].map(r => ({ date:r.querySelector('.d-date').value, time:r.querySelector('.d-time').value, title:r.querySelector('.d-title').value.trim(), end:r.querySelector('.d-end').value || undefined }));
 }
 const typeVal = () => document.querySelector('[name=type]').value;
 const isWed = () => typeVal() === 'wedding';
@@ -229,6 +226,7 @@ $('f').onsubmit = async e => {
     fd.delete('gallery'); $('f').gallery.files.length && [...$('f').gallery.files].forEach(f => fd.append('gallery', f));
     const days = readDays().filter(d => d.date || d.title || d.time);
     if (days.some(d => !d.date || !d.time)) { $('err').textContent = 'Each schedule item needs a date and a time.'; $('go').disabled = false; $('go').textContent = 'Create invitation'; return; }
+    if (days.some(d => d.end && d.end === d.time)) { $('err').textContent = 'End time must be different from the start time.'; $('go').disabled = false; $('go').textContent = 'Create invitation'; return; }
     if (days.length) {
       days.sort((a, b) => (a.date + (a.time || '')).localeCompare(b.date + (b.time || '')));
       fd.set('days', JSON.stringify(days));
