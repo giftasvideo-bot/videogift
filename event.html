@@ -4,11 +4,11 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>You're invited</title>
-<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,700&family=DM+Sans:wght@400;500&family=Noto+Sans+Ethiopic:wght@400;600&family=Pinyon+Script&family=Cormorant+Garamond:wght@500;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,700&family=DM+Sans:wght@400;500&family=Noto+Sans+Ethiopic:wght@400;600&family=Pinyon+Script&family=Cormorant+Garamond:wght@500;600&family=Chewy&family=Fredoka:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
   :root { --bg:#eef4f3; --ink:#123c40; --accent:#0f5257; --soft:#d9e8e6; }
   [data-type=wedding]  { --bg:#f3ecdc; --ink:#4a3a24; --accent:#7a5c3a; --soft:#e7dcc4; }
-  [data-type=birthday] { --bg:#fff3c4; --ink:#16308f; --accent:#1f3fbf; --soft:#ffe58a; }
+  [data-type=birthday] { --bg:#ffe1dc; --ink:#2b2a52; --accent:#6f63d9; --soft:#fff3f0; }
   [data-type=church]   { --bg:#eceee9; --ink:#1e3a2f; --accent:#2f6b52; --soft:#d8dcd3; }
   [data-type=seminar]  { --bg:#eef1f7; --ink:#1b2a4a; --accent:#2c4a8f; --soft:#d8e0f0; }
   [data-type=memorial] { --bg:#efefef; --ink:#2a2a2a; --accent:#555;    --soft:#dcdcdc; }
@@ -88,6 +88,53 @@
   .agenda li { background:var(--soft); border-left:4px solid var(--accent); border-radius:6px; padding:10px 14px; }
   .agenda .dd { font-weight:500; font-size:.9rem; }
   .agenda .dt { font:700 1.1rem/1.3 'Fraunces','Noto Sans Ethiopic',serif; }
+
+  /* ---------- Birthday template ---------- */
+  .bday { font-family:'Fredoka','DM Sans','Noto Sans Ethiopic',sans-serif; }
+  .bday main { max-width:980px; padding:0; min-height:100vh; display:flex; flex-direction:column; }
+  .bday .wnav { background:transparent; border-bottom:0; justify-content:center; gap:6px 10px; padding:18px 12px 8px; }
+  .bday .wtab { font:500 1rem 'Fredoka','Noto Sans Ethiopic',sans-serif; letter-spacing:0; text-transform:none; border-bottom:0; border-radius:999px; padding:7px 18px; color:var(--ink); }
+  .bday .wtab[aria-selected=true] { background:var(--accent); color:#fff; }
+  .bday .wpanel { padding:26px 22px 40px; flex:1; }
+  .bday .wpanel.home { padding:0; }
+  .bday .wpanel h2 { font:400 clamp(2rem,8vw,2.8rem)/1.1 'Chewy','Noto Sans Ethiopic',cursive; color:var(--accent); margin:0 0 18px; }
+  .bday .msg { font:400 1.1rem/1.65 'Fredoka','Noto Sans Ethiopic',sans-serif; }
+  .bday .sgroup h3 { font:600 .95rem 'Fredoka',sans-serif; letter-spacing:.06em; }
+  .bday .times li { border-top:2px dotted var(--accent); }
+  .bday .times .tm, .bday .times .tt { font-family:'Fredoka','Noto Sans Ethiopic',sans-serif; }
+  .bday .btn { border-radius:999px; font-family:'Fredoka',sans-serif; }
+  .bday input { color:#222; }
+  .bday form { background:#fff; border-radius:18px; }
+  .bday form h2 { font:400 1.6rem 'Chewy',cursive; color:var(--accent); }
+  .bday .wgrid img { border-radius:16px; }
+  .bday video { border-radius:16px; }
+  .bd-hero { position:relative; display:grid; gap:22px; padding:28px 22px 40px; align-items:center; justify-items:center; text-align:center; overflow:hidden; }
+  .bd-art { position:relative; width:min(74vw,360px); aspect-ratio:1; margin:64px 0 14px; order:-1; }
+  .bd-photo { width:100%; height:100%; border-radius:50%; border:10px solid #cfc8fa; overflow:hidden; background:#fff; box-shadow:0 10px 26px rgba(111,99,217,.22); display:grid; place-items:center; font-size:5rem; }
+  .bd-photo .slides, .bd-photo .photo { width:100%; height:100%; aspect-ratio:1; object-fit:cover; }
+  .bd-art svg.bl { position:absolute; filter:drop-shadow(0 4px 4px rgba(0,0,0,.12)); }
+  .bd-art svg.st { position:absolute; }
+  .bd-conf { position:absolute; display:block; border-radius:3px; opacity:.85; }
+  .bd-text { max-width:440px; z-index:1; }
+  .bd-pre { font:400 clamp(1.6rem,7vw,2.3rem)/1.1 'Fredoka',sans-serif; font-weight:500; margin:0; }
+  .bd-big { font:400 clamp(3rem,15vw,5rem)/1 'Chewy','Noto Sans Ethiopic',cursive; color:var(--accent); margin:0; letter-spacing:.02em; text-shadow:3px 3px 0 #fff; }
+  .bd-date { font:500 1.15rem 'Fredoka',sans-serif; margin:12px 0 0; }
+  .bd-venue { margin:2px 0 0; font-size:1rem; }
+  .bd-blurb { font-size:.98rem; line-height:1.6; margin:16px 0 18px; }
+  .bd-more { display:inline-block; border:0; background:var(--accent); color:#fff; font:500 1rem 'Fredoka',sans-serif; padding:9px 26px; border-radius:999px; cursor:pointer; }
+  .bd-more:focus-visible { outline:3px solid var(--ink); outline-offset:2px; }
+  .bd-band { height:54px; margin-top:auto; width:100vw; margin-left:calc(50% - 50vw); background:
+      repeating-conic-gradient(#7b6fe6 0% 25%, #6a5ed6 0% 50%) 0 0 / 28px 28px; }
+  @media (min-width:760px) {
+    .bd-hero { grid-template-columns:1.05fr 1fr; justify-items:stretch; text-align:left; padding:36px 40px 56px; gap:30px; }
+    .bd-art { order:0; justify-self:center; }
+    .bd-text { justify-self:start; }
+  }
+  @media (prefers-reduced-motion:no-preference) {
+    .bd-art svg.bl { animation:bdFloat 5s ease-in-out infinite; }
+    .bd-art svg.bl.b2 { animation-delay:-2s; } .bd-art svg.bl.b3 { animation-delay:-3.5s; }
+  }
+  @keyframes bdFloat { 0%,100% { transform:translateY(0) rotate(var(--r,0deg)); } 50% { transform:translateY(-9px) rotate(var(--r,0deg)); } }
 </style>
 </head>
 <body>
@@ -148,9 +195,59 @@ function slideshow(urls) {
   return box;
 }
 
+function birthdayHero(ev, photos, first, onMore) {
+  const NS = 'http://www.w3.org/2000/svg';
+  const balloon = (cls, color, w, style, rot) => {
+    const s = document.createElementNS(NS, 'svg');
+    s.setAttribute('viewBox', '0 0 60 100'); s.setAttribute('class', 'bl ' + cls); s.setAttribute('aria-hidden', 'true');
+    s.style.cssText = 'width:' + w + 'px;--r:' + rot + 'deg;transform:rotate(' + rot + 'deg);' + style;
+    s.innerHTML = '<path d="M30 66 C28 78 36 84 30 98" fill="none" stroke="#9a8fcf" stroke-width="1.6"/>' +
+      '<ellipse cx="30" cy="32" rx="27" ry="31" fill="' + color + '"/>' +
+      '<path d="M30 62 l-5 7 h10 z" fill="' + color + '"/>' +
+      '<ellipse cx="19" cy="20" rx="6" ry="10" fill="#fff" opacity=".35" transform="rotate(25 19 20)"/>';
+    return s;
+  };
+  const star = (color, w, style) => {
+    const s = document.createElementNS(NS, 'svg');
+    s.setAttribute('viewBox', '0 0 40 40'); s.setAttribute('class', 'st'); s.setAttribute('aria-hidden', 'true');
+    s.style.cssText = 'width:' + w + 'px;' + style;
+    s.innerHTML = '<path d="M20 2 L24 15 L38 14 L27 23 L32 37 L20 28 L8 37 L13 23 L2 14 L16 15 Z" fill="' + color + '"/>';
+    return s;
+  };
+  const hero = el('div', 'bd-hero');
+
+  const art = el('div', 'bd-art');
+  const ph = el('div', 'bd-photo');
+  if (photos.length) ph.append(slideshow(photos)); else ph.textContent = '\uD83C\uDF82';
+  art.append(ph,
+    balloon('b1', '#ff7fa0', 92, 'left:-14%;top:-20%;', -12),
+    balloon('b2', '#ff9a8a', 84, 'right:-12%;top:-16%;', 10),
+    balloon('b3', '#ff9a6b', 64, 'left:-8%;bottom:-8%;', -8),
+    star('#ff9a6b', 30, 'right:-6%;top:40%;'), star('#ffb36b', 22, 'left:-10%;top:46%;'));
+  [[6,30,'#ff7fa0',8],[92,12,'#6f63d9',7],[84,78,'#ff9a6b',9],[14,88,'#6f63d9',6],[50,-8,'#ff9a6b',8],[100,55,'#ff7fa0',7],[-4,70,'#6f63d9',7]].forEach(([x, y, c, z], i) => {
+    const d = el('span', 'bd-conf'); d.setAttribute('aria-hidden', 'true');
+    d.style.cssText = 'left:' + x + '%;top:' + y + '%;width:' + z + 'px;height:' + (i % 2 ? z : z * 2) + 'px;background:' + c + ';transform:rotate(' + (i * 37) + 'deg);' + (i % 3 === 0 ? 'border-radius:50%;' : '');
+    art.append(d);
+  });
+
+  const t = el('div', 'bd-text');
+  const m = (ev.title || '').match(/^(.*?)\s*\b(birthday.*)$/i);
+  if (m && m[2]) { if (m[1]) t.append(el('p', 'bd-pre', m[1])); t.append(el('h1', 'bd-big', m[2].charAt(0).toUpperCase() + m[2].slice(1))); }
+  else t.append(el('h1', 'bd-big', ev.title || 'Birthday'));
+  if (ev.host_names) t.append(el('p', 'bd-venue', ev.host_names));
+  if (first) t.append(el('p', 'bd-date', first.toLocaleDateString([], { dateStyle: 'medium' })));
+  if (ev.venue) t.append(el('p', 'bd-venue', ev.venue));
+  const blurb = (ev.message || ev.about || '').trim();
+  if (blurb) t.append(el('p', 'bd-blurb', blurb.length > 170 ? blurb.slice(0, 167).trim() + '\u2026' : blurb));
+  if (ev.about || blurb.length > 170) { const b = el('button', 'bd-more', 'Read More'); b.type = 'button'; b.onclick = onMore; t.append(b); }
+  hero.append(art, t);
+  return hero;
+}
+
 function renderWedding(ev) {
-  document.body.classList.add('wed');
-  if (['white','black','grey','cream','navy','burgundy'].includes(ev.theme)) document.body.dataset.theme = ev.theme;
+  const bday = ev.type === 'birthday';
+  document.body.classList.add(bday ? 'bday' : 'wed');
+  if (!bday && ['white','black','grey','cream','navy','burgundy'].includes(ev.theme)) document.body.dataset.theme = ev.theme;
   const photos = (ev.photo_urls && ev.photo_urls.length) ? ev.photo_urls : (ev.photo_url ? [ev.photo_url] : []);
   const days = Array.isArray(ev.days) ? ev.days.filter(d => d && d.date) : [];
   const first = days.length ? dayDate(days[0]) : (ev.event_date ? new Date(ev.event_date) : null);
@@ -160,7 +257,7 @@ function renderWedding(ev) {
   if (ev.host_names) h.append(el('p','wed-host', ev.host_names));
   const bits = [first && first.toLocaleDateString([], { dateStyle:'long' }), ev.venue].filter(Boolean);
   if (bits.length) h.append(el('p','wed-line', bits.join('  \u2022  ')));
-  app.append(h);
+  if (!bday) app.append(h);
 
   const secs = [];
   if (ev.about || ev.message) secs.push(['About us', p => { if (ev.about) p.append(el('p','msg', ev.about)); if (ev.message) p.append(el('p','msg', ev.message)); }]);
@@ -185,10 +282,10 @@ function renderWedding(ev) {
     if (ev.map_url) { const r = el('div','row'), m = el('a','btn','Open map'); m.href = ev.map_url; m.target = '_blank'; m.rel = 'noopener'; r.append(m); p.append(r); }
   }]);
   const more = Array.isArray(ev.gallery_urls) ? ev.gallery_urls : [], allPhotos = photos.concat(more);
-  if (allPhotos.length > 1) secs.push(['Photos', p => { const g = el('div','wgrid'); allPhotos.forEach(u => { const i = el('img'); i.src = u; i.alt = ''; i.loading = 'lazy'; g.append(i); }); p.append(g); }]);
+  if (allPhotos.length > 1) secs.push([bday ? 'Gallery' : 'Photos', p => { const g = el('div','wgrid'); allPhotos.forEach(u => { const i = el('img'); i.src = u; i.alt = ''; i.loading = 'lazy'; g.append(i); }); p.append(g); }]);
   if (ev.video_url) secs.push(['Video', p => { const v = el('video'); v.src = ev.video_url; v.controls = true; v.preload = 'metadata'; v.playsInline = true; p.append(v); }]);
   if (ev.rsvp_enabled) secs.push(['RSVP', p => p.append(rsvpForm())]);
-  if (!secs.length) { if (photos.length) app.append(slideshow(photos)); return; }
+  if (!secs.length && !bday) { if (photos.length) app.append(slideshow(photos)); return; }
 
   const nav = el('nav','wnav'); nav.setAttribute('role','tablist'); nav.setAttribute('aria-label','Invitation sections');
   const holder = el('div');
@@ -204,15 +301,17 @@ function renderWedding(ev) {
     if (!home) p.append(el('h2','',name));
     fill(p); tabs.push(t); panels.push(p); nav.append(t); holder.append(p);
   };
-  if (photos.length) add('Home', p => p.append(slideshow(photos)), true);
+  if (bday) add('Home', p => p.append(birthdayHero(ev, photos, first, () => { const k = tabs.findIndex(t => t.textContent === 'About us'); if (k > -1) show(k, true); })), true);
+  else if (photos.length) add('Home', p => p.append(slideshow(photos)), true);
   secs.forEach(([name, fill]) => add(name, fill));
   app.append(nav, holder); show(0);
+  if (bday) app.append(el('div', 'bd-band'));
 }
 
 function render(ev) {
   document.title = ev.title;
   document.body.dataset.type = ev.type;
-  if (ev.type === 'wedding') { app.textContent = ''; return renderWedding(ev); }
+  if (ev.type === 'wedding' || ev.type === 'birthday') { app.textContent = ''; return renderWedding(ev); }
   app.textContent = '';
   const photos = (ev.photo_urls && ev.photo_urls.length) ? ev.photo_urls : (ev.photo_url ? [ev.photo_url] : []);
   const wed = ev.type === 'wedding';
