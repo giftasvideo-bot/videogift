@@ -37,7 +37,7 @@
   .dayrow { display:grid; grid-template-columns:1fr 1fr; gap:8px; padding-bottom:10px; margin-bottom:10px; border-bottom:1px dashed var(--line); }
   .dayrow .full { grid-column:1/-1; }
   .dayrow button { justify-self:start; }
-  .wedOnly[hidden] { display:none; }
+  .wedOnly[hidden], .dayrow [hidden], #hostLbl[hidden] { display:none; }
   .swatches { border:1px solid var(--line); border-radius:8px; padding:10px 14px 14px; display:flex; gap:14px; flex-wrap:wrap; align-items:center; }
   .swatches legend { font-weight:500; padding:0 6px; }
   .swatches label { display:block; position:relative; cursor:pointer; }
@@ -73,7 +73,9 @@
         <option value="seminar">Seminar / multi-day</option><option value="church">Church / religious</option><option value="memorial">Memorial</option>
         <option value="general">Other</option>
       </select></label>
-    <label>Date and time <small>(optional if you add a schedule below)</small><input type="datetime-local" name="event_date"></label>
+    <label>Title <input name="title" required maxlength="120" placeholder="Selam & Dawit's Wedding"></label>
+    <label class="wedOnly" hidden>About us <small>(your story, shown in the "About us" section)</small><textarea name="about" maxlength="2000"></textarea></label>
+    <label><span id="dateTxt">Date and time</span> <small id="dateHint">(optional if you add a schedule below)</small><input type="datetime-local" name="event_date" id="evDate"></label>
     <fieldset id="daysBox" hidden>
       <legend id="daysLegend">Seminar days</legend>
       <small id="daysHelp">Add each day with its own title. You can change titles later.</small>
@@ -89,11 +91,9 @@
       <label title="Navy"><input type="radio" name="theme" value="navy"><span style="background:#22384f"></span></label>
       <label title="Burgundy"><input type="radio" name="theme" value="burgundy"><span style="background:#6b2233"></span></label>
     </fieldset>
-    <label>Title <input name="title" required maxlength="120" placeholder="Selam & Dawit's Wedding"></label>
-    <label>Hosts <small>(optional)</small><input name="host_names" maxlength="120" placeholder="Together with their families"></label>
+    <label id="hostLbl">Hosts <small>(optional)</small><input name="host_names" maxlength="120" placeholder="Together with their families"></label>
     <label>Venue <input name="venue" maxlength="200"></label>
     <label>Map link <small>(Google Maps share link)</small><input type="url" name="map_url" placeholder="https://maps.app.goo.gl/…"></label>
-    <label class="wedOnly" hidden>About us <small>(your story, shown in the "About us" section)</small><textarea name="about" maxlength="2000"></textarea></label>
     <label>Message <small>(optional)</small><textarea name="message" maxlength="1000"></textarea></label>
     <label><span id="photoLbl">Photos</span> <small>(up to 3, shown as a slideshow. JPG, PNG or WebP, up to 50 MB each)</small><input type="file" name="photo" multiple accept="image/jpeg,image/png,image/webp"></label>
     <label class="wedOnly" hidden>Additional photos <small>(up to 20, shown in the "Photos" section)</small><input type="file" name="gallery" multiple accept="image/jpeg,image/png,image/webp"></label>
@@ -147,6 +147,7 @@ function labelRows() {
     r.querySelector('button').textContent = w ? 'Remove' : 'Remove day';
     r.querySelector('.d-title').placeholder = w ? 'e.g. Church ceremony, Photos, Reception' : 'Day ' + (i + 1) + ': e.g. Opening and Vision';
   });
+  [...$('days').children].forEach(r => { r.querySelector('.d-date').parentElement.hidden = w; });
   $('addDay').textContent = w ? '+ Add to schedule' : '+ Add day';
 }
 function readDays() {
@@ -158,8 +159,13 @@ function syncType() {
   const sem = typeVal() === 'seminar', wed = isWed();
   $('daysBox').hidden = !(sem || wed);
   $('daysLegend').textContent = wed ? 'Time schedule' : 'Seminar days';
-  $('daysHelp').textContent = wed ? 'Build your time schedule: add each moment with its time, for example 9:00 church ceremony, 12:00 photos, 6:00 reception. New items keep the previous date. Leave empty to use only the date above.' : 'Add each day with its own title. You can change titles later.';
+  $('daysHelp').textContent = wed ? 'Add each moment of the wedding day with its time, for example 9:00 church ceremony, 12:00 photos, 6:00 reception. All items use the wedding date above.' : 'Add each day with its own title. You can change titles later.';
   document.querySelectorAll('.wedOnly').forEach(x => x.hidden = !wed);
+  $('hostLbl').hidden = wed;
+  const ed = $('evDate'), want = wed ? 'date' : 'datetime-local';
+  if (ed.type !== want) { ed.type = want; ed.value = ''; }
+  $('dateTxt').textContent = wed ? 'Wedding date' : 'Date and time';
+  $('dateHint').hidden = wed; ed.required = wed;
   $('photoLbl').textContent = wed ? 'Main photos' : 'Photos';
   if ((sem || wed) && !$('days').children.length) addDay();
   labelRows();
@@ -219,19 +225,19 @@ $('f').onsubmit = async e => {
   const fd = new FormData(e.target);
   if (fd.getAll('photo').filter(f => f.size).length > 3) { $('err').textContent = 'Please choose up to 3 photos.'; $('go').disabled = false; $('go').textContent = 'Create invitation'; return; }
   if (fd.getAll('gallery').filter(f => f.size).length > 20) { $('err').textContent = 'Please choose up to 20 additional photos.'; $('go').disabled = false; $('go').textContent = 'Create invitation'; return; }
-  if (fd.get('type') !== 'wedding') fd.delete('theme');
+  if (fd.get('type') !== 'wedding') fd.delete('theme'); else fd.delete('host_names');
   fd.set('rsvp_enabled', $('rsvpOn').checked ? 'true' : 'false');
   for (const k of ['photo', 'video']) { const f = fd.get(k); if (f && !f.size) fd.delete(k); }
   if (fd.get('type') === 'wedding') {
     fd.delete('gallery'); $('f').gallery.files.length && [...$('f').gallery.files].forEach(f => fd.append('gallery', f));
-    const days = readDays().filter(d => d.date || d.title || d.time);
-    if (days.some(d => !d.date || !d.time)) { $('err').textContent = 'Each schedule item needs a date and a time.'; $('go').disabled = false; $('go').textContent = 'Create invitation'; return; }
+    const wd = fd.get('event_date');
+    const days = readDays().filter(d => d.time || d.title || d.end);
+    days.forEach(d => { d.date = wd; });
+    if (days.some(d => !d.time)) { $('err').textContent = 'Each schedule item needs a time.'; $('go').disabled = false; $('go').textContent = 'Create invitation'; return; }
     if (days.some(d => d.end && d.end === d.time)) { $('err').textContent = 'End time must be different from the start time.'; $('go').disabled = false; $('go').textContent = 'Create invitation'; return; }
-    if (days.length) {
-      days.sort((a, b) => (a.date + (a.time || '')).localeCompare(b.date + (b.time || '')));
-      fd.set('days', JSON.stringify(days));
-      if (!fd.get('event_date')) fd.set('event_date', days[0].date + 'T' + (days[0].time || '00:00'));
-    }
+    days.sort((a, b) => a.time.localeCompare(b.time));
+    if (days.length) fd.set('days', JSON.stringify(days));
+    fd.set('event_date', wd + 'T' + (days.length ? days[0].time : '00:00'));
   }
   if (fd.get('type') === 'seminar') {
     const days = readDays();
