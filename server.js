@@ -239,6 +239,11 @@ app.post('/api/gifts/status', async (req, res) => {
       statuses[row.id] = row.status;
       uploadCounts[row.id] = row.upload_count || 0;
     });
+    // A card whose event has been created counts as "viewed" (used). The gift row itself is left untouched.
+    try {
+      const { data: evs } = await supabase.from('events').select('gift_id').in('gift_id', ids);
+      (evs || []).forEach(e => { if (e.gift_id) statuses[e.gift_id] = 'viewed'; });
+    } catch (e) { /* events table not ready: leave statuses as they are */ }
     res.status(200).json({ statuses, uploadCounts });
   } catch (error) {
     console.error('? /api/gifts/status failed:', error.message);
