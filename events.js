@@ -50,8 +50,8 @@ module.exports = function ({ express, multer, supabase, r2, PutObjectCommand, De
     if (!code) return { status: 400, error: 'Enter the code printed on your event card.' };
     const { data: g } = await supabase.from('gifts').select('id,sold_at,product_type').eq('id', code).single();
     if (!g) return { status: 404, error: 'That code was not found. Please check the code on your card.' };
-    if (!g.sold_at) return { status: 403, error: 'This card has not been activated yet. Please contact the shop.' };
-    if (g.product_type !== 'event') return { status: 403, error: 'This card is not an event invitation card.' };
+    // An admin marks a card as an event card (product_type 'event'). No buyer details or sale record needed.
+    if (g.product_type !== 'event') return { status: 403, error: 'This card has not been activated as an event invitation card yet. Please contact the shop.' };
     const { data: used } = await supabase.from('events').select('slug').eq('gift_id', code).maybeSingle();
     if (used) return { status: 409, error: 'This card has already been used for an event.' };
     return { code };
@@ -73,7 +73,7 @@ module.exports = function ({ express, multer, supabase, r2, PutObjectCommand, De
     if (throttled(req, 300, scanHits)) return res.status(429).json({ error: 'Too many requests.' });
     const code = String(req.params.code || '').trim().toUpperCase();
     const { data: g } = await supabase.from('gifts').select('id,sold_at,product_type').eq('id', code).single();
-    if (!g || !g.sold_at || g.product_type !== 'event') return res.json({ state: 'none' });
+    if (!g || g.product_type !== 'event') return res.json({ state: 'none' });
     const { data: ev } = await supabase.from('events').select('slug').eq('gift_id', code).maybeSingle();
     res.json(ev ? { state: 'created', slug: ev.slug } : { state: 'ready' });
   });

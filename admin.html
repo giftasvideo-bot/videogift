@@ -522,6 +522,7 @@
   document.getElementById('api-url-input').value = BACKEND_API_BASE;
 
   let localRegistry = [];
+  let eventSet = new Set(); // ids of cards marked as event cards
   let buyerMap = {}; // { [id]: { buyerName, buyerContact, buyerNote, soldAt } }
 
   // Returns Authorization header using the stored session token
@@ -821,10 +822,11 @@
         <div class="print-status-badge ${printed ? 'print-status-yes' : 'print-status-no'}">${printed ? '✅ Printed' : '🔴 Not Printed'}</div>
         <div class="status-badge status-pending" id="badge-${id}">CHECKING...</div>
         <div id="upload-count-${id}" style="font-size:0.78rem; color:var(--muted); margin-bottom:10px; min-height:18px;"></div>
-        <div class="sold-info ${isSold ? 'has-buyer' : ''}" id="sold-info-${id}">${renderSoldInfoHtml(buyer)}</div>
+        <div class="sold-info ${isSold ? 'has-buyer' : ''}" id="sold-info-${id}">${renderSoldInfoHtml(buyer)}${eventSet.has(id) && !isSold ? ' <span style="opacity:0.8;">&middot; 🎉 Event card</span>' : ''}</div>
         <div class="card-actions" style="flex-wrap:wrap; gap:6px;">
           <button class="btn btn-print-toggle ${printed ? 'is-printed' : ''}" onclick="togglePrinted('${id}')">${printed ? '✅ Printed' : '🖨️ Mark Printed'}</button>
           <button class="btn btn-secondary" onclick="copyWatchLink('${id}')">🔗 Link</button>
+          <button class="btn btn-secondary" onclick="toggleEventCard('${id}')">${eventSet.has(id) ? '🎉 Event ✓ (unmark)' : '🎉 Mark as Event'}</button>
           <button class="btn btn-action-sold ${isSold ? 'is-sold' : ''}" onclick="openBuyerModal('${id}')">${isSold ? '🧾 Edit Sale' : '🧾 Record Sale'}</button>
           <button class="btn btn-action-delete-video" id="delvid-${id}" onclick="deleteVideoOnly('${id}')">🎬 Delete Video</button>
           <button class="btn btn-action-delete" onclick="deleteCardRow('${id}')">🗑️ Card</button>
@@ -874,6 +876,25 @@
     return n % 1 === 0 ? n.toLocaleString() : n.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
   }
 
+  async function toggleEventCard(id) {
+    const enable = !eventSet.has(id);
+    if (!enable && !confirm('Unmark ' + id + ' as an event card?')) return;
+    try {
+      const res = await apiFetch(`${BACKEND_API_BASE}/api/gift/${id}/event-card`, {
+        method: 'PATCH',
+        body: JSON.stringify({ enabled: enable })
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.error || 'Server error');
+      if (enable) eventSet.add(id); else eventSet.delete(id);
+      if (buyerMap[id]) buyerMap[id].productType = enable ? 'event' : 'qr_only';
+      renderDashboardGrid();
+      syncStatusesWithDatabase();
+    } catch (err) {
+      alert('Could not update card: ' + err.message);
+    }
+  }
+
   let buyerModalCardId = null;
 
   function openBuyerModal(id) {
@@ -882,7 +903,7 @@
     document.getElementById('buyer-modal-id').textContent = id;
     document.getElementById('buyer-name-input').value = buyer.buyerName || '';
     document.getElementById('buyer-contact-input').value = buyer.buyerContact || '';
-    document.getElementById('buyer-product-type-input').value = buyer.productType || 'qr_only';
+    document.getElementById('buyer-product-type-input').value = buyer.productType || (eventSet.has(id) ? 'event' : 'qr_only');
     document.getElementById('buyer-price-input').value = (buyer.price !== null && buyer.price !== undefined) ? buyer.price : '';
     document.getElementById('buyer-note-input').value = buyer.buyerNote || '';
 
@@ -945,6 +966,7 @@
         soldAt,
         productType
       };
+      if (productType === 'event') eventSet.add(id); else eventSet.delete(id);
       closeBuyerModal();
       renderDashboardGrid();
       if (productType === 'event' && confirm('Sale saved. Fill in the event details for this card now?\n\nChoose Cancel to let the customer do it later by scanning the card.')) window.open('create-event.html?code=' + encodeURIComponent(id), '_blank');
@@ -965,6 +987,7 @@
         throw new Error(data.error || 'Server error');
       }
       delete buyerMap[id];
+      eventSet.delete(id); // clearing a sale also resets the product type on the server
       closeBuyerModal();
       renderDashboardGrid();
     } catch (err) {
@@ -1337,6 +1360,7 @@
 
     localRegistry = localRegistry.filter(item => item !== id);
     delete buyerMap[id];
+    eventSet.delete(id);
 
     const map = getPrintedMap();
     if (map[id]) { delete map[id]; setPrintedMap(map); }
@@ -1421,10 +1445,12 @@
       const data = await response.json();
       localRegistry = data.ids || [];
       buyerMap = data.buyers || {};
+      eventSet = new Set(data.eventCards || []);
     } catch (err) {
       console.warn('Could not load cards from DB:', err);
       localRegistry = [];
       buyerMap = {};
+      eventSet = new Set();
     }
 
     renderDashboardGrid();

@@ -417,6 +417,38 @@ app.patch('/api/gift/:id/buyer', requireAuth, requireAdmin, async (req, res) => 
   }
 });
 
+// -- MARK / UNMARK A CARD AS AN EVENT CARD (protected, admin only) --
+// No buyer details needed. Sets gifts.product_type = 'event' so the QR already
+// printed on the card can be used by a host to create an invitation.
+// Body: { enabled: true | false }
+app.patch('/api/gift/:id/event-card', requireAuth, requireAdmin, async (req, res) => {
+  const giftId = req.params.id;
+  const enabled = !(req.body && req.body.enabled === false);
+  try {
+    const { data: g, error: lookupErr } = await supabase
+      .from('gifts').select('id, video_url, product_type').eq('id', giftId).single();
+    if (lookupErr || !g) return res.status(404).json({ error: 'Gift not found.' });
+
+    if (enabled) {
+      if (g.video_url) return res.status(409).json({ error: 'This card already has a video gift on it, so it cannot become an event card.' });
+      const { error } = await supabase.from('gifts').update({ product_type: 'event' }).eq('id', giftId);
+      if (error) throw error;
+      return res.json({ success: true, isEvent: true });
+    }
+
+    const { data: ev } = await supabase.from('events').select('slug').eq('gift_id', giftId).maybeSingle();
+    if (ev) return res.status(409).json({ error: 'An event was already created with this card, so it cannot be unmarked.' });
+    if (g.product_type === 'event') {
+      const { error } = await supabase.from('gifts').update({ product_type: null }).eq('id', giftId);
+      if (error) throw error;
+    }
+    res.json({ success: true, isEvent: false });
+  } catch (err) {
+    console.error('Event-card mark error:', err.message);
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // -- RECORD PRINTED DESIGN (protected) --
 // NOTE: requires these columns on the `gifts` table in Supabase (run once):
 //   ALTER TABLE gifts ADD COLUMN design_category text;
@@ -666,6 +698,7 @@ app.get('/api/admin/cards', requireAuth, async (req, res) => {
     const ids = (data || []).map(row => row.id);
     const buyers = {};
     const printStatus = {};
+    const eventCards = (data || []).filter(row => row.product_type === 'event').map(row => row.id);
     (data || []).forEach(row => {
       if (row.buyer_name || row.buyer_contact || row.buyer_note || row.sale_price != null) {
         buyers[row.id] = {
@@ -686,7 +719,7 @@ app.get('/api/admin/cards', requireAuth, async (req, res) => {
         };
       }
     });
-    res.json({ ids, buyers, printStatus, role: req.admin.role });
+    res.json({ ids, buyers, printStatus, eventCards, role: req.admin.role });
   } catch (err) {
     console.error('Failed to fetch card list:', err);
     res.status(500).json({ message: err.message });
