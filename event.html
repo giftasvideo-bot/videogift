@@ -4,10 +4,10 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>You're invited</title>
-<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,700&family=DM+Sans:wght@400;500&family=Noto+Sans+Ethiopic:wght@400;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,700&family=DM+Sans:wght@400;500&family=Noto+Sans+Ethiopic:wght@400;600&family=Pinyon+Script&family=Cormorant+Garamond:wght@500;600&display=swap" rel="stylesheet">
 <style>
   :root { --bg:#eef4f3; --ink:#123c40; --accent:#0f5257; --soft:#d9e8e6; }
-  [data-type=wedding]  { --bg:#f6e9e6; --ink:#3b1f2b; --accent:#b08d57; --soft:#ecd5d0; }
+  [data-type=wedding]  { --bg:#f3ecdc; --ink:#4a3a24; --accent:#7a5c3a; --soft:#e7dcc4; }
   [data-type=birthday] { --bg:#fff3c4; --ink:#16308f; --accent:#1f3fbf; --soft:#ffe58a; }
   [data-type=church]   { --bg:#eceee9; --ink:#1e3a2f; --accent:#2f6b52; --soft:#d8dcd3; }
   [data-type=seminar]  { --bg:#eef1f7; --ink:#1b2a4a; --accent:#2c4a8f; --soft:#d8e0f0; }
@@ -42,6 +42,21 @@
   .choice { display:flex; gap:10px; } .choice .btn { flex:1; }
   .choice .on { background:var(--accent); color:#fff; }
   .note { min-height:1.4em; font-weight:500; }
+
+  .wed main { max-width:720px; }
+  .wed-head { text-align:center; padding:44px 22px 30px; }
+  .wed-of { display:flex; align-items:center; justify-content:center; gap:clamp(10px,3vw,22px); font:500 clamp(.8rem,2.6vw,1rem)/1 'Cormorant Garamond','Noto Sans Ethiopic',serif; letter-spacing:.4em; text-transform:uppercase; }
+  .wed-script { font:400 clamp(3.4rem,17vw,6rem)/1 'Pinyon Script','Noto Sans Ethiopic',cursive; letter-spacing:0; text-transform:none; color:var(--ink); }
+  .wed-names { font:500 clamp(1.5rem,7vw,2.6rem)/1.2 'Cormorant Garamond','Noto Sans Ethiopic',serif; letter-spacing:.18em; text-transform:uppercase; margin:18px 0 0; }
+  .wed-host { font:500 1rem 'Cormorant Garamond','Noto Sans Ethiopic',serif; letter-spacing:.14em; margin:8px 0 0; }
+  .wed-line { font:500 .8rem/1.9 'Cormorant Garamond','Noto Sans Ethiopic',serif; letter-spacing:.22em; text-transform:uppercase; margin:18px 0 0; color:var(--accent); }
+  .wed .photo, .wed .slides { aspect-ratio:3/2; }
+  .wed .agenda li { background:transparent; border-left:0; border-top:1px solid var(--accent); border-radius:0; text-align:center; }
+  .wed .agenda .dt { font-family:'Cormorant Garamond','Noto Sans Ethiopic',serif; }
+  .wed .body { text-align:center; }
+  .wed .row { justify-content:center; }
+  .wed .msg { font-family:'Cormorant Garamond','Noto Sans Ethiopic',serif; font-size:1.3rem; }
+  .wed form { text-align:left; }
   .err { padding:80px 22px; text-align:center; }
   .agenda { list-style:none; margin:0 0 18px; padding:0; display:grid; gap:10px; }
   .agenda li { background:var(--soft); border-left:4px solid var(--accent); border-radius:6px; padding:10px 14px; }
@@ -111,10 +126,25 @@ function render(ev) {
   document.body.dataset.type = ev.type;
   app.textContent = '';
   const photos = (ev.photo_urls && ev.photo_urls.length) ? ev.photo_urls : (ev.photo_url ? [ev.photo_url] : []);
+  const wed = ev.type === 'wedding';
+  document.body.classList.toggle('wed', wed);
+  const days0 = Array.isArray(ev.days) ? ev.days.filter(d => d && d.date) : [];
+  if (wed) {
+    const h = el('header','wed-head'), of = el('div','wed-of');
+    of.append(el('span','','The'), el('span','wed-script','Wedding'), el('span','','of'));
+    h.append(of, el('h1','wed-names',ev.title));
+    if (ev.host_names) h.append(el('p','wed-host', ev.host_names));
+    const first = days0.length ? dayDate(days0[0]) : (ev.event_date ? new Date(ev.event_date) : null);
+    const bits = [first && first.toLocaleDateString([], { dateStyle:'long' }), ev.venue].filter(Boolean);
+    if (bits.length) h.append(el('p','wed-line', bits.join('  •  ')));
+    app.append(h);
+  }
   if (photos.length) app.append(slideshow(photos));
   const b = el('div','body');
-  b.append(el('h1', '', ev.title));
-  if (ev.host_names) b.append(el('p','hosts', ev.host_names));
+  if (!wed) {
+    b.append(el('h1', '', ev.title));
+    if (ev.host_names) b.append(el('p','hosts', ev.host_names));
+  }
   const days = Array.isArray(ev.days) ? ev.days.filter(d => d && d.date) : [];
   if (days.length) {
     const ul = el('ul','agenda');
@@ -125,8 +155,8 @@ function render(ev) {
       ul.append(li);
     });
     b.append(ul);
-  } else if (ev.event_date) b.append(el('p','when', new Date(ev.event_date).toLocaleString([], { dateStyle:'full', timeStyle:'short' })));
-  if (ev.venue) b.append(el('p','where', ev.venue));
+  } else if (ev.event_date && !wed) b.append(el('p','when', new Date(ev.event_date).toLocaleString([], { dateStyle:'full', timeStyle:'short' })));
+  if (ev.venue && !wed) b.append(el('p','where', ev.venue));
   const row = el('div','row');
   if (ev.event_date || days.length) { const c = el('button','btn','Add to calendar'); c.onclick = () => ics(ev); row.append(c); }
   if (ev.map_url) { const m = el('a','btn','Open map'); m.href = ev.map_url; m.target = '_blank'; m.rel = 'noopener'; row.append(m); }
