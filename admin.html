@@ -523,6 +523,7 @@
 
   let localRegistry = [];
   let eventSet = new Set(); // ids of cards marked as event cards
+  let eventCreatedMap = {}; // cardId -> event slug, for cards that already have an event
   let buyerMap = {}; // { [id]: { buyerName, buyerContact, buyerNote, soldAt } }
 
   // Returns Authorization header using the stored session token
@@ -822,11 +823,13 @@
         <div class="print-status-badge ${printed ? 'print-status-yes' : 'print-status-no'}">${printed ? '✅ Printed' : '🔴 Not Printed'}</div>
         <div class="status-badge status-pending" id="badge-${id}">CHECKING...</div>
         <div id="upload-count-${id}" style="font-size:0.78rem; color:var(--muted); margin-bottom:10px; min-height:18px;"></div>
-        <div class="sold-info ${isSold ? 'has-buyer' : ''}" id="sold-info-${id}">${renderSoldInfoHtml(buyer)}${eventSet.has(id) && !isSold ? ' <span style="opacity:0.8;">&middot; 🎉 Event card</span>' : ''}</div>
+        <div class="sold-info ${isSold ? 'has-buyer' : ''}" id="sold-info-${id}">${renderSoldInfoHtml(buyer)}${eventCreatedMap[id] ? ' <span style="color:#2f6b52;font-weight:600;">&middot; ✅ Event created</span>' : (eventSet.has(id) && !isSold ? ' <span style="opacity:0.8;">&middot; 🎉 Event card</span>' : '')}</div>
         <div class="card-actions" style="flex-wrap:wrap; gap:6px;">
           <button class="btn btn-print-toggle ${printed ? 'is-printed' : ''}" onclick="togglePrinted('${id}')">${printed ? '✅ Printed' : '🖨️ Mark Printed'}</button>
           <button class="btn btn-secondary" onclick="copyWatchLink('${id}')">🔗 Link</button>
-          ${eventSet.has(id)
+          ${eventCreatedMap[id]
+            ? `<button class="btn btn-secondary" onclick="viewEvent('${id}')">✅ Event created · View</button>`
+            : eventSet.has(id)
             ? `<button class="btn btn-secondary" onclick="openCreateEvent('${id}')">🎉 Create Event</button><button class="btn btn-secondary" onclick="toggleEventCard('${id}')">✕ Unmark</button>`
             : `<button class="btn btn-secondary" onclick="useForEvent('${id}')">🎉 Use for Event</button>`}
           <button class="btn btn-action-sold ${isSold ? 'is-sold' : ''}" onclick="openBuyerModal('${id}')">${isSold ? '🧾 Edit Sale' : '🧾 Record Sale'}</button>
@@ -876,6 +879,12 @@
     if (isNaN(n)) return '';
     // No fixed currency symbol assumed — just format the number cleanly.
     return n % 1 === 0 ? n.toLocaleString() : n.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  }
+
+  function viewEvent(id) {
+    const slug = eventCreatedMap[id];
+    if (!slug) return;
+    window.open(new URL('event.html', location.href).href + '?e=' + encodeURIComponent(slug), '_blank');
   }
 
   function openCreateEvent(id) {
@@ -1478,6 +1487,7 @@
       localRegistry = data.ids || [];
       buyerMap = data.buyers || {};
       eventSet = new Set(data.eventCards || []);
+      eventCreatedMap = data.eventsByCard || {};
     } catch (err) {
       console.warn('Could not load cards from DB:', err);
       localRegistry = [];
@@ -1490,6 +1500,31 @@
   }
 
   loadCardsFromDatabase();
+
+  // When you come back from the create-event tab, pick up newly created events
+  // so the card flips from "Create Event" to "Event created" without a manual reload.
+  let lastEventRefresh = 0;
+  async function refreshEventState() {
+    if (Date.now() - lastEventRefresh < 5000) return;
+    lastEventRefresh = Date.now();
+    try {
+      const res = await apiFetch(`${BACKEND_API_BASE}/api/admin/cards`);
+      if (!res.ok) return;
+      const data = await res.json();
+      const nextCreated = data.eventsByCard || {};
+      const nextSet = new Set(data.eventCards || []);
+      const changed = JSON.stringify(nextCreated) !== JSON.stringify(eventCreatedMap) ||
+        [...nextSet].sort().join() !== [...eventSet].sort().join();
+      if (changed) {
+        eventCreatedMap = nextCreated;
+        eventSet = nextSet;
+        renderDashboardGrid();
+        syncStatusesWithDatabase();
+      }
+    } catch (e) { /* ignore, next focus will retry */ }
+  }
+  window.addEventListener('focus', refreshEventState);
+  document.addEventListener('visibilitychange', () => { if (!document.hidden) refreshEventState(); });
   setInterval(syncStatusesWithDatabase, 4000);
 </script>
 <script>

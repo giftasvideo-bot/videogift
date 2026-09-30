@@ -718,6 +718,12 @@ app.get('/api/admin/cards', requireAuth, async (req, res) => {
     const buyers = {};
     const printStatus = {};
     const eventCards = (data || []).filter(row => row.product_type === 'event').map(row => row.id);
+    // Cards that already have an event created: { cardId: eventSlug }
+    const eventsByCard = {};
+    try {
+      const { data: evs } = await supabase.from('events').select('gift_id, slug').not('gift_id', 'is', null);
+      (evs || []).forEach(e => { eventsByCard[e.gift_id] = e.slug; });
+    } catch (e) { /* events table not ready yet: just show no created events */ }
     (data || []).forEach(row => {
       if (row.buyer_name || row.buyer_contact || row.buyer_note || row.sale_price != null) {
         buyers[row.id] = {
@@ -738,7 +744,7 @@ app.get('/api/admin/cards', requireAuth, async (req, res) => {
         };
       }
     });
-    res.json({ ids, buyers, printStatus, eventCards, role: req.admin.role });
+    res.json({ ids, buyers, printStatus, eventCards, eventsByCard, role: req.admin.role });
   } catch (err) {
     console.error('Failed to fetch card list:', err);
     res.status(500).json({ message: err.message });
