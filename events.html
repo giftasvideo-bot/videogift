@@ -89,6 +89,15 @@
     .modal-actions { display: flex; gap: 8px; margin-top: 18px; }
     .modal-actions .btn { flex: 1; padding: 10px; font-size: 0.88rem; }
     .modal-close { position: absolute; top: 16px; right: 16px; background: var(--cream); border: none; width: 30px; height: 30px; border-radius: 50%; cursor: pointer; color: var(--muted); font-size: 1rem; }
+    .qr-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 24px; margin-top: 20px; }
+    .qr-card { background: #fff; border: 1px solid var(--cream); border-radius: 12px; padding: 24px; text-align: center; display: flex; flex-direction: column; align-items: center; box-shadow: 0 2px 12px rgba(0,0,0,0.01); }
+    .qr-container { width: 160px; height: 160px; background: var(--paper); display: flex; align-items: center; justify-content: center; margin-bottom: 16px; border-radius: 8px; padding: 10px; }
+    .qr-title { font-weight: 700; font-size: 1rem; margin-bottom: 4px; word-break: break-word; }
+    .qr-card .ev-meta { margin-bottom: 10px; }
+    .qr-card .ev-acts { justify-content: center; margin-top: auto; }
+    .view-toggle { display: flex; gap: 8px; margin-bottom: 12px; }
+    .filter-btn { padding: 6px 14px; border: 1px solid var(--cream); border-radius: 20px; background: #fff; color: var(--muted); font-size: 0.8rem; cursor: pointer; font-family: 'DM Sans', sans-serif; font-weight: 500; }
+    .filter-btn.active { background: var(--gold); color: #fff; border-color: var(--gold); }
     .ev-row { display:flex; justify-content:space-between; align-items:center; gap:12px; flex-wrap:wrap; padding:14px 0; border-bottom:1px solid var(--cream); }
     .ev-row:last-child { border-bottom:none; }
     .ev-title { font-weight:500; }
@@ -163,6 +172,7 @@
       </div>
     </div>
     <div class="form-group"><input type="text" id="ev-search" placeholder="Search title, host or venue" oninput="renderEvents()"><select id="ev-type" onchange="renderEvents()" aria-label="Filter by type" style="padding:12px 16px;border:1px solid var(--cream);border-radius:6px;background:var(--paper);"><option value="">All types</option><option value="seminar">Seminar</option><option value="wedding">Wedding</option><option value="birthday">Birthday</option><option value="church">Church / religious</option><option value="memorial">Memorial</option><option value="general">Other</option></select></div>
+    <div class="view-toggle"><button class="filter-btn active" id="vw-grid" onclick="setEvView('grid')">🔳 QR codes</button><button class="filter-btn" id="vw-list" onclick="setEvView('list')">☰ List</button></div>
     <div class="ev-meta" id="ev-msg" role="status">Loading…</div>
     <div id="ev-list"></div>
 </div>
@@ -208,10 +218,32 @@
     }
     return esc(t) + (e.host_names ? ' · ' + esc(e.host_names) : '') + (when ? ' · ' + esc(when) : '');
   }
+  let evView = 'grid';
+  window.setEvView = v => { evView = v; $('vw-grid').classList.toggle('active', v === 'grid'); $('vw-list').classList.toggle('active', v === 'list'); renderEvents(); };
+  const evButtons = e => `
+          <button class="btn btn-secondary" data-act="edit">✏️ Edit</button>
+          <button class="btn btn-secondary" data-act="qr">QR</button>
+          <button class="btn btn-secondary" data-act="copy">Copy link</button>
+          <button class="btn btn-secondary" data-act="hostlink">🔑 Host edit link</button>
+          <button class="btn btn-secondary" data-act="print">🖨️ Print cards</button>
+          <button class="btn btn-secondary" data-act="replies">Replies</button>
+          <button class="btn btn-secondary" data-act="toggle">${e.status === 'live' ? 'Disable' : 'Enable'}</button>
+          <button class="btn btn-secondary" data-act="delete" style="color:#a12a2a;">Delete</button>`;
+  function renderQrGrid(list, box) {
+    box.innerHTML = '<div class="qr-grid">' + list.map((e, i) => `
+      <div class="qr-card">
+        <div class="qr-container" id="ev-qr-${i}"></div>
+        <div class="qr-title">${esc(e.title)}<span class="ev-badge ${esc(e.status)}">${esc(e.status)}</span></div>
+        <div class="ev-meta">${evMeta(e)} · ${e.replies} replies, ${e.coming} coming${e.gift_id ? ' · code ' + esc(e.gift_id) : ''}</div>
+        <div class="ev-acts" data-slug="${esc(e.slug)}">${evButtons(e)}</div>
+      </div>`).join('') + '</div>';
+    list.forEach((e, i) => new QRCode($('ev-qr-' + i), { text: evLink(e.slug), width: 140, height: 140, correctLevel: QRCode.CorrectLevel.H }));
+  }
   window.renderEvents = function () {
     const q = $('ev-search').value.toLowerCase(), box = $('ev-list');
     const tf = $('ev-type').value;
     const list = events.filter(e => (!tf || e.type === tf) && [e.title, e.host_names, e.venue].join(' ').toLowerCase().includes(q));
+    if (evView === 'grid') { if (list.length) renderQrGrid(list, box); else box.innerHTML = ''; return; }
     box.innerHTML = list.map(e => `
       <div class="ev-row">
         <div>
