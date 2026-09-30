@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>You're invited</title>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,700&family=DM+Sans:wght@400;500&family=Noto+Sans+Ethiopic:wght@400;600&display=swap" rel="stylesheet">
+<style>
+  :root { --bg:#eef4f3; --ink:#123c40; --accent:#0f5257; --soft:#d9e8e6; }
+  [data-type=wedding]  { --bg:#f6e9e6; --ink:#3b1f2b; --accent:#b08d57; --soft:#ecd5d0; }
+  [data-type=birthday] { --bg:#fff3c4; --ink:#16308f; --accent:#1f3fbf; --soft:#ffe58a; }
+  [data-type=church]   { --bg:#eceee9; --ink:#1e3a2f; --accent:#2f6b52; --soft:#d8dcd3; }
+  [data-type=memorial] { --bg:#efefef; --ink:#2a2a2a; --accent:#555;    --soft:#dcdcdc; }
+  * { box-sizing:border-box; }
+  body { margin:0; background:var(--bg); color:var(--ink); font:400 1rem/1.6 'DM Sans','Noto Sans Ethiopic',sans-serif; }
+  main { max-width:560px; margin:0 auto; padding:0 0 48px; }
+  .photo { width:100%; aspect-ratio:4/5; object-fit:cover; display:block; background:var(--soft); }
+  .body { padding:28px 22px 0; }
+  h1 { font:700 clamp(2rem,9vw,2.9rem)/1.1 'Fraunces','Noto Sans Ethiopic',serif; margin:0 0 6px; }
+  .hosts { font-size:1.1rem; margin:0 0 20px; }
+  .when { font-weight:500; margin:0; }
+  .where { margin:0 0 18px; }
+  .msg { font:500 1.15rem/1.6 'Fraunces','Noto Sans Ethiopic',serif; white-space:pre-wrap; margin:22px 0; }
+  video { width:100%; border-radius:6px; background:#000; margin:6px 0 18px; }
+  .row { display:flex; gap:10px; flex-wrap:wrap; margin-bottom:26px; }
+  .btn { border:2px solid var(--accent); background:transparent; color:var(--accent); padding:11px 18px; border-radius:6px; font:500 .95rem 'DM Sans',sans-serif; cursor:pointer; text-decoration:none; }
+  .btn.fill { background:var(--accent); color:#fff; }
+  .btn:focus-visible, input:focus-visible { outline:3px solid var(--ink); outline-offset:2px; }
+  form { background:var(--soft); padding:20px; border-radius:8px; display:grid; gap:12px; }
+  form h2 { font:700 1.3rem 'Fraunces',serif; margin:0; }
+  input { padding:11px; border:1px solid var(--accent); border-radius:6px; font:inherit; background:#fff; width:100%; }
+  .choice { display:flex; gap:10px; } .choice .btn { flex:1; }
+  .choice .on { background:var(--accent); color:#fff; }
+  .note { min-height:1.4em; font-weight:500; }
+  .err { padding:80px 22px; text-align:center; }
+</style>
+</head>
+<body>
+<main id="app"><p class="err">Loading invitation…</p></main>
+<script>
+const API = 'https://videogift-backend-3.onrender.com';
+const slug = new URLSearchParams(location.search).get('e');
+const app = document.getElementById('app');
+const el = (t, cls, txt) => { const n = document.createElement(t); if (cls) n.className = cls; if (txt) n.textContent = txt; return n; };
+
+function ics(ev) {
+  const d = new Date(ev.event_date), f = x => x.toISOString().replace(/[-:]|\.\d{3}/g, '');
+  const end = new Date(d.getTime() + 3 * 3600e3);
+  const clean = s => (s || '').replace(/[\r\n,;]/g, ' ');
+  const text = ['BEGIN:VCALENDAR','VERSION:2.0','BEGIN:VEVENT','DTSTART:'+f(d),'DTEND:'+f(end),
+    'SUMMARY:'+clean(ev.title),'LOCATION:'+clean(ev.venue),'END:VEVENT','END:VCALENDAR'].join('\r\n');
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([text], { type:'text/calendar' }));
+  a.download = 'invitation.ics'; a.click();
+}
+
+function render(ev) {
+  document.title = ev.title;
+  document.body.dataset.type = ev.type;
+  app.textContent = '';
+  if (ev.photo_url) { const i = el('img','photo'); i.src = ev.photo_url; i.alt = ''; app.append(i); }
+  const b = el('div','body');
+  b.append(el('h1', '', ev.title));
+  if (ev.host_names) b.append(el('p','hosts', ev.host_names));
+  if (ev.event_date) b.append(el('p','when', new Date(ev.event_date).toLocaleString([], { dateStyle:'full', timeStyle:'short' })));
+  if (ev.venue) b.append(el('p','where', ev.venue));
+  const row = el('div','row');
+  if (ev.event_date) { const c = el('button','btn','Add to calendar'); c.onclick = () => ics(ev); row.append(c); }
+  if (ev.map_url) { const m = el('a','btn','Open map'); m.href = ev.map_url; m.target = '_blank'; m.rel = 'noopener'; row.append(m); }
+  if (row.children.length) b.append(row);
+  if (ev.message) b.append(el('p','msg', ev.message));
+  if (ev.video_url) { const v = el('video'); v.src = ev.video_url; v.controls = true; v.preload = 'metadata'; v.playsInline = true; b.append(v); }
+  if (ev.rsvp_enabled) b.append(rsvpForm());
+  app.append(b);
+}
+
+function rsvpForm() {
+  let attending = true;
+  const f = el('form'); f.append(el('h2','','Will you come?'));
+  const name = el('input'); name.placeholder = 'Your name'; name.required = true; name.maxLength = 100;
+  const n = el('input'); n.type = 'number'; n.min = 1; n.max = 20; n.value = 1; n.setAttribute('aria-label','Number of guests');
+  const ch = el('div','choice'), yes = el('button','btn on','Yes, I\'ll be there'), no = el('button','btn','Can\'t make it');
+  yes.type = no.type = 'button';
+  yes.onclick = () => { attending = true; yes.classList.add('on'); no.classList.remove('on'); };
+  no.onclick = () => { attending = false; no.classList.add('on'); yes.classList.remove('on'); };
+  ch.append(yes, no);
+  const send = el('button','btn fill','Send reply'), note = el('p','note');
+  f.append(name, ch, n, send, note);
+  f.onsubmit = async e => {
+    e.preventDefault(); send.disabled = true;
+    try {
+      const r = await fetch(`${API}/api/e/${encodeURIComponent(slug)}/rsvp`, { method:'POST', headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({ name:name.value, attending, guests:n.value }) });
+      if (!r.ok) throw new Error((await r.json()).error);
+      note.textContent = 'Reply sent. Thank you!'; f.querySelectorAll('input,button').forEach(x => x.disabled = true);
+    } catch (x) { note.textContent = 'Could not send: ' + x.message; send.disabled = false; }
+  };
+  return f;
+}
+
+(async () => {
+  if (!slug) return app.replaceChildren(el('p','err','This link is missing its invitation code.'));
+  try {
+    const r = await fetch(`${API}/api/e/${encodeURIComponent(slug)}`);
+    if (!r.ok) throw 0;
+    render(await r.json());
+  } catch { app.replaceChildren(el('p','err','This invitation could not be found. Check the link and try again.')); }
+})();
+</script>
+</body>
+</html>

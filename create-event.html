@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Create your invitation</title>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,700&family=DM+Sans:wght@400;500&family=Noto+Sans+Ethiopic:wght@400;600&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcode-generator/1.4.4/qrcode.min.js"></script>
+<style>
+  :root { --bg:#f2f5f4; --ink:#123c40; --accent:#0f5257; --line:#b9cfcc; }
+  * { box-sizing:border-box; }
+  body { margin:0; background:var(--bg); color:var(--ink); font:400 1rem/1.5 'DM Sans','Noto Sans Ethiopic',sans-serif; }
+  main { max-width:560px; margin:0 auto; padding:32px 20px 60px; }
+  h1 { font:700 2.2rem/1.1 'Fraunces',serif; margin:0 0 6px; }
+  p.lead { margin:0 0 24px; }
+  form { display:grid; gap:14px; }
+  label { display:grid; gap:5px; font-weight:500; }
+  input, select, textarea { padding:11px; border:1px solid var(--line); border-radius:6px; font:inherit; background:#fff; width:100%; }
+  textarea { min-height:90px; resize:vertical; }
+  small { font-weight:400; opacity:.75; }
+  .two { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+  .btn { border:0; background:var(--accent); color:#fff; padding:13px 20px; border-radius:6px; font:500 1rem 'DM Sans',sans-serif; cursor:pointer; text-decoration:none; display:inline-block; }
+  .btn.alt { background:transparent; color:var(--accent); border:2px solid var(--accent); }
+  .btn:disabled { opacity:.5; }
+  input:focus-visible, select:focus-visible, textarea:focus-visible, .btn:focus-visible { outline:3px solid var(--ink); outline-offset:2px; }
+  #result { display:none; background:#fff; border:1px solid var(--line); border-radius:8px; padding:22px; }
+  #qr svg { width:220px; height:220px; display:block; margin:12px 0; }
+  code { word-break:break-all; display:block; background:var(--bg); padding:8px; border-radius:4px; margin:8px 0; }
+  .row { display:flex; gap:10px; flex-wrap:wrap; margin-top:12px; }
+  #err { color:#a12a2a; min-height:1.4em; font-weight:500; }
+  #rsvps li { margin:4px 0; }
+</style>
+</head>
+<body>
+<main>
+  <h1>Create your invitation</h1>
+  <p class="lead">Add your photo, video, and details. You'll get a QR code to print on your cards.</p>
+
+  <form id="f">
+    <label>Event type
+      <select name="type">
+        <option value="wedding">Wedding</option><option value="birthday">Birthday</option>
+        <option value="church">Church / religious</option><option value="memorial">Memorial</option>
+        <option value="general">Other</option>
+      </select></label>
+    <label>Title <input name="title" required maxlength="120" placeholder="Selam & Dawit's Wedding"></label>
+    <label>Hosts <small>(optional)</small><input name="host_names" maxlength="120" placeholder="Together with their families"></label>
+    <div class="two">
+      <label>Date and time <input type="datetime-local" name="event_date"></label>
+      <label>Venue <input name="venue" maxlength="200"></label>
+    </div>
+    <label>Map link <small>(Google Maps share link)</small><input type="url" name="map_url" placeholder="https://maps.app.goo.gl/…"></label>
+    <label>Message <small>(optional)</small><textarea name="message" maxlength="1000"></textarea></label>
+    <label>Photo <small>(JPG, PNG or WebP, up to 50 MB)</small><input type="file" name="photo" accept="image/jpeg,image/png,image/webp"></label>
+    <label>Video <small>(MP4, MOV or WebM, up to 50 MB. Shorter videos load faster for guests.)</small><input type="file" name="video" accept="video/mp4,video/quicktime,video/webm"></label>
+    <p id="err" role="alert"></p>
+    <button class="btn" id="go">Create invitation</button>
+  </form>
+
+  <section id="result" aria-live="polite">
+    <h2>Your invitation is ready</h2>
+    <div id="qr"></div>
+    <p>Guests will open:</p><code id="link"></code>
+    <div class="row">
+      <a class="btn" id="dl" download="invitation-qr.svg">Download QR (SVG)</a>
+      <a class="btn alt" id="view" target="_blank" rel="noopener">Preview page</a>
+      <button class="btn alt" id="rs" type="button">View replies</button>
+    </div>
+    <p><small>Save this private edit key. It's the only way to see replies: <b id="key"></b></small></p>
+    <ul id="rsvps"></ul>
+  </section>
+</main>
+<script>
+const API = 'https://videogift-backend-3.onrender.com';
+const $ = id => document.getElementById(id);
+let cur = {};
+
+$('f').onsubmit = async e => {
+  e.preventDefault(); $('err').textContent = ''; $('go').disabled = true; $('go').textContent = 'Uploading…';
+  const fd = new FormData(e.target);
+  for (const k of ['photo', 'video']) { const f = fd.get(k); if (f && !f.size) fd.delete(k); }
+  if (fd.get('event_date')) fd.set('event_date', new Date(fd.get('event_date')).toISOString());
+  try {
+    const r = await fetch(`${API}/api/events`, { method:'POST', body:fd });
+    const d = await r.json();
+    if (!r.ok) throw new Error(d.error || 'Upload failed.');
+    cur = d;
+    const url = new URL('event.html', location.href); url.search = '?e=' + d.slug;
+    const qr = qrcode(0, 'H'); qr.addData(url.href); qr.make();
+    const svg = qr.createSvgTag({ cellSize:8, margin:4, scalable:true });
+    $('qr').innerHTML = svg;
+    $('dl').href = URL.createObjectURL(new Blob([svg], { type:'image/svg+xml' }));
+    $('link').textContent = url.href; $('view').href = url.href; $('key').textContent = d.edit_token;
+    $('f').style.display = 'none'; $('result').style.display = 'block';
+  } catch (x) { $('err').textContent = x.message; }
+  $('go').disabled = false; $('go').textContent = 'Create invitation';
+};
+
+$('rs').onclick = async () => {
+  const r = await fetch(`${API}/api/events/${cur.slug}/rsvps`, { headers:{ 'x-edit-token':cur.edit_token } });
+  const list = $('rsvps'); list.textContent = '';
+  if (!r.ok) return list.append(Object.assign(document.createElement('li'), { textContent:'Could not load replies.' }));
+  const rows = await r.json();
+  if (!rows.length) return list.append(Object.assign(document.createElement('li'), { textContent:'No replies yet.' }));
+  rows.forEach(x => list.append(Object.assign(document.createElement('li'),
+    { textContent:`${x.guest_name}: ${x.attending ? 'coming (' + x.guests + ')' : 'not coming'}` })));
+};
+</script>
+</body>
+</html>
