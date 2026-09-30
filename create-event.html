@@ -51,7 +51,7 @@
     </div>
     <label>Map link <small>(Google Maps share link)</small><input type="url" name="map_url" placeholder="https://maps.app.goo.gl/…"></label>
     <label>Message <small>(optional)</small><textarea name="message" maxlength="1000"></textarea></label>
-    <label>Photo <small>(JPG, PNG or WebP, up to 50 MB)</small><input type="file" name="photo" accept="image/jpeg,image/png,image/webp"></label>
+    <label>Photos <small>(up to 3, shown as a slideshow. JPG, PNG or WebP, up to 50 MB each)</small><input type="file" name="photo" multiple accept="image/jpeg,image/png,image/webp"></label>
     <label>Video <small>(MP4, MOV or WebM, up to 50 MB. Shorter videos load faster for guests.)</small><input type="file" name="video" accept="video/mp4,video/quicktime,video/webm"></label>
     <p id="err" role="alert"></p>
     <button class="btn" id="go">Create invitation</button>
@@ -78,6 +78,7 @@ let cur = {};
 $('f').onsubmit = async e => {
   e.preventDefault(); $('err').textContent = ''; $('go').disabled = true; $('go').textContent = 'Uploading…';
   const fd = new FormData(e.target);
+  if (fd.getAll('photo').filter(f => f.size).length > 3) { $('err').textContent = 'Please choose up to 3 photos.'; $('go').disabled = false; $('go').textContent = 'Create invitation'; return; }
   for (const k of ['photo', 'video']) { const f = fd.get(k); if (f && !f.size) fd.delete(k); }
   if (fd.get('event_date')) fd.set('event_date', new Date(fd.get('event_date')).toISOString());
   try {

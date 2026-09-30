@@ -13,11 +13,11 @@ module.exports = function ({ express, multer, supabase, r2, PutObjectCommand, De
                  (f.fieldname === 'video' && /^video\/(mp4|quicktime|webm)$/.test(f.mimetype));
       cb(ok ? null : new Error('INVALID_FILE_TYPE'), ok);
     }
-  }).fields([{ name: 'photo', maxCount: 1 }, { name: 'video', maxCount: 1 }]);
+  }).fields([{ name: 'photo', maxCount: 3 }, { name: 'video', maxCount: 1 }]);
 
   async function putFile(f, slug) {
     const ext = (f.originalname.split('.').pop() || 'bin').toLowerCase().replace(/[^a-z0-9]/g, '');
-    const key = `events/${slug}-${f.fieldname}-${Date.now()}.${ext}`;
+    const key = `events/${slug}-${f.fieldname}-${Date.now()}-${crypto.randomBytes(3).toString('hex')}.${ext}`;
     await r2.send(new PutObjectCommand({ Bucket: R2_BUCKET_NAME, Key: key, Body: f.buffer, ContentType: f.mimetype }));
     return `${R2_PUBLIC_URL_BASE}/${key}`;
   }
@@ -41,10 +41,15 @@ module.exports = function ({ express, multer, supabase, r2, PutObjectCommand, De
           venue: (b.venue || '').slice(0, 200),
           map_url: /^https?:\/\//.test(b.map_url || '') ? b.map_url : null,
           message: (b.message || '').slice(0, 1000),
-          photo_url: files.photo ? await putFile(files.photo[0], slug) : null,
+          photo_urls: [],
+          photo_url: null,
           video_url: files.video ? await putFile(files.video[0], slug) : null,
           rsvp_enabled: type !== 'memorial' && b.rsvp_enabled !== 'false'
         };
+        if (files.photo) {
+          for (const f of files.photo.slice(0, 3)) row.photo_urls.push(await putFile(f, slug));
+          row.photo_url = row.photo_urls[0] || null;
+        }
         const { error } = await supabase.from('events').insert(row);
         if (error) throw error;
         res.json({ slug, edit_token });
@@ -55,7 +60,7 @@ module.exports = function ({ express, multer, supabase, r2, PutObjectCommand, De
   // Public event data (no edit_token, no id)
   router.get('/e/:slug', async (req, res) => {
     const { data, error } = await supabase.from('events')
-      .select('slug,type,title,host_names,event_date,venue,map_url,message,photo_url,video_url,rsvp_enabled,status')
+      .select('slug,type,title,host_names,event_date,venue,map_url,message,photo_url,photo_urls,video_url,rsvp_enabled,status')
       .eq('slug', req.params.slug).single();
     if (error || !data || data.status !== 'live') return res.status(404).json({ error: 'Event not found.' });
     res.json(data);
@@ -89,7 +94,7 @@ module.exports = function ({ express, multer, supabase, r2, PutObjectCommand, De
   // List all events with reply counts (admin + postcard staff can read)
   router.get('/admin/events', requireAuth, async (req, res) => {
     const { data, error } = await supabase.from('events')
-      .select('id,slug,type,title,host_names,event_date,venue,map_url,message,rsvp_enabled,status,photo_url,video_url,created_at')
+      .select('id,slug,type,title,host_names,event_date,venue,map_url,message,rsvp_enabled,status,photo_url,photo_urls,video_url,created_at')
       .order('created_at', { ascending: false });
     if (error) return res.status(500).json({ error: error.message });
     const { data: rs } = await supabase.from('event_rsvps').select('event_id,attending,guests');
@@ -118,9 +123,10 @@ module.exports = function ({ express, multer, supabase, r2, PutObjectCommand, De
 
   // Delete event + its files - admin only
   router.delete('/admin/events/:slug', requireAuth, requireAdmin, async (req, res) => {
-    const { data: ev } = await supabase.from('events').select('photo_url,video_url').eq('slug', req.params.slug).single();
+    const { data: ev } = await supabase.from('events').select('photo_url,photo_urls,video_url').eq('slug', req.params.slug).single();
     if (!ev) return res.status(404).json({ error: 'Event not found.' });
-    for (const u of [ev.photo_url, ev.video_url]) {
+    const allPhotos = (ev.photo_urls && ev.photo_urls.length) ? ev.photo_urls : (ev.photo_url ? [ev.photo_url] : []);
+    for (const u of [...allPhotos, ev.video_url]) {
       if (!u || !u.startsWith(R2_PUBLIC_URL_BASE + '/')) continue;
       try { await r2.send(new DeleteObjectCommand({ Bucket: R2_BUCKET_NAME, Key: decodeURIComponent(u.slice(R2_PUBLIC_URL_BASE.length + 1)) })); }
       catch (e) { console.error('R2 delete failed:', e.message); }
@@ -151,8 +157,21 @@ module.exports = function ({ express, multer, supabase, r2, PutObjectCommand, De
         if (b.map_url !== undefined) upd.map_url = /^https?:\/\//.test(b.map_url) ? b.map_url : null;
         if (b.event_date !== undefined) upd.event_date = b.event_date ? new Date(b.event_date).toISOString() : null;
         if (b.rsvp_enabled !== undefined || upd.type) upd.rsvp_enabled = (upd.type || ev.type) !== 'memorial' && (b.rsvp_enabled === undefined ? ev.rsvp_enabled : b.rsvp_enabled === 'true');
-        if (files.photo) { upd.photo_url = await putFile(files.photo[0], ev.slug); await dropFile(ev.photo_url); }
-        else if (b.remove_photo === '1') { upd.photo_url = null; await dropFile(ev.photo_url); }
+        if (files.photo || b.keep_photos !== undefined) {
+          const existing = (ev.photo_urls && ev.photo_urls.length) ? ev.photo_urls : (ev.photo_url ? [ev.photo_url] : []);
+          let keep = existing;
+          if (b.keep_photos !== undefined) {
+            try { const k = JSON.parse(b.keep_photos); keep = existing.filter(u => k.includes(u)); }
+            catch { return res.status(400).json({ error: 'Invalid photo list.' }); }
+          }
+          const added = files.photo || [];
+          if (keep.length + added.length > 3) return res.status(400).json({ error: 'Maximum 3 photos per event.' });
+          const fresh = [];
+          for (const f of added) fresh.push(await putFile(f, ev.slug));
+          for (const u of existing) if (!keep.includes(u)) await dropFile(u);
+          const all = keep.concat(fresh);
+          upd.photo_urls = all; upd.photo_url = all[0] || null;
+        }
         if (files.video) { upd.video_url = await putFile(files.video[0], ev.slug); await dropFile(ev.video_url); }
         else if (b.remove_video === '1') { upd.video_url = null; await dropFile(ev.video_url); }
         const { error } = await supabase.from('events').update(upd).eq('slug', ev.slug);

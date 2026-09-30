@@ -1533,6 +1533,7 @@ small{font-size:7.5pt;word-break:break-all;opacity:.8} .scan{font-size:9pt;font-
   function showEdit(e) {
     const loc = d => { if (!d) return ''; const t = new Date(d); t.setMinutes(t.getMinutes() - t.getTimezoneOffset()); return t.toISOString().slice(0, 16); };
     const types = ['wedding', 'birthday', 'church', 'memorial', 'general'];
+    const photos = (e.photo_urls && e.photo_urls.length) ? e.photo_urls : (e.photo_url ? [e.photo_url] : []);
     openModal(`<h3>Edit event</h3><div class="modal-subtitle">The QR code and link stay the same.</div>
       <form id="ev-edit-form">
         <div class="ev-f"><label>Type</label><select name="type">${types.map(t => `<option value="${t}"${t === e.type ? ' selected' : ''}>${t}</option>`).join('')}</select></div>
@@ -1543,7 +1544,7 @@ small{font-size:7.5pt;word-break:break-all;opacity:.8} .scan{font-size:9pt;font-
         <div class="ev-f"><label>Map link</label><input type="url" name="map_url" value="${esc(e.map_url)}"></div>
         <div class="ev-f"><label>Message</label><textarea name="message" maxlength="1000">${esc(e.message)}</textarea></div>
         <div class="ev-f"><label><input type="checkbox" name="rsvp_enabled" ${e.rsvp_enabled ? 'checked' : ''}> Allow guest replies (RSVP)</label></div>
-        <div class="ev-f"><label>Photo</label>${e.photo_url ? `<img class="ev-thumb" src="${esc(e.photo_url)}" alt=""><label><input type="checkbox" name="remove_photo"> Remove current photo</label>` : '<small>No photo yet.</small>'}<input type="file" name="photo" accept="image/jpeg,image/png,image/webp"></div>
+        <div class="ev-f"><label>Photos (up to 3, shown as a slideshow)</label>${photos.map(u => `<div><img class="ev-thumb" src="${esc(u)}" alt=""><label><input type="checkbox" class="ev-rm-photo" value="${esc(u)}"> Remove this photo</label></div>`).join('') || '<small>No photos yet.</small>'}<input type="file" name="photo" multiple accept="image/jpeg,image/png,image/webp"></div>
         <div class="ev-f"><label>Video</label>${e.video_url ? `<video class="ev-thumb" src="${esc(e.video_url)}" controls preload="metadata"></video><label><input type="checkbox" name="remove_video"> Remove current video</label>` : '<small>No video yet.</small>'}<input type="file" name="video" accept="video/mp4,video/quicktime,video/webm"></div>
         <div class="modal-actions"><button class="btn" type="submit" id="ev-save">Save changes</button></div>
         <div class="ev-meta" id="ev-save-msg" role="status"></div>
@@ -1554,9 +1555,11 @@ small{font-size:7.5pt;word-break:break-all;opacity:.8} .scan{font-size:9pt;font-
       ['type', 'title', 'host_names', 'venue', 'map_url', 'message'].forEach(k => fd.set(k, f[k].value));
       fd.set('event_date', f.event_date.value ? new Date(f.event_date.value).toISOString() : '');
       fd.set('rsvp_enabled', f.rsvp_enabled.checked ? 'true' : 'false');
-      if (f.remove_photo && f.remove_photo.checked) fd.set('remove_photo', '1');
       if (f.remove_video && f.remove_video.checked) fd.set('remove_video', '1');
-      if (f.photo.files[0]) fd.set('photo', f.photo.files[0]);
+      const removed = Array.from(document.querySelectorAll('.ev-rm-photo')).filter(c => c.checked).map(c => c.value);
+      const keep = photos.filter(u => !removed.includes(u)), added = Array.from(f.photo.files);
+      if (keep.length + added.length > 3) { $('ev-save-msg').textContent = 'Maximum 3 photos. Remove one first or choose fewer files.'; return; }
+      fd.set('keep_photos', JSON.stringify(keep)); added.forEach(x => fd.append('photo', x));
       if (f.video.files[0]) fd.set('video', f.video.files[0]);
       $('ev-save').disabled = true; $('ev-save-msg').textContent = 'Saving…';
       try {

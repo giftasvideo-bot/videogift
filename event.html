@@ -15,6 +15,15 @@
   body { margin:0; background:var(--bg); color:var(--ink); font:400 1rem/1.6 'DM Sans','Noto Sans Ethiopic',sans-serif; }
   main { max-width:560px; margin:0 auto; padding:0 0 48px; }
   .photo { width:100%; aspect-ratio:4/5; object-fit:cover; display:block; background:var(--soft); }
+  .slides { position:relative; width:100%; aspect-ratio:4/5; background:var(--soft); overflow:hidden; }
+  .slide { position:absolute; inset:0; width:100%; height:100%; object-fit:cover; opacity:0; transition:opacity .9s; }
+  .slide.on { opacity:1; }
+  .dots { position:absolute; bottom:12px; left:0; right:0; display:flex; justify-content:center; gap:6px; }
+  .dot { width:26px; height:26px; padding:0; border:0; background:transparent; cursor:pointer; position:relative; }
+  .dot::after { content:''; position:absolute; inset:8px; border-radius:50%; border:2px solid #fff; box-shadow:0 0 3px rgba(0,0,0,.5); }
+  .dot.on::after { background:#fff; }
+  .dot:focus-visible { outline:3px solid #fff; border-radius:50%; }
+  @media (prefers-reduced-motion: reduce) { .slide { transition:none; } }
   .body { padding:28px 22px 0; }
   h1 { font:700 clamp(2rem,9vw,2.9rem)/1.1 'Fraunces','Noto Sans Ethiopic',serif; margin:0 0 6px; }
   .hosts { font-size:1.1rem; margin:0 0 20px; }
@@ -54,11 +63,26 @@ function ics(ev) {
   a.download = 'invitation.ics'; a.click();
 }
 
+function slideshow(urls) {
+  if (urls.length === 1) { const i = el('img','photo'); i.src = urls[0]; i.alt = ''; return i; }
+  const box = el('div','slides'); box.setAttribute('role','group'); box.setAttribute('aria-label','Photo slideshow');
+  const imgs = urls.map((u, k) => { const i = el('img','slide'); i.src = u; i.alt = ''; if (!k) i.classList.add('on'); box.append(i); return i; });
+  const dots = el('div','dots');
+  const btns = urls.map((_, k) => { const b = el('button','dot'); b.type = 'button'; b.setAttribute('aria-label','Photo ' + (k + 1));
+    b.onclick = () => { go(k); restart(); }; dots.append(b); return b; });
+  let cur = 0, timer;
+  function go(k) { imgs[cur].classList.remove('on'); btns[cur].classList.remove('on'); cur = k; imgs[cur].classList.add('on'); btns[cur].classList.add('on'); }
+  function restart() { clearInterval(timer); if (!matchMedia('(prefers-reduced-motion: reduce)').matches) timer = setInterval(() => go((cur + 1) % imgs.length), 4500); }
+  btns[0].classList.add('on'); box.append(dots); restart();
+  return box;
+}
+
 function render(ev) {
   document.title = ev.title;
   document.body.dataset.type = ev.type;
   app.textContent = '';
-  if (ev.photo_url) { const i = el('img','photo'); i.src = ev.photo_url; i.alt = ''; app.append(i); }
+  const photos = (ev.photo_urls && ev.photo_urls.length) ? ev.photo_urls : (ev.photo_url ? [ev.photo_url] : []);
+  if (photos.length) app.append(slideshow(photos));
   const b = el('div','body');
   b.append(el('h1', '', ev.title));
   if (ev.host_names) b.append(el('p','hosts', ev.host_names));
