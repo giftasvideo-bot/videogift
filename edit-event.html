@@ -32,6 +32,7 @@
   #daysBox[hidden] { display:none; }
   .dayrow { display:grid; grid-template-columns:1fr 1fr; gap:8px; padding-bottom:10px; margin-bottom:10px; border-bottom:1px dashed var(--line); }
   .dayrow .full { grid-column:1/-1; }
+  .wedOnly[hidden] { display:none; }
   .dayrow button { justify-self:start; }
   #msg { min-height:1.4em; font-weight:500; }
   #msg.err { color:#a12a2a; }
@@ -56,15 +57,18 @@
           <option value="general">Other</option>
         </select></label>
       <fieldset class="box" id="daysBox" hidden>
-        <legend>Seminar days</legend>
-        <small>Each day needs a date and a title.</small>
+        <legend id="daysLegend">Seminar days</legend>
+        <small id="daysHelp">Each day needs a date and a title.</small>
         <div id="days"></div>
         <button class="btn alt" id="addDay" type="button">+ Add day</button>
       </fieldset>
       <label>Title <input name="title" required maxlength="120"></label>
-      <label>Hosts <small>(optional)</small><input name="host_names" maxlength="120"></label>
+      <label id="hostLbl">Hosts <small>(optional)</small><input name="host_names" maxlength="120"></label>
+      <label class="wedOnly" hidden>About us <small>(your story, shown in the "About us" section)</small><textarea name="about" maxlength="2000"></textarea></label>
+      <label class="wedOnly" hidden>Background color
+        <select name="theme"><option value="white">White</option><option value="black">Black</option><option value="grey">Grey</option><option value="cream">Cream</option><option value="navy">Navy</option><option value="burgundy">Burgundy</option></select></label>
       <div class="two">
-        <label>Date and time <small>(seminars: optional)</small><input type="datetime-local" name="event_date"></label>
+        <label><span id="dateTxt">Date and time</span> <small id="dateHint">(seminars: optional)</small><input type="datetime-local" name="event_date" id="evDate"></label>
         <label>Venue <input name="venue" maxlength="200"></label>
       </div>
       <label>Map link <small>(Google Maps share link)</small><input type="url" name="map_url" placeholder="https://maps.app.goo.gl/…"></label>
@@ -108,21 +112,42 @@ const fail = t => { $('loading').textContent = t; $('loading').hidden = false; $
 const say = (t, cls) => { $('msg').textContent = t; $('msg').className = cls || ''; };
 const h = { 'x-edit-token': token || '' };
 
+const isWed = () => $('f').type.value === 'wedding';
 function addDay(v = {}) {
   const n = $('days').children.length + 1;
   const r = document.createElement('div'); r.className = 'dayrow';
-  r.innerHTML = '<label>Date <input type="date" class="d-date"></label><label>Start time <input type="time" class="d-time"></label>' +
+  r.innerHTML = '<label class="full">Date <input type="date" class="d-date"></label><label>Start time <input type="time" class="d-time"></label>' +
+    '<label>End time <small>(optional)</small><input type="time" class="d-end"></label>' +
     '<label class="full">Title for this day <input class="d-title" maxlength="120"></label><button class="btn alt" type="button">Remove day</button>';
-  r.querySelector('.d-date').value = v.date || ''; r.querySelector('.d-time').value = v.time || '';
+  r.querySelector('.d-date').value = v.date || ''; r.querySelector('.d-time').value = v.time || ''; r.querySelector('.d-end').value = v.end || '';
   r.querySelector('.d-title').value = v.title || ''; r.querySelector('.d-title').placeholder = 'Day ' + n;
   r.querySelector('button').onclick = () => { if ($('days').children.length > 1) r.remove(); };
-  $('days').append(r);
+  $('days').append(r); labelRows();
 }
-const readDays = () => [...$('days').children].map(r => ({ date: r.querySelector('.d-date').value, time: r.querySelector('.d-time').value, title: r.querySelector('.d-title').value.trim() }));
+function labelRows() {
+  const w = isWed();
+  [...$('days').children].forEach((r, i) => {
+    r.querySelector('.d-title').parentElement.firstChild.textContent = w ? 'What happens at this time ' : 'Title for this day ';
+    r.querySelector('button').textContent = w ? 'Remove' : 'Remove day';
+    r.querySelector('.d-title').placeholder = w ? 'e.g. Church ceremony, Photos, Reception' : 'Day ' + (i + 1);
+    r.querySelector('.d-date').parentElement.hidden = w;
+  });
+  $('addDay').textContent = w ? '+ Add to schedule' : '+ Add day';
+}
+const readDays = () => [...$('days').children].map(r => ({ date: r.querySelector('.d-date').value, time: r.querySelector('.d-time').value, title: r.querySelector('.d-title').value.trim(), end: r.querySelector('.d-end').value || undefined }));
 const syncType = () => {
-  const sem = $('f').type.value === 'seminar';
-  $('daysBox').hidden = !sem;
-  if (sem && !$('days').children.length) addDay();
+  const sem = $('f').type.value === 'seminar', wed = isWed();
+  $('daysBox').hidden = !(sem || wed);
+  $('daysLegend').textContent = wed ? 'Time schedule' : 'Seminar days';
+  $('daysHelp').textContent = wed ? 'Add each moment of the wedding day with its time, for example 9:00 church ceremony, 12:00 photos, 6:00 reception. All items use the wedding date above.' : 'Each day needs a date and a title.';
+  document.querySelectorAll('.wedOnly').forEach(x => x.hidden = !wed);
+  $('hostLbl').hidden = wed;
+  const ed = $('evDate'), want = wed ? 'date' : 'datetime-local';
+  if (ed.type !== want) { const old = ed.value; ed.type = want; ed.value = wed ? old.slice(0, 10) : (old ? old + 'T00:00' : ''); }
+  $('dateTxt').textContent = wed ? 'Wedding date' : 'Date and time';
+  $('dateHint').hidden = wed;
+  if ((sem || wed) && !$('days').children.length) addDay();
+  labelRows();
   $('rsvpLbl').hidden = $('f').type.value === 'memorial';
 };
 const localDT = d => { if (!d) return ''; const t = new Date(d); t.setMinutes(t.getMinutes() - t.getTimezoneOffset()); return t.toISOString().slice(0, 16); };
@@ -130,8 +155,10 @@ const localDT = d => { if (!d) return ''; const t = new Date(d); t.setMinutes(t.
 function fill(e) {
   ev = e;
   const f = $('f');
-  f.type.value = e.type; f.title.value = e.title || ''; f.host_names.value = e.host_names || '';
-  f.event_date.value = localDT(e.event_date); f.venue.value = e.venue || ''; f.map_url.value = e.map_url || '';
+  f.type.value = e.type; f.about.value = e.about || ''; if (e.theme) f.theme.value = e.theme; f.title.value = e.title || ''; f.host_names.value = e.host_names || '';
+  const dl0 = (Array.isArray(e.days) ? e.days : []).filter(d => d && d.date);
+  f.event_date.type = e.type === 'wedding' ? 'date' : 'datetime-local';
+  f.event_date.value = e.type === 'wedding' ? (dl0.length ? dl0[0].date : localDT(e.event_date).slice(0, 10)) : localDT(e.event_date); f.venue.value = e.venue || ''; f.map_url.value = e.map_url || '';
   f.message.value = e.message || ''; f.rsvp_enabled.checked = !!e.rsvp_enabled;
   $('days').textContent = '';
   (Array.isArray(e.days) ? e.days : []).filter(d => d && d.date).forEach(addDay);
@@ -176,14 +203,25 @@ $('f').onsubmit = async e => {
   e.preventDefault(); say('');
   const f = e.target, fd = new FormData();
   ['type', 'title', 'host_names', 'venue', 'map_url', 'message'].forEach(k => fd.set(k, f[k].value));
-  fd.set('event_date', f.event_date.value ? new Date(f.event_date.value).toISOString() : '');
   fd.set('rsvp_enabled', f.rsvp_enabled.checked ? 'true' : 'false');
-  if (f.type.value === 'seminar') {
+  let evDate = f.event_date.value;
+  if (isWed()) {
+    fd.set('about', f.about.value); fd.set('theme', f.theme.value);
+    if (!evDate) return say('Please choose the wedding date.', 'err');
+    const days = readDays().filter(d => d.time || d.title || d.end);
+    days.forEach(d => { d.date = evDate; });
+    if (days.some(d => !d.time)) return say('Each schedule item needs a time.', 'err');
+    if (days.some(d => d.end && d.end === d.time)) return say('End time must be different from the start time.', 'err');
+    days.sort((a, b) => a.time.localeCompare(b.time));
+    fd.set('days', JSON.stringify(days));
+    evDate = evDate + 'T' + (days.length ? days[0].time : '00:00');
+  } else if (f.type.value === 'seminar') {
     const days = readDays();
     if (!days.length || days.some(d => !d.date || !d.title)) return say('Each seminar day needs a date and a title.', 'err');
     days.sort((a, b) => a.date.localeCompare(b.date));
     fd.set('days', JSON.stringify(days));
   } else fd.set('days', '[]');
+  fd.set('event_date', evDate ? new Date(evDate).toISOString() : '');
 
   const photos = (ev.photo_urls && ev.photo_urls.length) ? ev.photo_urls : (ev.photo_url ? [ev.photo_url] : []);
   const removed = [...document.querySelectorAll('.rm-photo')].filter(c => c.checked).map(c => c.value);
