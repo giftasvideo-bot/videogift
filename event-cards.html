@@ -190,6 +190,7 @@
       <button class="filter-btn active" data-f="available">Available <span></span></button>
       <button class="filter-btn" data-f="marked">Event cards, no event yet <span></span></button>
       <button class="filter-btn" data-f="created">Event created <span></span></button>
+      <button class="filter-btn" data-f="printed">Printed (not for events) <span></span></button>
       <button class="filter-btn" data-f="all">All <span></span></button>
     </div>
     <div class="ev-meta" id="cd-msg" role="status">Loading…</div>
@@ -212,10 +213,10 @@
   const esc = t => String(t == null ? '' : t).replace(/[&<>"']/g, c => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[c]));
   const base = window.location.origin + window.location.pathname.replace(/[^\/]*$/, '');
   const watchUrl = id => base + 'watch.html?id=' + id;
-  let ids = [], buyers = {}, evCards = new Set(), evByCard = {}, filter = 'available', shown = 60, lastLoad = 0;
+  let ids = [], buyers = {}, evCards = new Set(), evByCard = {}, printed = new Set(), filter = 'available', shown = 60, lastLoad = 0;
 
   const isSold = id => { const b = buyers[id]; return !!(b && (b.buyerName || b.buyerContact || b.buyerNote || (b.price !== null && b.price !== undefined))); };
-  const stateOf = id => evByCard[id] ? 'created' : evCards.has(id) ? 'marked' : 'available';
+  const stateOf = id => evByCard[id] ? 'created' : evCards.has(id) ? 'marked' : printed.has(id) ? 'printed' : 'available';
   const sorted = a => [...a].sort((x, y) => x.localeCompare(y, undefined, { numeric: true }));
 
   window.loadCardQrs = async function () {
@@ -225,6 +226,8 @@
       if (!r.ok) throw new Error('Could not load cards.');
       const d = await r.json();
       ids = sorted(d.ids || []); buyers = d.buyers || {}; evCards = new Set(d.eventCards || []); evByCard = d.eventsByCard || {};
+      printed = new Set(Object.keys(d.printStatus || {}));
+      try { const local = JSON.parse(localStorage.getItem('videogift_printed_ids')) || {}; Object.keys(local).forEach(id => { if (local[id]) printed.add(id); }); } catch {}
       renderCardQrs(true);
     } catch (x) { $('cd-msg').textContent = x.message; }
   };
@@ -245,11 +248,13 @@
     $('cd-more').style.display = list.length > shown ? '' : 'none';
     grid.innerHTML = page.map(id => {
       const st = stateOf(id);
-      const badge = st === 'created' ? '<span class="cd-badge created">✅ Event created</span>' : st === 'marked' ? '<span class="cd-badge marked">🎉 Event card</span>' : '<span class="cd-badge">Available</span>';
+      const badge = st === 'printed' ? '<span class="cd-badge sold" title="Printed cards cannot be used for events.">🔒 Printed</span>' : st === 'created' ? '<span class="cd-badge created">✅ Event created</span>' : st === 'marked' ? '<span class="cd-badge marked">🎉 Event card</span>' : '<span class="cd-badge">Available</span>';
       const acts = st === 'created'
         ? `<button class="btn btn-secondary" data-act="view">✅ Event created · View</button>`
         : st === 'marked'
         ? `<button class="btn btn-secondary" data-act="create">🎉 Create Event</button><button class="btn btn-secondary" data-act="unmark">✕ Unmark</button>`
+        : st === 'printed'
+        ? `<div class="ev-meta">Printed cards can't be used for events.</div>`
         : `<button class="btn btn-secondary" data-act="use">🎉 Use for Event</button>`;
       return `<div class="qr-card" data-id="${esc(id)}">
         <div class="qr-container" id="cq-${esc(id)}"></div>
@@ -270,8 +275,9 @@
     let { res, data } = await send(false);
     if (res.status === 409 && data.locked) {
       const when = data.printedAt && !isNaN(new Date(data.printedAt)) ? ' on ' + new Date(data.printedAt).toLocaleDateString() : '';
-      if (!confirm('\uD83D\uDD12 Card ' + id + ' is already printed' + when + (data.design ? ' (design: ' + data.design + ')' : '') + ' and locked.\n\nThe QR on the physical card was made for that print. Use it for an event anyway?')) return false;
-      ({ res, data } = await send(true));
+      printed.add(id); renderCardQrs(false);
+      alert('\uD83D\uDD12 Card ' + id + ' is already printed' + when + (data.design ? ' (design: ' + data.design + ')' : '') + ' and cannot be used for an event.');
+      return false;
     }
     if (!res.ok) throw new Error(data.error || 'Server error');
     if (enable) evCards.add(id); else evCards.delete(id);
@@ -287,6 +293,7 @@
     if (act === 'view') return void window.open(new URL('event.html', location.href).href + '?e=' + encodeURIComponent(evByCard[id]), '_blank');
     if (act === 'unmark') { if (!confirm('Unmark ' + id + ' as an event card?')) return; try { await setEventCard(id, false); } catch (x) { alert('Could not update card: ' + x.message); } return; }
     if (act === 'use') {
+      if (printed.has(id)) { alert('Card ' + id + ' is printed and cannot be used for an event.'); return; }
       const win = window.open('', '_blank'); // open first so the popup is not blocked
       try {
         const done = await setEventCard(id, true);

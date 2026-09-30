@@ -866,6 +866,8 @@
             ? `<button class="btn btn-secondary" onclick="viewEvent('${id}')">✅ Event created · View</button>`
             : eventSet.has(id)
             ? `<button class="btn btn-secondary" onclick="openCreateEvent('${id}')">🎉 Create Event</button><button class="btn btn-secondary" onclick="toggleEventCard('${id}')">✕ Unmark</button>`
+            : printed
+            ? `<button class="btn btn-secondary" disabled title="Printed cards cannot be used for events">🔒 Printed · no event</button>`
             : `<button class="btn btn-secondary" onclick="useForEvent('${id}')">🎉 Use for Event</button>`}
           <button class="btn btn-action-sold ${isSold ? 'is-sold' : ''}" onclick="openBuyerModal('${id}')">${isSold ? '🧾 Edit Sale' : '🧾 Record Sale'}</button>
           <button class="btn btn-action-delete-video" id="delvid-${id}" onclick="deleteVideoOnly('${id}')">🎬 Delete Video</button>
@@ -939,9 +941,8 @@
     let { res, data } = await send(false);
     if (res.status === 409 && data.locked) {
       const when = data.printedAt && !isNaN(new Date(data.printedAt)) ? ' on ' + new Date(data.printedAt).toLocaleDateString() : '';
-      const ok = confirm(`\uD83D\uDD12 Card ${id} is already printed${when}${data.design ? ' (design: ' + data.design + ')' : ''} and locked.\n\nThe QR on the physical card was made for that print. Use it for an event anyway?`);
-      if (!ok) return false;
-      ({ res, data } = await send(true));
+      alert(`\uD83D\uDD12 Card ${id} is already printed${when}${data.design ? ' (design: ' + data.design + ')' : ''} and cannot be used for an event.`);
+      return false;
     }
     if (!res.ok) throw new Error(data.error || 'Server error');
     if (enable) eventSet.add(id); else eventSet.delete(id);
@@ -953,6 +954,7 @@
 
   // One click: mark the card as an event card, then open the create form with its code filled in.
   async function useForEvent(id) {
+    if (getPrintedMap()[id]) { alert('Card ' + id + ' is printed and cannot be used for an event.'); return; }
     const win = window.open('', '_blank'); // opened first so the browser doesn't block the popup
     try {
       const done = await setEventCard(id, true);

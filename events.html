@@ -95,6 +95,13 @@
     .qr-title { font-weight: 700; font-size: 1rem; margin-bottom: 4px; word-break: break-word; }
     .qr-card .ev-meta { margin-bottom: 10px; }
     .qr-card .ev-acts { justify-content: center; margin-top: auto; }
+    .cd-badge { display:inline-block; padding:3px 10px; border-radius:6px; font-size:0.7rem; font-weight:700; text-transform:uppercase; letter-spacing:0.05em; margin-bottom:8px; background:#f5f5f5; color:#9e9e9e; }
+    .cd-badge.marked { background:#e3ecfb; color:#2c4a8f; }
+    .cd-badge.created { background:var(--success-bg); color:var(--success-text); }
+    .cd-badge.sold { background:#fff8e1; color:#7a6020; }
+    .card-actions { display:flex; gap:6px; flex-wrap:wrap; justify-content:center; width:100%; margin-top:auto; }
+    .card-actions .btn { padding:8px 12px; font-size:0.82rem; }
+    .cd-id { font-family:monospace; font-weight:700; font-size:1.05rem; letter-spacing:0.05em; margin-bottom:6px; }
     .view-toggle { display: flex; gap: 8px; margin-bottom: 12px; }
     .filter-btn { padding: 6px 14px; border: 1px solid var(--cream); border-radius: 20px; background: #fff; color: var(--muted); font-size: 0.8rem; cursor: pointer; font-family: 'DM Sans', sans-serif; font-weight: 500; }
     .filter-btn.active { background: var(--gold); color: #fff; border-color: var(--gold); }
@@ -158,6 +165,7 @@
   <div class="header">
     <div class="logo">Forever<span>27</span></div>
     <h1>🎉 Event Invitations</h1>
+    <div style="font-size:0.72rem;color:var(--muted);">page version: registry-v4</div>
     <div class="header-links">
       <button class="btn btn-secondary" style="font-size:0.8rem; padding:8px 18px;" onclick="window.location.href='admin.html'">← Back to Dashboard</button>
     </div>
@@ -168,13 +176,27 @@
       <h2>🎉 Event Invitations</h2>
       <div style="display:flex;gap:10px;flex-wrap:wrap;">
         <button class="btn btn-secondary" onclick="window.open('create-event.html','_blank')">➕ New Event</button>
-        <button class="btn btn-secondary" onclick="loadEvents()">🔄 Refresh</button>
+        <button class="btn btn-secondary" onclick="loadEvents(); loadCardQrs()">🔄 Refresh</button>
       </div>
     </div>
-    <div class="form-group"><input type="text" id="ev-search" placeholder="Search title, host or venue" oninput="renderEvents()"><select id="ev-type" onchange="renderEvents()" aria-label="Filter by type" style="padding:12px 16px;border:1px solid var(--cream);border-radius:6px;background:var(--paper);"><option value="">All types</option><option value="seminar">Seminar</option><option value="wedding">Wedding</option><option value="birthday">Birthday</option><option value="church">Church / religious</option><option value="memorial">Memorial</option><option value="general">Other</option></select></div>
-    <div class="view-toggle"><button class="filter-btn active" id="vw-grid" onclick="setEvView('grid')">🔳 QR codes</button><button class="filter-btn" id="vw-list" onclick="setEvView('list')">☰ List</button></div>
+    <div class="form-group" id="ev-searchbar"><input type="text" id="ev-search" placeholder="Search title, host or venue" oninput="renderEvents()"><select id="ev-type" onchange="renderEvents()" aria-label="Filter by type" style="padding:12px 16px;border:1px solid var(--cream);border-radius:6px;background:var(--paper);"><option value="">All types</option><option value="seminar">Seminar</option><option value="wedding">Wedding</option><option value="birthday">Birthday</option><option value="church">Church / religious</option><option value="memorial">Memorial</option><option value="general">Other</option></select></div>
+    <div class="view-toggle"><button class="filter-btn active" id="vw-cards" onclick="setEvView('cards')">🗂 All cards (registry)</button><button class="filter-btn" id="vw-grid" onclick="setEvView('grid')">🔳 Event QR codes</button><button class="filter-btn" id="vw-list" onclick="setEvView('list')">☰ List</button></div>
     <div class="ev-meta" id="ev-msg" role="status">Loading…</div>
     <div id="ev-list"></div>
+    <div id="cards-pane">
+      <div class="ev-meta" style="margin-bottom:12px;">Every card in the registry, same as the admin dashboard. Pick one to create an event.</div>
+    <div class="form-group"><input type="text" id="cd-search" placeholder="Search card code" oninput="renderCardQrs(true)"></div>
+    <div class="view-toggle" id="cd-filters">
+      <button class="filter-btn active" data-f="available">Available <span></span></button>
+      <button class="filter-btn" data-f="marked">Event cards, no event yet <span></span></button>
+      <button class="filter-btn" data-f="created">Event created <span></span></button>
+      <button class="filter-btn" data-f="printed">Printed (not for events) <span></span></button>
+      <button class="filter-btn" data-f="all">All <span></span></button>
+    </div>
+    <div class="ev-meta" id="cd-msg" role="status">Loading…</div>
+    <div class="qr-grid" id="cd-grid"></div>
+    <div style="text-align:center;margin-top:18px;"><button class="btn btn-secondary" id="cd-more" style="display:none;" onclick="showMoreCards()">Show more</button></div>
+    </div>
 </div>
 
 <div class="modal-overlay" id="ev-modal">
@@ -184,6 +206,110 @@
   </div>
 </div>
 
+<script>
+// ===== Card QR codes (same cards as the admin dashboard) =====
+(function () {
+  const $ = id => document.getElementById(id);
+  const esc = t => String(t == null ? '' : t).replace(/[&<>"']/g, c => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[c]));
+  const base = window.location.origin + window.location.pathname.replace(/[^\/]*$/, '');
+  const watchUrl = id => base + 'watch.html?id=' + id;
+  let ids = [], buyers = {}, evCards = new Set(), evByCard = {}, printed = new Set(), filter = 'available', shown = 60, lastLoad = 0;
+
+  const isSold = id => { const b = buyers[id]; return !!(b && (b.buyerName || b.buyerContact || b.buyerNote || (b.price !== null && b.price !== undefined))); };
+  const stateOf = id => evByCard[id] ? 'created' : evCards.has(id) ? 'marked' : printed.has(id) ? 'printed' : 'available';
+  const sorted = a => [...a].sort((x, y) => x.localeCompare(y, undefined, { numeric: true }));
+
+  window.loadCardQrs = async function () {
+    $('cd-msg').textContent = 'Loading…'; lastLoad = Date.now();
+    try {
+      const r = await apiFetch(BACKEND_API_BASE + '/api/admin/cards');
+      if (!r.ok) throw new Error('Could not load cards.');
+      const d = await r.json();
+      ids = sorted(d.ids || []); buyers = d.buyers || {}; evCards = new Set(d.eventCards || []); evByCard = d.eventsByCard || {};
+      printed = new Set(Object.keys(d.printStatus || {}));
+      try { const local = JSON.parse(localStorage.getItem('videogift_printed_ids')) || {}; Object.keys(local).forEach(id => { if (local[id]) printed.add(id); }); } catch {}
+      renderCardQrs(true);
+    } catch (x) { $('cd-msg').textContent = x.message; }
+  };
+
+  function visible() {
+    const q = $('cd-search').value.trim().toLowerCase();
+    return ids.filter(id => (filter === 'all' || stateOf(id) === filter) && (!q || id.toLowerCase().includes(q)));
+  }
+  window.renderCardQrs = function (reset) {
+    if (reset) shown = 60;
+    document.querySelectorAll('#cd-filters button').forEach(b => {
+      const f = b.dataset.f;
+      b.classList.toggle('active', f === filter);
+      b.lastElementChild.textContent = '(' + (f === 'all' ? ids.length : ids.filter(id => stateOf(id) === f).length) + ')';
+    });
+    const list = visible(), grid = $('cd-grid'), page = list.slice(0, shown);
+    $('cd-msg').textContent = list.length + ' of ' + ids.length + ' cards';
+    $('cd-more').style.display = list.length > shown ? '' : 'none';
+    grid.innerHTML = page.map(id => {
+      const st = stateOf(id);
+      const badge = st === 'printed' ? '<span class="cd-badge sold" title="Printed cards cannot be used for events.">🔒 Printed</span>' : st === 'created' ? '<span class="cd-badge created">✅ Event created</span>' : st === 'marked' ? '<span class="cd-badge marked">🎉 Event card</span>' : '<span class="cd-badge">Available</span>';
+      const acts = st === 'created'
+        ? `<button class="btn btn-secondary" data-act="view">✅ Event created · View</button>`
+        : st === 'marked'
+        ? `<button class="btn btn-secondary" data-act="create">🎉 Create Event</button><button class="btn btn-secondary" data-act="unmark">✕ Unmark</button>`
+        : st === 'printed'
+        ? `<div class="ev-meta">Printed cards can't be used for events.</div>`
+        : `<button class="btn btn-secondary" data-act="use">🎉 Use for Event</button>`;
+      return `<div class="qr-card" data-id="${esc(id)}">
+        <div class="qr-container" id="cq-${esc(id)}"></div>
+        <div class="cd-id">${esc(id)}</div>
+        <div>${badge}${isSold(id) ? ' <span class="cd-badge sold">🧾 Sold</span>' : ''}</div>
+        <div class="card-actions">${acts}</div></div>`;
+    }).join('');
+    page.forEach(id => new QRCode($('cq-' + id), { text: watchUrl(id), width: 140, height: 140, correctLevel: QRCode.CorrectLevel.M }));
+  };
+  window.showMoreCards = () => { shown += 60; renderCardQrs(false); };
+
+  // Marks/unmarks a card as an event card. A printed card answers 409 + locked:true; confirm before forcing.
+  async function setEventCard(id, enable) {
+    const send = async force => {
+      const res = await apiFetch(BACKEND_API_BASE + '/api/gift/' + id + '/event-card', { method: 'PATCH', body: JSON.stringify({ enabled: enable, force }) });
+      return { res, data: await res.json().catch(() => ({})) };
+    };
+    let { res, data } = await send(false);
+    if (res.status === 409 && data.locked) {
+      const when = data.printedAt && !isNaN(new Date(data.printedAt)) ? ' on ' + new Date(data.printedAt).toLocaleDateString() : '';
+      printed.add(id); renderCardQrs(false);
+      alert('\uD83D\uDD12 Card ' + id + ' is already printed' + when + (data.design ? ' (design: ' + data.design + ')' : '') + ' and cannot be used for an event.');
+      return false;
+    }
+    if (!res.ok) throw new Error(data.error || 'Server error');
+    if (enable) evCards.add(id); else evCards.delete(id);
+    renderCardQrs(false);
+    return true;
+  }
+  const createUrl = id => 'create-event.html?code=' + encodeURIComponent(id);
+
+  $('cd-grid').addEventListener('click', async ev => {
+    const b = ev.target.closest('button[data-act]'); if (!b) return;
+    const id = b.closest('.qr-card').dataset.id, act = b.dataset.act;
+    if (act === 'create') return void window.open(createUrl(id), '_blank');
+    if (act === 'view') return void window.open(new URL('event.html', location.href).href + '?e=' + encodeURIComponent(evByCard[id]), '_blank');
+    if (act === 'unmark') { if (!confirm('Unmark ' + id + ' as an event card?')) return; try { await setEventCard(id, false); } catch (x) { alert('Could not update card: ' + x.message); } return; }
+    if (act === 'use') {
+      if (printed.has(id)) { alert('Card ' + id + ' is printed and cannot be used for an event.'); return; }
+      const win = window.open('', '_blank'); // open first so the popup is not blocked
+      try {
+        const done = await setEventCard(id, true);
+        if (done && win) win.location.href = createUrl(id); else if (win) win.close();
+      } catch (x) { if (win) win.close(); alert('Could not use this card for an event: ' + x.message); }
+    }
+  });
+  $('cd-filters').addEventListener('click', e => { const b = e.target.closest('button[data-f]'); if (b) { filter = b.dataset.f; renderCardQrs(true); } });
+
+  // Coming back from the create-event tab: pick up the new event without a manual reload
+  const refresh = () => { if (!document.hidden && Date.now() - lastLoad > 5000) { loadCardQrs(); if (window.loadEvents) loadEvents(); } };
+  window.addEventListener('focus', refresh);
+  document.addEventListener('visibilitychange', refresh);
+  loadCardQrs();
+})();
+</script>
 <script>
 // ===== Event invitations (admin) — uses this page's existing login session =====
 (function () {
@@ -218,8 +344,17 @@
     }
     return esc(t) + (e.host_names ? ' · ' + esc(e.host_names) : '') + (when ? ' · ' + esc(when) : '');
   }
-  let evView = 'grid';
-  window.setEvView = v => { evView = v; $('vw-grid').classList.toggle('active', v === 'grid'); $('vw-list').classList.toggle('active', v === 'list'); renderEvents(); };
+  let evView = 'cards';
+  window.setEvView = v => {
+    evView = v;
+    ['cards', 'grid', 'list'].forEach(k => $('vw-' + k).classList.toggle('active', k === v));
+    const c = v === 'cards';
+    $('cards-pane').style.display = c ? '' : 'none';
+    $('ev-list').style.display = c ? 'none' : '';
+    $('ev-searchbar').style.display = c ? 'none' : '';
+    $('ev-msg').style.display = c ? 'none' : '';
+    if (!c) renderEvents();
+  };
   const evButtons = e => `
           <button class="btn btn-secondary" data-act="edit">✏️ Edit</button>
           <button class="btn btn-secondary" data-act="qr">QR</button>
@@ -240,6 +375,7 @@
     list.forEach((e, i) => new QRCode($('ev-qr-' + i), { text: evLink(e.slug), width: 140, height: 140, correctLevel: QRCode.CorrectLevel.H }));
   }
   window.renderEvents = function () {
+    if (evView === 'cards') return;
     const q = $('ev-search').value.toLowerCase(), box = $('ev-list');
     const tf = $('ev-type').value;
     const list = events.filter(e => (!tf || e.type === tf) && [e.title, e.host_names, e.venue].join(' ').toLowerCase().includes(q));
@@ -419,6 +555,7 @@ small{font-size:7.5pt;word-break:break-all;opacity:.8} .scan{font-size:9pt;font-
        } })[b.dataset.act](e);
   });
 
+  setEvView('cards');
   loadEvents();
 })();
 </script>
