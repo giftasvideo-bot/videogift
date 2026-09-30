@@ -37,6 +37,14 @@
   .dayrow { display:grid; grid-template-columns:1fr 1fr; gap:8px; padding-bottom:10px; margin-bottom:10px; border-bottom:1px dashed var(--line); }
   .dayrow .full { grid-column:1/-1; }
   .dayrow button { justify-self:start; }
+  .wedOnly[hidden] { display:none; }
+  .swatches { border:1px solid var(--line); border-radius:8px; padding:10px 14px 14px; display:flex; gap:14px; flex-wrap:wrap; align-items:center; }
+  .swatches legend { font-weight:500; padding:0 6px; }
+  .swatches label { display:block; position:relative; cursor:pointer; }
+  .swatches input { position:absolute; opacity:0; width:100%; height:100%; margin:0; cursor:pointer; }
+  .swatches span { display:block; width:36px; height:36px; border-radius:50%; border:1px solid #888; }
+  .swatches input:checked + span { outline:3px solid var(--accent); outline-offset:3px; }
+  .swatches input:focus-visible + span { outline:3px solid var(--ink); outline-offset:3px; }
 </style>
 </head>
 <body>
@@ -66,21 +74,33 @@
         <option value="general">Other</option>
       </select></label>
     <fieldset id="daysBox" hidden>
-      <legend>Seminar days</legend>
-      <small>Add each day with its own title. You can change titles later.</small>
+      <legend id="daysLegend">Seminar days</legend>
+      <small id="daysHelp">Add each day with its own title. You can change titles later.</small>
       <div id="days"></div>
       <button class="btn alt" id="addDay" type="button">+ Add day</button>
+    </fieldset>
+    <fieldset class="wedOnly swatches" hidden>
+      <legend>Background color</legend>
+      <label title="White"><input type="radio" name="theme" value="white"><span style="background:#fff"></span></label>
+      <label title="Black"><input type="radio" name="theme" value="black"><span style="background:#1c1c1c"></span></label>
+      <label title="Grey"><input type="radio" name="theme" value="grey"><span style="background:#e9e9e9"></span></label>
+      <label title="Cream"><input type="radio" name="theme" value="cream" checked><span style="background:#f3ecdc"></span></label>
+      <label title="Navy"><input type="radio" name="theme" value="navy"><span style="background:#22384f"></span></label>
+      <label title="Burgundy"><input type="radio" name="theme" value="burgundy"><span style="background:#6b2233"></span></label>
     </fieldset>
     <label>Title <input name="title" required maxlength="120" placeholder="Selam & Dawit's Wedding"></label>
     <label>Hosts <small>(optional)</small><input name="host_names" maxlength="120" placeholder="Together with their families"></label>
     <div class="two">
-      <label>Date and time <small>(seminars: optional)</small><input type="datetime-local" name="event_date"></label>
+      <label>Date and time <small>(optional if you add a program below)</small><input type="datetime-local" name="event_date"></label>
       <label>Venue <input name="venue" maxlength="200"></label>
     </div>
     <label>Map link <small>(Google Maps share link)</small><input type="url" name="map_url" placeholder="https://maps.app.goo.gl/…"></label>
+    <label class="wedOnly" hidden>About us <small>(your story, shown in the "About us" section)</small><textarea name="about" maxlength="2000"></textarea></label>
     <label>Message <small>(optional)</small><textarea name="message" maxlength="1000"></textarea></label>
-    <label>Photos <small>(up to 3, shown as a slideshow. JPG, PNG or WebP, up to 50 MB each)</small><input type="file" name="photo" multiple accept="image/jpeg,image/png,image/webp"></label>
+    <label><span id="photoLbl">Photos</span> <small>(up to 3, shown as a slideshow. JPG, PNG or WebP, up to 50 MB each)</small><input type="file" name="photo" multiple accept="image/jpeg,image/png,image/webp"></label>
+    <label class="wedOnly" hidden>Additional photos <small>(up to 20, shown in the "Photos" section)</small><input type="file" name="gallery" multiple accept="image/jpeg,image/png,image/webp"></label>
     <label>Video <small>(MP4, MOV or WebM, up to 50 MB. Shorter videos load faster for guests.)</small><input type="file" name="video" accept="video/mp4,video/quicktime,video/webm"></label>
+    <label style="display:flex;gap:10px;align-items:center"><input type="checkbox" name="rsvp_enabled" id="rsvpOn" checked style="width:auto"> Let guests reply (RSVP)</label>
     <p id="err" role="alert"></p>
     <button class="btn" id="go">Create invitation</button>
   </form>
@@ -117,17 +137,23 @@ function addDay(v = {}) {
   r.innerHTML = '<label>Date <input type="date" class="d-date"></label><label>Start time <input type="time" class="d-time"></label>' +
     '<label class="full">Title for this day <input class="d-title" maxlength="120"></label><button class="btn alt" type="button">Remove day</button>';
   r.querySelector('.d-date').value = v.date || ''; r.querySelector('.d-time').value = v.time || '';
-  r.querySelector('.d-title').value = v.title || ''; r.querySelector('.d-title').placeholder = 'Day ' + n + ': e.g. Opening and Vision';
+  r.querySelector('.d-title').value = v.title || ''; r.querySelector('.d-title').placeholder = isWed() ? 'e.g. Church ceremony' : 'Day ' + n + ': e.g. Opening and Vision';
   r.querySelector('button').onclick = () => { if ($('days').children.length > 1) r.remove(); };
   $('days').append(r);
 }
 function readDays() {
   return [...$('days').children].map(r => ({ date:r.querySelector('.d-date').value, time:r.querySelector('.d-time').value, title:r.querySelector('.d-title').value.trim() }));
 }
+const typeVal = () => document.querySelector('[name=type]').value;
+const isWed = () => typeVal() === 'wedding';
 function syncType() {
-  const sem = document.querySelector('[name=type]').value === 'seminar';
-  $('daysBox').hidden = !sem;
-  if (sem && !$('days').children.length) addDay();
+  const sem = typeVal() === 'seminar', wed = isWed();
+  $('daysBox').hidden = !(sem || wed);
+  $('daysLegend').textContent = wed ? 'Wedding program (schedule)' : 'Seminar days';
+  $('daysHelp').textContent = wed ? 'Add each part of the wedding, for example the ceremony and the reception, with its date and time. Leave empty to use only the date above.' : 'Add each day with its own title. You can change titles later.';
+  document.querySelectorAll('.wedOnly').forEach(x => x.hidden = !wed);
+  $('photoLbl').textContent = wed ? 'Main photos' : 'Photos';
+  if ((sem || wed) && !$('days').children.length) addDay();
 }
 document.querySelector('[name=type]').onchange = syncType;
 $('addDay').onclick = () => { if ($('days').children.length < MAX_DAYS) addDay(); };
@@ -183,7 +209,20 @@ $('f').onsubmit = async e => {
   e.preventDefault(); $('err').textContent = ''; $('go').disabled = true; $('go').textContent = 'Uploading…';
   const fd = new FormData(e.target);
   if (fd.getAll('photo').filter(f => f.size).length > 3) { $('err').textContent = 'Please choose up to 3 photos.'; $('go').disabled = false; $('go').textContent = 'Create invitation'; return; }
+  if (fd.getAll('gallery').filter(f => f.size).length > 20) { $('err').textContent = 'Please choose up to 20 additional photos.'; $('go').disabled = false; $('go').textContent = 'Create invitation'; return; }
+  if (fd.get('type') !== 'wedding') fd.delete('theme');
+  fd.set('rsvp_enabled', $('rsvpOn').checked ? 'true' : 'false');
   for (const k of ['photo', 'video']) { const f = fd.get(k); if (f && !f.size) fd.delete(k); }
+  if (fd.get('type') === 'wedding') {
+    fd.delete('gallery'); $('f').gallery.files.length && [...$('f').gallery.files].forEach(f => fd.append('gallery', f));
+    const days = readDays().filter(d => d.date || d.title || d.time);
+    if (days.some(d => !d.date)) { $('err').textContent = 'Each program item needs a date.'; $('go').disabled = false; $('go').textContent = 'Create invitation'; return; }
+    if (days.length) {
+      days.sort((a, b) => (a.date + (a.time || '')).localeCompare(b.date + (b.time || '')));
+      fd.set('days', JSON.stringify(days));
+      if (!fd.get('event_date')) fd.set('event_date', days[0].date + 'T' + (days[0].time || '00:00'));
+    }
+  }
   if (fd.get('type') === 'seminar') {
     const days = readDays();
     if (days.some(d => !d.date || !d.title)) { $('err').textContent = 'Each seminar day needs a date and a title.'; $('go').disabled = false; $('go').textContent = 'Create invitation'; return; }

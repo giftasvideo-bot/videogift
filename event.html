@@ -12,6 +12,14 @@
   [data-type=church]   { --bg:#eceee9; --ink:#1e3a2f; --accent:#2f6b52; --soft:#d8dcd3; }
   [data-type=seminar]  { --bg:#eef1f7; --ink:#1b2a4a; --accent:#2c4a8f; --soft:#d8e0f0; }
   [data-type=memorial] { --bg:#efefef; --ink:#2a2a2a; --accent:#555;    --soft:#dcdcdc; }
+  body[data-theme=white]    { --bg:#ffffff; --ink:#2b2b2b; --accent:#8a6d3b; --soft:#f0ece4; }
+  body[data-theme=black]    { --bg:#1c1c1c; --ink:#f2ece0; --accent:#c9a96a; --soft:#2d2d2d; --on:#1c1c1c; }
+  body[data-theme=grey]     { --bg:#e9e9e9; --ink:#2f2f2f; --accent:#6b5b45; --soft:#d8d8d8; }
+  body[data-theme=cream]    { --bg:#f3ecdc; --ink:#4a3a24; --accent:#7a5c3a; --soft:#e7dcc4; }
+  body[data-theme=navy]     { --bg:#22384f; --ink:#f4efe3; --accent:#d8b978; --soft:#2f4862; --on:#22384f; }
+  body[data-theme=burgundy] { --bg:#6b2233; --ink:#f7ece6; --accent:#e0bf8a; --soft:#7d3245; --on:#4a1421; }
+  .btn.fill { color:var(--on,#fff); }
+  .wed input { color:#222; }
   * { box-sizing:border-box; }
   body { margin:0; background:var(--bg); color:var(--ink); font:400 1rem/1.6 'DM Sans','Noto Sans Ethiopic',sans-serif; }
   main { max-width:560px; margin:0 auto; padding:0 0 48px; }
@@ -57,6 +65,17 @@
   .wed .row { justify-content:center; }
   .wed .msg { font-family:'Cormorant Garamond','Noto Sans Ethiopic',serif; font-size:1.3rem; }
   .wed form { text-align:left; }
+
+  .wnav { display:flex; justify-content:center; flex-wrap:wrap; gap:4px 22px; padding:16px 12px 6px; position:sticky; top:0; background:var(--bg); z-index:5; border-bottom:1px solid var(--soft); }
+  .wtab { border:0; background:transparent; color:var(--ink); font:600 .95rem 'Cormorant Garamond','Noto Sans Ethiopic',serif; letter-spacing:.14em; text-transform:uppercase; padding:8px 2px; cursor:pointer; border-bottom:2px solid transparent; }
+  .wtab[aria-selected=true] { border-bottom-color:var(--accent); color:var(--accent); }
+  .wtab:focus-visible { outline:3px solid var(--ink); outline-offset:2px; }
+  .wpanel { padding:28px 22px 0; text-align:center; }
+  .wpanel h2 { font:400 clamp(2rem,9vw,2.8rem)/1.1 'Pinyon Script','Noto Sans Ethiopic',cursive; margin:0 0 18px; }
+  .wgrid { display:grid; grid-template-columns:repeat(2,1fr); gap:8px; }
+  .wgrid img { width:100%; aspect-ratio:1; object-fit:cover; display:block; background:var(--soft); }
+  .wgrid img:first-child:nth-last-child(odd) { grid-column:span 2; aspect-ratio:3/2; }
+  .wpanel form { text-align:left; }
   .err { padding:80px 22px; text-align:center; }
   .agenda { list-style:none; margin:0 0 18px; padding:0; display:grid; gap:10px; }
   .agenda li { background:var(--soft); border-left:4px solid var(--accent); border-radius:6px; padding:10px 14px; }
@@ -121,9 +140,59 @@ function slideshow(urls) {
   return box;
 }
 
+function renderWedding(ev) {
+  document.body.classList.add('wed');
+  if (['white','black','grey','cream','navy','burgundy'].includes(ev.theme)) document.body.dataset.theme = ev.theme;
+  const photos = (ev.photo_urls && ev.photo_urls.length) ? ev.photo_urls : (ev.photo_url ? [ev.photo_url] : []);
+  const days = Array.isArray(ev.days) ? ev.days.filter(d => d && d.date) : [];
+  const first = days.length ? dayDate(days[0]) : (ev.event_date ? new Date(ev.event_date) : null);
+  const h = el('header','wed-head'), of = el('div','wed-of');
+  of.append(el('span','','The'), el('span','wed-script','Wedding'), el('span','','of'));
+  h.append(of, el('h1','wed-names',ev.title));
+  if (ev.host_names) h.append(el('p','wed-host', ev.host_names));
+  const bits = [first && first.toLocaleDateString([], { dateStyle:'long' }), ev.venue].filter(Boolean);
+  if (bits.length) h.append(el('p','wed-line', bits.join('  \u2022  ')));
+  app.append(h);
+  if (photos.length) app.append(slideshow(photos));
+
+  const secs = [];
+  if (days.length || ev.event_date) secs.push(['Schedule', p => {
+    if (days.length) {
+      const ul = el('ul','agenda');
+      days.forEach(d => { const li = el('li');
+        li.append(el('div','dd', dayDate(d).toLocaleString([], d.time ? { dateStyle:'full', timeStyle:'short' } : { dateStyle:'full' })), el('div','dt', d.title || ''));
+        ul.append(li); });
+      p.append(ul);
+    } else p.append(el('p','when', new Date(ev.event_date).toLocaleString([], { dateStyle:'full', timeStyle:'short' })));
+    const r = el('div','row'), c = el('button','btn','Add to calendar'); c.onclick = () => ics(ev); r.append(c); p.append(r);
+  }]);
+  if (ev.venue || ev.map_url) secs.push(['Venue', p => {
+    if (ev.venue) p.append(el('p','where', ev.venue));
+    if (ev.map_url) { const r = el('div','row'), m = el('a','btn','Open map'); m.href = ev.map_url; m.target = '_blank'; m.rel = 'noopener'; r.append(m); p.append(r); }
+  }]);
+  if (ev.about || ev.message) secs.push(['About us', p => { if (ev.about) p.append(el('p','msg', ev.about)); if (ev.message) p.append(el('p','msg', ev.message)); }]);
+  const more = Array.isArray(ev.gallery_urls) ? ev.gallery_urls : [], allPhotos = photos.concat(more);
+  if (allPhotos.length > 1) secs.push(['Photos', p => { const g = el('div','wgrid'); allPhotos.forEach(u => { const i = el('img'); i.src = u; i.alt = ''; i.loading = 'lazy'; g.append(i); }); p.append(g); }]);
+  if (ev.video_url) secs.push(['Video', p => { const v = el('video'); v.src = ev.video_url; v.controls = true; v.preload = 'metadata'; v.playsInline = true; p.append(v); }]);
+  if (ev.rsvp_enabled) secs.push(['RSVP', p => p.append(rsvpForm())]);
+  if (!secs.length) return;
+
+  const nav = el('nav','wnav'); nav.setAttribute('role','tablist'); nav.setAttribute('aria-label','Invitation sections');
+  const holder = el('div');
+  const tabs = [], panels = [];
+  const show = k => tabs.forEach((t, j) => { t.setAttribute('aria-selected', j === k); panels[j].hidden = j !== k; });
+  secs.forEach(([name, fill], k) => {
+    const t = el('button','wtab',name); t.type = 'button'; t.setAttribute('role','tab'); t.onclick = () => show(k);
+    const p = el('section','wpanel'); p.setAttribute('role','tabpanel'); p.append(el('h2','',name)); fill(p);
+    tabs.push(t); panels.push(p); nav.append(t); holder.append(p);
+  });
+  app.append(nav, holder); show(0);
+}
+
 function render(ev) {
   document.title = ev.title;
   document.body.dataset.type = ev.type;
+  if (ev.type === 'wedding') { app.textContent = ''; return renderWedding(ev); }
   app.textContent = '';
   const photos = (ev.photo_urls && ev.photo_urls.length) ? ev.photo_urls : (ev.photo_url ? [ev.photo_url] : []);
   const wed = ev.type === 'wedding';
