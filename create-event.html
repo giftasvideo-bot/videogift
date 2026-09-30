@@ -136,10 +136,21 @@ function addDay(v = {}) {
   const r = document.createElement('div'); r.className = 'dayrow';
   r.innerHTML = '<label>Date <input type="date" class="d-date"></label><label>Start time <input type="time" class="d-time"></label>' +
     '<label class="full">Title for this day <input class="d-title" maxlength="120"></label><button class="btn alt" type="button">Remove day</button>';
-  r.querySelector('.d-date').value = v.date || ''; r.querySelector('.d-time').value = v.time || '';
+  const prev = $('days').lastElementChild; r.querySelector('.d-date').value = v.date || (prev ? prev.querySelector('.d-date').value : ''); r.querySelector('.d-time').value = v.time || '';
   r.querySelector('.d-title').value = v.title || ''; r.querySelector('.d-title').placeholder = isWed() ? 'e.g. Church ceremony' : 'Day ' + n + ': e.g. Opening and Vision';
   r.querySelector('button').onclick = () => { if ($('days').children.length > 1) r.remove(); };
-  $('days').append(r);
+  $('days').append(r); labelRows();
+}
+function labelRows() {
+  const w = isWed();
+  [...$('days').children].forEach(r => {
+    r.querySelector('label').firstChild.textContent = 'Date ';
+    r.querySelectorAll('label')[1].firstChild.textContent = w ? 'Time ' : 'Start time ';
+    r.querySelector('label.full').firstChild.textContent = w ? 'What happens at this time ' : 'Title for this day ';
+    r.querySelector('button').textContent = w ? 'Remove' : 'Remove day';
+    r.querySelector('.d-title').placeholder = w ? 'e.g. Church ceremony, Photos, Reception' : 'Day ' + ([...$('days').children].indexOf(r) + 1) + ': e.g. Opening and Vision';
+  });
+  $('addDay').textContent = w ? '+ Add to schedule' : '+ Add day';
 }
 function readDays() {
   return [...$('days').children].map(r => ({ date:r.querySelector('.d-date').value, time:r.querySelector('.d-time').value, title:r.querySelector('.d-title').value.trim() }));
@@ -149,11 +160,12 @@ const isWed = () => typeVal() === 'wedding';
 function syncType() {
   const sem = typeVal() === 'seminar', wed = isWed();
   $('daysBox').hidden = !(sem || wed);
-  $('daysLegend').textContent = wed ? 'Wedding program (schedule)' : 'Seminar days';
-  $('daysHelp').textContent = wed ? 'Add each part of the wedding, for example the ceremony and the reception, with its date and time. Leave empty to use only the date above.' : 'Add each day with its own title. You can change titles later.';
+  $('daysLegend').textContent = wed ? 'Time schedule' : 'Seminar days';
+  $('daysHelp').textContent = wed ? 'Build your time schedule: add each moment with its time, for example 9:00 church ceremony, 12:00 photos, 6:00 reception. New items keep the previous date. Leave empty to use only the date above.' : 'Add each day with its own title. You can change titles later.';
   document.querySelectorAll('.wedOnly').forEach(x => x.hidden = !wed);
   $('photoLbl').textContent = wed ? 'Main photos' : 'Photos';
   if ((sem || wed) && !$('days').children.length) addDay();
+  labelRows();
 }
 document.querySelector('[name=type]').onchange = syncType;
 $('addDay').onclick = () => { if ($('days').children.length < MAX_DAYS) addDay(); };
@@ -216,7 +228,7 @@ $('f').onsubmit = async e => {
   if (fd.get('type') === 'wedding') {
     fd.delete('gallery'); $('f').gallery.files.length && [...$('f').gallery.files].forEach(f => fd.append('gallery', f));
     const days = readDays().filter(d => d.date || d.title || d.time);
-    if (days.some(d => !d.date)) { $('err').textContent = 'Each program item needs a date.'; $('go').disabled = false; $('go').textContent = 'Create invitation'; return; }
+    if (days.some(d => !d.date || !d.time)) { $('err').textContent = 'Each schedule item needs a date and a time.'; $('go').disabled = false; $('go').textContent = 'Create invitation'; return; }
     if (days.length) {
       days.sort((a, b) => (a.date + (a.time || '')).localeCompare(b.date + (b.time || '')));
       fd.set('days', JSON.stringify(days));
