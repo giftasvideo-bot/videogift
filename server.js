@@ -55,6 +55,9 @@ const r2 = new S3Client({
   }
 });
 
+// -- EVENTS / INVITATIONS API --
+app.use('/api', require('./events')({ express, multer, supabase, r2, PutObjectCommand, R2_BUCKET_NAME, R2_PUBLIC_URL_BASE }));
+
 // -- JWT CONFIG --
 const JWT_SECRET     = process.env.JWT_SECRET     || 'forever27-secret-change-this';
 const ADMIN_USERNAME = process.env.ADMIN_USERNAME || 'admin';
