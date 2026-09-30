@@ -39,7 +39,7 @@
 </header>
 <main>
   <p id="msg" role="status">Loading…</p>
-  <input type="search" id="q" placeholder="Search title, host or venue">
+  <input type="search" id="q" placeholder="Search title, host or venue"> <select id="tf" aria-label="Filter by type" style="padding:10px;border:1px solid var(--line);border-radius:6px;font:inherit;margin-bottom:14px;"><option value="">All types</option><option value="seminar">Seminar</option><option value="wedding">Wedding</option><option value="birthday">Birthday</option><option value="church">Church / religious</option><option value="memorial">Memorial</option><option value="general">Other</option></select>
   <div class="scroll"><table>
     <thead><tr><th>Event</th><th>Date</th><th>Replies</th><th>Status</th><th>Actions</th></tr></thead>
     <tbody id="rows"></tbody>
@@ -69,11 +69,13 @@ function btn(label, fn, cls) { const b = document.createElement('button'); b.cla
 
 function draw() {
   const q = $('q').value.toLowerCase(), tb = $('rows'); tb.textContent = '';
-  events.filter(e => [e.title, e.host_names, e.venue].join(' ').toLowerCase().includes(q)).forEach(e => {
+  events.filter(e => (!$('tf').value || e.type === $('tf').value) && [e.title, e.host_names, e.venue].join(' ').toLowerCase().includes(q)).forEach(e => {
+    const dl = (Array.isArray(e.days) ? e.days : []).filter(d => d && d.date).sort((a, b) => a.date.localeCompare(b.date));
+    const pd = d => { const [y, m, dd] = d.date.split('-').map(Number); return new Date(y, m - 1, dd); };
     const tr = document.createElement('tr');
     const t = cell(tr, e.title); t.append(document.createElement('br'));
-    const sm = document.createElement('small'); sm.textContent = e.type + (e.host_names ? ' · ' + e.host_names : ''); t.append(sm);
-    cell(tr, e.event_date ? new Date(e.event_date).toLocaleString([], { dateStyle:'medium', timeStyle:'short' }) : '-');
+    const sm = document.createElement('small'); sm.textContent = (e.type === 'seminar' && dl.length ? 'seminar · ' + dl.length + (dl.length === 1 ? ' day: ' : ' days: ') + dl.map(d => d.title).join(' | ') : e.type) + (e.host_names ? ' · ' + e.host_names : ''); t.append(sm);
+    cell(tr, e.type === 'seminar' && dl.length ? (dl.length === 1 ? pd(dl[0]).toLocaleDateString([], { dateStyle:'medium' }) : pd(dl[0]).toLocaleDateString([], { dateStyle:'medium' }) + ' to ' + pd(dl[dl.length - 1]).toLocaleDateString([], { dateStyle:'medium' })) : e.event_date ? new Date(e.event_date).toLocaleString([], { dateStyle:'medium', timeStyle:'short' }) : '-');
     cell(tr, e.replies + ' replies, ' + e.coming + ' coming');
     const st = cell(tr, ''); const tag = document.createElement('span'); tag.className = 'tag ' + e.status; tag.textContent = e.status; st.append(tag);
     const act = document.createElement('td');
@@ -125,7 +127,7 @@ async function del(e) {
     role = (await api('/api/admin/verify')).role;
     events = await api('/api/admin/events');
     note(events.length ? events.length + ' events' + (role === 'admin' ? '' : ' (view only)') : 'No events yet.');
-    draw(); $('q').oninput = draw;
+    draw(); $('q').oninput = draw; $('tf').onchange = draw;
   } catch (x) { note(x.message); }
 })();
 </script>
