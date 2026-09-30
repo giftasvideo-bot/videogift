@@ -71,6 +71,7 @@
   .wtab[aria-selected=true] { border-bottom-color:var(--accent); color:var(--accent); }
   .wtab:focus-visible { outline:3px solid var(--ink); outline-offset:2px; }
   .wpanel { padding:28px 22px 0; text-align:center; }
+  .wpanel.home { padding:0; }
   .wpanel h2 { font:400 clamp(2rem,9vw,2.8rem)/1.1 'Pinyon Script','Noto Sans Ethiopic',cursive; margin:0 0 18px; }
   .sgroup { margin:0 0 26px; }
   .sgroup h3 { font:600 .9rem 'Cormorant Garamond','Noto Sans Ethiopic',serif; letter-spacing:.2em; text-transform:uppercase; color:var(--accent); margin:0 0 10px; }
@@ -162,6 +163,7 @@ function renderWedding(ev) {
   app.append(h);
 
   const secs = [];
+  if (ev.about || ev.message) secs.push(['About us', p => { if (ev.about) p.append(el('p','msg', ev.about)); if (ev.message) p.append(el('p','msg', ev.message)); }]);
   if (days.length || ev.event_date) secs.push(['Schedule', p => {
     if (days.length) {
       const groups = new Map();
@@ -182,7 +184,6 @@ function renderWedding(ev) {
     if (ev.venue) p.append(el('p','where', ev.venue));
     if (ev.map_url) { const r = el('div','row'), m = el('a','btn','Open map'); m.href = ev.map_url; m.target = '_blank'; m.rel = 'noopener'; r.append(m); p.append(r); }
   }]);
-  if (ev.about || ev.message) secs.push(['About us', p => { if (ev.about) p.append(el('p','msg', ev.about)); if (ev.message) p.append(el('p','msg', ev.message)); }]);
   const more = Array.isArray(ev.gallery_urls) ? ev.gallery_urls : [], allPhotos = photos.concat(more);
   if (allPhotos.length > 1) secs.push(['Photos', p => { const g = el('div','wgrid'); allPhotos.forEach(u => { const i = el('img'); i.src = u; i.alt = ''; i.loading = 'lazy'; g.append(i); }); p.append(g); }]);
   if (ev.video_url) secs.push(['Video', p => { const v = el('video'); v.src = ev.video_url; v.controls = true; v.preload = 'metadata'; v.playsInline = true; p.append(v); }]);
@@ -192,15 +193,20 @@ function renderWedding(ev) {
   const nav = el('nav','wnav'); nav.setAttribute('role','tablist'); nav.setAttribute('aria-label','Invitation sections');
   const holder = el('div');
   const tabs = [], panels = [];
-  const show = k => tabs.forEach((t, j) => { t.setAttribute('aria-selected', j === k); panels[j].hidden = j !== k; });
-  secs.forEach(([name, fill], k) => {
-    const t = el('button','wtab',name); t.type = 'button'; t.setAttribute('role','tab'); t.onclick = () => show(k);
-    const p = el('section','wpanel'); p.setAttribute('role','tabpanel'); p.append(el('h2','',name)); fill(p);
-    tabs.push(t); panels.push(p); nav.append(t); holder.append(p);
-  });
-  app.append(nav);
-  if (photos.length) app.append(slideshow(photos));
-  app.append(holder); show(0);
+  const show = (k, jump) => {
+    tabs.forEach((t, j) => { t.setAttribute('aria-selected', j === k); panels[j].hidden = j !== k; });
+    if (jump) { const top = holder.getBoundingClientRect().top + scrollY - nav.offsetHeight; if (scrollY > top) scrollTo({ top:Math.max(0, top) }); }
+  };
+  const add = (name, fill, home) => {
+    const k = tabs.length;
+    const t = el('button','wtab',name); t.type = 'button'; t.setAttribute('role','tab'); t.onclick = () => show(k, true);
+    const p = el('section', home ? 'wpanel home' : 'wpanel'); p.setAttribute('role','tabpanel');
+    if (!home) p.append(el('h2','',name));
+    fill(p); tabs.push(t); panels.push(p); nav.append(t); holder.append(p);
+  };
+  if (photos.length) add('Home', p => p.append(slideshow(photos)), true);
+  secs.forEach(([name, fill]) => add(name, fill));
+  app.append(nav, holder); show(0);
 }
 
 function render(ev) {
