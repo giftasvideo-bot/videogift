@@ -335,6 +335,7 @@
     <div class="logo">Forever<span>27</span></div>
     <h1>System Operations Control</h1>
     <div style="margin-top: 12px; display:flex; gap:10px; justify-content:center; flex-wrap:wrap;">
+      <button class="btn btn-secondary" style="font-size: 0.8rem; padding: 8px 18px;" onclick="document.getElementById('events-section').scrollIntoView({behavior:'smooth'})">🎉 Events</button>
       <button class="btn btn-secondary" style="font-size: 0.8rem; padding: 8px 18px;" onclick="window.location.href='postcards.html'">💌 Postcard Print Layout</button>
       <button class="btn btn-secondary" style="font-size: 0.8rem; padding: 8px 18px;" onclick="adminLogout()">🔓 Sign out</button>
     </div>
@@ -357,25 +358,6 @@
       <input type="number" id="batch-count" value="1" min="1" max="100" placeholder="Quantity">
       <button class="btn" onclick="generateBatchCodes()">Generate Cards</button>
     </div>
-  </div>
-
-  <div class="card-section">
-    <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; flex-wrap:wrap; gap:12px;">
-      <h2>📋 Active Card Registry Collection</h2>
-      <div style="display:flex;gap:10px;flex-wrap:wrap;">
-        <button class="btn btn-secondary" onclick="viewUnsoldList()" id="view-unsold-btn">👁️ View Unsold List</button>
-        <button class="btn btn-secondary" onclick="viewSalesReport()" id="view-sales-btn">💰 Sales Report</button>
-        <button class="btn btn-secondary" onclick="exportUnsoldToExcel()" id="export-unsold-btn">📊 Export Unsold (Excel)</button>
-        <button class="btn btn-secondary" onclick="purgeOrphanedStorage()" id="purge-btn">🧹 Purge Storage</button>
-        <button class="btn btn-secondary" onclick="printAndMark()">🖨️ Print Unsold Cards</button>
-      </div>
-    </div>
-    <div class="filter-bar">
-      <button class="filter-btn active" id="filter-all" onclick="setFilter('all')">All <span class="filter-count" id="count-all"></span></button>
-      <button class="filter-btn" id="filter-no" onclick="setFilter('no')">🔴 Not Printed <span class="filter-count" id="count-no"></span></button>
-      <button class="filter-btn" id="filter-yes" onclick="setFilter('yes')">✅ Printed <span class="filter-count" id="count-yes"></span></button>
-    </div>
-    <div class="qr-grid" id="cards-grid-container"></div>
   </div>
 
   <style>
@@ -403,6 +385,25 @@
     <div class="form-group"><input type="text" id="ev-search" placeholder="Search title, host or venue" oninput="renderEvents()"></div>
     <div class="ev-meta" id="ev-msg" role="status">Loading…</div>
     <div id="ev-list"></div>
+  </div>
+
+  <div class="card-section">
+    <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; flex-wrap:wrap; gap:12px;">
+      <h2>📋 Active Card Registry Collection</h2>
+      <div style="display:flex;gap:10px;flex-wrap:wrap;">
+        <button class="btn btn-secondary" onclick="viewUnsoldList()" id="view-unsold-btn">👁️ View Unsold List</button>
+        <button class="btn btn-secondary" onclick="viewSalesReport()" id="view-sales-btn">💰 Sales Report</button>
+        <button class="btn btn-secondary" onclick="exportUnsoldToExcel()" id="export-unsold-btn">📊 Export Unsold (Excel)</button>
+        <button class="btn btn-secondary" onclick="purgeOrphanedStorage()" id="purge-btn">🧹 Purge Storage</button>
+        <button class="btn btn-secondary" onclick="printAndMark()">🖨️ Print Unsold Cards</button>
+      </div>
+    </div>
+    <div class="filter-bar">
+      <button class="filter-btn active" id="filter-all" onclick="setFilter('all')">All <span class="filter-count" id="count-all"></span></button>
+      <button class="filter-btn" id="filter-no" onclick="setFilter('no')">🔴 Not Printed <span class="filter-count" id="count-no"></span></button>
+      <button class="filter-btn" id="filter-yes" onclick="setFilter('yes')">✅ Printed <span class="filter-count" id="count-yes"></span></button>
+    </div>
+    <div class="qr-grid" id="cards-grid-container"></div>
   </div>
 </div>
 
