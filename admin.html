@@ -130,6 +130,7 @@
     .status-pending { background: var(--pending-bg); color: var(--pending-text); }
     .status-uploaded { background: var(--success-bg); color: var(--success-text); }
     .status-viewed { background: #e3f2fd; color: #1565c0; }
+    .status-printed { background: var(--success-bg); color: var(--success-text); }
     .status-sealed { background: var(--success-bg); color: var(--success-text); }
 
     .print-status-badge {
@@ -335,7 +336,7 @@
     <div class="logo">Forever<span>27</span></div>
     <h1>System Operations Control</h1>
     <div style="margin-top: 12px; display:flex; gap:10px; justify-content:center; flex-wrap:wrap;">
-      <button class="btn btn-secondary" style="font-size: 0.8rem; padding: 8px 18px;" onclick="window.location.href='events.html'">🎉 Events Page</button>
+      <button class="btn btn-secondary" style="font-size: 0.8rem; padding: 8px 18px;" onclick="document.getElementById('events-section').scrollIntoView({behavior:'smooth'})">🎉 Events</button>
       <button class="btn btn-secondary" style="font-size: 0.8rem; padding: 8px 18px;" onclick="window.location.href='postcards.html'">💌 Postcard Print Layout</button>
       <button class="btn btn-secondary" style="font-size: 0.8rem; padding: 8px 18px;" onclick="adminLogout()">🔓 Sign out</button>
     </div>
@@ -524,6 +525,12 @@
   let localRegistry = [];
   let eventSet = new Set(); // ids of cards marked as event cards
   let eventCreatedMap = {}; // cardId -> event slug, for cards that already have an event
+  const VIEW_UNLOCK_KEY = 'f27_view_unlocked_ids'; // same key as postcards.html
+  let viewedSet = new Set(); // cards whose video was watched (status "viewed")
+  function getViewUnlocked() { try { return JSON.parse(localStorage.getItem(VIEW_UNLOCK_KEY)) || {}; } catch { return {}; } }
+  function viewedLocked(id) { return viewedSet.has(id) && !getViewUnlocked()[id]; }
+  function isCardLocked(id) { return !!printStatusMap[id] || viewedLocked(id); }
+  let printStatusMap = {}; // cardId -> {category, variant, printedAt}: cards locked as printed on postcards.html (from the database)
   let buyerMap = {}; // { [id]: { buyerName, buyerContact, buyerNote, soldAt } }
 
   // Returns Authorization header using the stored session token
@@ -635,8 +642,11 @@
       }
       const data = await response.json();
 
+      const nextViewed = new Set(localRegistry.filter(id => (data.statuses || {})[id] === 'viewed'));
+      if ([...nextViewed].sort().join() !== [...viewedSet].sort().join()) { viewedSet = nextViewed; renderDashboardGrid(); }
       localRegistry.forEach(id => {
-        const remoteStatus = data.statuses[id] || 'pending';
+        let remoteStatus = data.statuses[id] || 'pending';
+        if (printStatusMap[id] && (remoteStatus === 'pending' || remoteStatus === 'viewed')) remoteStatus = 'printed';
         const badge = document.getElementById(`badge-${id}`);
         if (badge) {
           badge.textContent = remoteStatus.toUpperCase();
@@ -681,16 +691,39 @@
   let currentFilter = 'all';
 
   function getPrintedMap() {
-    try { return JSON.parse(localStorage.getItem(PRINTED_KEY)) || {}; }
-    catch { return {}; }
+    let local = {};
+    try { local = JSON.parse(localStorage.getItem(PRINTED_KEY)) || {}; } catch { local = {}; }
+    // A card locked on the postcard page counts as printed everywhere on this dashboard.
+    Object.keys(printStatusMap).forEach(id => { local[id] = true; });
+    return local;
   }
   function setPrintedMap(map) {
-    localStorage.setItem(PRINTED_KEY, JSON.stringify(map));
+    const own = { ...map };
+    Object.keys(printStatusMap).forEach(id => { delete own[id]; }); // database locks are not stored locally
+    localStorage.setItem(PRINTED_KEY, JSON.stringify(own));
   }
   function isPrinted(id) {
     return !!getPrintedMap()[id];
   }
+  async function unlockCard(id) {
+    if (!confirm(`Unlock ${id}? It will be printable again.`)) return;
+    try {
+      if (printStatusMap[id]) {
+        const res = await apiFetch(`${BACKEND_API_BASE}/api/admin/cards/${encodeURIComponent(id)}/design`, { method: 'DELETE' });
+        if (!res.ok) throw new Error('Unlock failed.');
+        delete printStatusMap[id];
+      }
+      if (viewedSet.has(id)) {
+        const u = getViewUnlocked(); u[id] = true;
+        localStorage.setItem(VIEW_UNLOCK_KEY, JSON.stringify(u));
+      }
+      renderDashboardGrid();
+      syncStatusesWithDatabase();
+    } catch (err) { alert(`⚠️ Could not unlock ${id}: ${err.message}`); }
+  }
   function togglePrinted(id) {
+    if (viewedLocked(id)) { alert('🔒 ' + id + ' is locked because its video was watched. Use Unlock first.'); return; }
+    if (printStatusMap[id]) { alert('🔒 ' + id + ' is locked as printed on the Postcard Print Layout page. An admin can unlock it there.'); return; }
     const map = getPrintedMap();
     map[id] = !map[id];
     if (!map[id]) delete map[id];
@@ -712,7 +745,7 @@
   // (via generateQrDataUrl) so the popup only ever needs to show a plain
   // <img>, never a live canvas.
   function printAndMark() {
-    const unsoldIds = sortIdsAscending(localRegistry.filter(id => !isCardSold(id) && !eventSet.has(id)));
+    const unsoldIds = sortIdsAscending(localRegistry.filter(id => !isCardSold(id) && !eventSet.has(id) && !viewedLocked(id)));
     if (unsoldIds.length === 0) {
       alert('🎉 Nothing to print — every card in the registry has already been sold.');
       return;
@@ -820,13 +853,15 @@
       card.innerHTML = `
         <div class="qr-container" id="qr-container-${id}"></div>
         <div class="qr-id-label">${id}</div>
-        <div class="print-status-badge ${printed ? 'print-status-yes' : 'print-status-no'}">${printed ? '✅ Printed' : '🔴 Not Printed'}</div>
+        <div class="print-status-badge ${printed ? 'print-status-yes' : 'print-status-no'}">${printStatusMap[id] ? '🔒 Printed (postcard)' : printed ? '✅ Printed' : '🔴 Not Printed'}</div>
+        ${viewedLocked(id) ? '<div class="print-status-badge" style="background:#e3ecfb;color:#2c4a8f;" title="The video was watched, so this card is locked.">🔒 Locked (viewed)</div>' : ''}
         <div class="status-badge status-pending" id="badge-${id}">CHECKING...</div>
         <div id="upload-count-${id}" style="font-size:0.78rem; color:var(--muted); margin-bottom:10px; min-height:18px;"></div>
         <div class="sold-info ${isSold ? 'has-buyer' : ''}" id="sold-info-${id}">${renderSoldInfoHtml(buyer)}${eventCreatedMap[id] ? ' <span style="color:#2f6b52;font-weight:600;">&middot; ✅ Event created</span>' : (eventSet.has(id) && !isSold ? ' <span style="opacity:0.8;">&middot; 🎉 Event card</span>' : '')}</div>
         <div class="card-actions" style="flex-wrap:wrap; gap:6px;">
           <button class="btn btn-print-toggle ${printed ? 'is-printed' : ''}" onclick="togglePrinted('${id}')">${printed ? '✅ Printed' : '🖨️ Mark Printed'}</button>
           <button class="btn btn-secondary" onclick="copyWatchLink('${id}')">🔗 Link</button>
+          ${isCardLocked(id) ? `<button class="btn btn-secondary" onclick="unlockCard('${id}')">🔓 Unlock</button>` : ''}
           ${eventCreatedMap[id]
             ? `<button class="btn btn-secondary" onclick="viewEvent('${id}')">✅ Event created · View</button>`
             : eventSet.has(id)
@@ -1054,7 +1089,7 @@
 
   function viewUnsoldList() {
     const printedMap = getPrintedMap();
-    const unsoldIds = sortIdsAscending(localRegistry.filter(id => !isCardSold(id) && !eventSet.has(id)));
+    const unsoldIds = sortIdsAscending(localRegistry.filter(id => !isCardSold(id) && !eventSet.has(id) && !viewedLocked(id)));
 
     const subtitle = document.getElementById('unsold-modal-subtitle');
     const grid = document.getElementById('unsold-grid');
@@ -1290,7 +1325,7 @@
     }
 
     const printedMap = getPrintedMap();
-    const unsoldIds = sortIdsAscending(localRegistry.filter(id => !isCardSold(id) && !eventSet.has(id)));
+    const unsoldIds = sortIdsAscending(localRegistry.filter(id => !isCardSold(id) && !eventSet.has(id) && !viewedLocked(id)));
 
     if (unsoldIds.length === 0) {
       alert('🎉 No unsold cards — everything currently in the registry has been sold.');
@@ -1488,6 +1523,7 @@
       buyerMap = data.buyers || {};
       eventSet = new Set(data.eventCards || []);
       eventCreatedMap = data.eventsByCard || {};
+      printStatusMap = data.printStatus || {};
     } catch (err) {
       console.warn('Could not load cards from DB:', err);
       localRegistry = [];
@@ -1513,7 +1549,10 @@
       const data = await res.json();
       const nextCreated = data.eventsByCard || {};
       const nextSet = new Set(data.eventCards || []);
-      const changed = JSON.stringify(nextCreated) !== JSON.stringify(eventCreatedMap) ||
+      const nextPrinted = data.printStatus || {};
+      const printedChanged = Object.keys(nextPrinted).sort().join() !== Object.keys(printStatusMap).sort().join();
+      if (printedChanged) printStatusMap = nextPrinted;
+      const changed = printedChanged || JSON.stringify(nextCreated) !== JSON.stringify(eventCreatedMap) ||
         [...nextSet].sort().join() !== [...eventSet].sort().join();
       if (changed) {
         eventCreatedMap = nextCreated;
