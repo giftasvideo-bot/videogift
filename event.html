@@ -160,7 +160,6 @@ function renderWedding(ev) {
   const bits = [first && first.toLocaleDateString([], { dateStyle:'long' }), ev.venue].filter(Boolean);
   if (bits.length) h.append(el('p','wed-line', bits.join('  \u2022  ')));
   app.append(h);
-  if (photos.length) app.append(slideshow(photos));
 
   const secs = [];
   if (days.length || ev.event_date) secs.push(['Schedule', p => {
@@ -188,7 +187,7 @@ function renderWedding(ev) {
   if (allPhotos.length > 1) secs.push(['Photos', p => { const g = el('div','wgrid'); allPhotos.forEach(u => { const i = el('img'); i.src = u; i.alt = ''; i.loading = 'lazy'; g.append(i); }); p.append(g); }]);
   if (ev.video_url) secs.push(['Video', p => { const v = el('video'); v.src = ev.video_url; v.controls = true; v.preload = 'metadata'; v.playsInline = true; p.append(v); }]);
   if (ev.rsvp_enabled) secs.push(['RSVP', p => p.append(rsvpForm())]);
-  if (!secs.length) return;
+  if (!secs.length) { if (photos.length) app.append(slideshow(photos)); return; }
 
   const nav = el('nav','wnav'); nav.setAttribute('role','tablist'); nav.setAttribute('aria-label','Invitation sections');
   const holder = el('div');
@@ -199,7 +198,9 @@ function renderWedding(ev) {
     const p = el('section','wpanel'); p.setAttribute('role','tabpanel'); p.append(el('h2','',name)); fill(p);
     tabs.push(t); panels.push(p); nav.append(t); holder.append(p);
   });
-  app.append(nav, holder); show(0);
+  app.append(nav);
+  if (photos.length) app.append(slideshow(photos));
+  app.append(holder); show(0);
 }
 
 function render(ev) {
