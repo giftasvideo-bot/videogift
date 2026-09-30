@@ -18,6 +18,9 @@
   body[data-theme=cream]    { --bg:#f3ecdc; --ink:#4a3a24; --accent:#7a5c3a; --soft:#e7dcc4; }
   body[data-theme=navy]     { --bg:#22384f; --ink:#f4efe3; --accent:#d8b978; --soft:#2f4862; --on:#22384f; }
   body[data-theme=burgundy] { --bg:#6b2233; --ink:#f7ece6; --accent:#e0bf8a; --soft:#7d3245; --on:#4a1421; }
+  body.bday[data-theme=pink]  { --bg:#ffd9e8; --ink:#4a1f3a; --accent:#d6336c; --soft:#fff0f6; --ring:#f9b8d1; --band1:#e85c92; --band2:#d6336c; }
+  body.bday[data-theme=blue]  { --bg:#d9ebff; --ink:#10294d; --accent:#2f6fdb; --soft:#f0f7ff; --ring:#bcd6fa; --band1:#4a86e8; --band2:#3a76d8; }
+  body.bday[data-theme=white] { --bg:#ffffff; --ink:#2b2a52; --accent:#6f63d9; --soft:#f4f2ff; --ring:#e0dcfa; --band1:#7b6fe6; --band2:#6a5ed6; }
   .btn.fill { color:var(--on,#fff); }
   .wed input { color:#222; }
   * { box-sizing:border-box; }
@@ -110,7 +113,7 @@
   .bday video { border-radius:16px; }
   .bd-hero { position:relative; display:grid; gap:22px; padding:28px 22px 40px; align-items:center; justify-items:center; text-align:center; overflow:hidden; }
   .bd-art { position:relative; width:min(74vw,360px); aspect-ratio:1; margin:64px 0 14px; order:-1; }
-  .bd-photo { width:100%; height:100%; border-radius:50%; border:10px solid #cfc8fa; overflow:hidden; background:#fff; box-shadow:0 10px 26px rgba(111,99,217,.22); display:grid; place-items:center; font-size:5rem; }
+  .bd-photo { width:100%; height:100%; border-radius:50%; border:10px solid var(--ring,#cfc8fa); overflow:hidden; background:#fff; box-shadow:0 10px 26px rgba(111,99,217,.22); display:grid; place-items:center; font-size:5rem; }
   .bd-photo .slides, .bd-photo .photo { width:100%; height:100%; aspect-ratio:1; object-fit:cover; }
   .bd-art svg.bl { position:absolute; filter:drop-shadow(0 4px 4px rgba(0,0,0,.12)); }
   .bd-art svg.st { position:absolute; }
@@ -124,7 +127,7 @@
   .bd-more { display:inline-block; border:0; background:var(--accent); color:#fff; font:500 1rem 'Fredoka',sans-serif; padding:9px 26px; border-radius:999px; cursor:pointer; }
   .bd-more:focus-visible { outline:3px solid var(--ink); outline-offset:2px; }
   .bd-band { height:54px; margin-top:auto; width:100vw; margin-left:calc(50% - 50vw); background:
-      repeating-conic-gradient(#7b6fe6 0% 25%, #6a5ed6 0% 50%) 0 0 / 28px 28px; }
+      repeating-conic-gradient(var(--band1,#7b6fe6) 0% 25%, var(--band2,#6a5ed6) 0% 50%) 0 0 / 28px 28px; }
   @media (min-width:760px) {
     .bd-hero { grid-template-columns:1.05fr 1fr; justify-items:stretch; text-align:left; padding:36px 40px 56px; gap:30px; }
     .bd-art { order:0; justify-self:center; }
@@ -224,7 +227,7 @@ function birthdayHero(ev, photos, first, onMore) {
     balloon('b2', '#ff9a8a', 84, 'right:-12%;top:-16%;', 10),
     balloon('b3', '#ff9a6b', 64, 'left:-8%;bottom:-8%;', -8),
     star('#ff9a6b', 30, 'right:-6%;top:40%;'), star('#ffb36b', 22, 'left:-10%;top:46%;'));
-  [[6,30,'#ff7fa0',8],[92,12,'#6f63d9',7],[84,78,'#ff9a6b',9],[14,88,'#6f63d9',6],[50,-8,'#ff9a6b',8],[100,55,'#ff7fa0',7],[-4,70,'#6f63d9',7]].forEach(([x, y, c, z], i) => {
+  [[6,30,'#ff7fa0',8],[92,12,'var(--accent)',7],[84,78,'#ff9a6b',9],[14,88,'var(--accent)',6],[50,-8,'#ff9a6b',8],[100,55,'#ff7fa0',7],[-4,70,'var(--accent)',7]].forEach(([x, y, c, z], i) => {
     const d = el('span', 'bd-conf'); d.setAttribute('aria-hidden', 'true');
     d.style.cssText = 'left:' + x + '%;top:' + y + '%;width:' + z + 'px;height:' + (i % 2 ? z : z * 2) + 'px;background:' + c + ';transform:rotate(' + (i * 37) + 'deg);' + (i % 3 === 0 ? 'border-radius:50%;' : '');
     art.append(d);
@@ -247,7 +250,8 @@ function birthdayHero(ev, photos, first, onMore) {
 function renderWedding(ev) {
   const bday = ev.type === 'birthday';
   document.body.classList.add(bday ? 'bday' : 'wed');
-  if (!bday && ['white','black','grey','cream','navy','burgundy'].includes(ev.theme)) document.body.dataset.theme = ev.theme;
+  const okThemes = bday ? ['pink','blue','white'] : ['white','black','grey','cream','navy','burgundy'];
+  if (okThemes.includes(ev.theme)) document.body.dataset.theme = ev.theme;
   const photos = (ev.photo_urls && ev.photo_urls.length) ? ev.photo_urls : (ev.photo_url ? [ev.photo_url] : []);
   const days = Array.isArray(ev.days) ? ev.days.filter(d => d && d.date) : [];
   const first = days.length ? dayDate(days[0]) : (ev.event_date ? new Date(ev.event_date) : null);
