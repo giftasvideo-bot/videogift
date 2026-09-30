@@ -1,7 +1,7 @@
 // events.js — invitation events API. Mount from server.js (see bottom of this file).
 const crypto = require('crypto');
 
-module.exports = function ({ express, multer, supabase, r2, PutObjectCommand, R2_BUCKET_NAME, R2_PUBLIC_URL_BASE }) {
+module.exports = function ({ express, multer, supabase, r2, PutObjectCommand, DeleteObjectCommand, R2_BUCKET_NAME, R2_PUBLIC_URL_BASE, requireAuth, requireAdmin }) {
   const router = express.Router();
   const TYPES = ['wedding', 'birthday', 'church', 'memorial', 'general'];
 
@@ -85,11 +85,56 @@ module.exports = function ({ express, multer, supabase, r2, PutObjectCommand, R2
     res.json(data || []);
   });
 
+  // ---------- ADMIN / STAFF ----------
+  // List all events with reply counts (admin + postcard staff can read)
+  router.get('/admin/events', requireAuth, async (req, res) => {
+    const { data, error } = await supabase.from('events')
+      .select('id,slug,type,title,host_names,event_date,venue,status,photo_url,video_url,created_at')
+      .order('created_at', { ascending: false });
+    if (error) return res.status(500).json({ error: error.message });
+    const { data: rs } = await supabase.from('event_rsvps').select('event_id,attending,guests');
+    const counts = {};
+    (rs || []).forEach(r => { const c = counts[r.event_id] || (counts[r.event_id] = { replies: 0, coming: 0 });
+      c.replies++; if (r.attending) c.coming += r.guests || 1; });
+    res.json((data || []).map(({ id, ...e }) => ({ ...e, ...(counts[id] || { replies: 0, coming: 0 }) })));
+  });
+
+  // Turn a QR link on or off (status: live | disabled) - admin only
+  router.patch('/admin/events/:slug', requireAuth, requireAdmin, async (req, res) => {
+    const status = req.body && req.body.status;
+    if (!['live', 'disabled'].includes(status)) return res.status(400).json({ error: 'Status must be live or disabled.' });
+    const { error } = await supabase.from('events').update({ status }).eq('slug', req.params.slug);
+    if (error) return res.status(500).json({ error: error.message });
+    res.json({ success: true, status });
+  });
+
+  // See replies for any event - admin only
+  router.get('/admin/events/:slug/rsvps', requireAuth, requireAdmin, async (req, res) => {
+    const { data: ev } = await supabase.from('events').select('id').eq('slug', req.params.slug).single();
+    if (!ev) return res.status(404).json({ error: 'Event not found.' });
+    const { data } = await supabase.from('event_rsvps').select('guest_name,attending,guests,created_at').eq('event_id', ev.id).order('created_at');
+    res.json(data || []);
+  });
+
+  // Delete event + its files - admin only
+  router.delete('/admin/events/:slug', requireAuth, requireAdmin, async (req, res) => {
+    const { data: ev } = await supabase.from('events').select('photo_url,video_url').eq('slug', req.params.slug).single();
+    if (!ev) return res.status(404).json({ error: 'Event not found.' });
+    for (const u of [ev.photo_url, ev.video_url]) {
+      if (!u || !u.startsWith(R2_PUBLIC_URL_BASE + '/')) continue;
+      try { await r2.send(new DeleteObjectCommand({ Bucket: R2_BUCKET_NAME, Key: decodeURIComponent(u.slice(R2_PUBLIC_URL_BASE.length + 1)) })); }
+      catch (e) { console.error('R2 delete failed:', e.message); }
+    }
+    const { error } = await supabase.from('events').delete().eq('slug', req.params.slug);
+    if (error) return res.status(500).json({ error: error.message });
+    res.json({ success: true });
+  });
+
   return router;
 };
 
 /* In server.js, after the R2 client (`r2`) is created, add:
 
 const { PutObjectCommand } = require('@aws-sdk/client-s3'); // already imported at top
-app.use('/api', require('./events')({ express, multer, supabase, r2, PutObjectCommand, R2_BUCKET_NAME, R2_PUBLIC_URL_BASE }));
+app.use('/api', require('./events')({ express, multer, supabase, r2, PutObjectCommand, DeleteObjectCommand, R2_BUCKET_NAME, R2_PUBLIC_URL_BASE, requireAuth, requireAdmin }));
 */

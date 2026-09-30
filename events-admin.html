@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Events | Admin</title>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,700&family=DM+Sans:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcode-generator/1.4.4/qrcode.min.js"></script>
+<style>
+  :root { --bg:#f2f5f4; --ink:#123c40; --accent:#0f5257; --line:#b9cfcc; --bad:#a12a2a; }
+  * { box-sizing:border-box; }
+  body { margin:0; background:var(--bg); color:var(--ink); font:400 .95rem/1.5 'DM Sans',sans-serif; }
+  header { display:flex; gap:16px; align-items:center; flex-wrap:wrap; padding:18px 22px; background:var(--accent); color:#fff; }
+  header h1 { font:700 1.5rem 'Fraunces',serif; margin:0; flex:1; }
+  header a { color:#fff; }
+  main { padding:20px 22px 60px; max-width:1100px; margin:0 auto; }
+  input[type=search] { padding:10px; border:1px solid var(--line); border-radius:6px; width:100%; max-width:360px; font:inherit; margin-bottom:14px; }
+  .scroll { overflow-x:auto; }
+  table { border-collapse:collapse; width:100%; background:#fff; min-width:760px; }
+  th, td { text-align:left; padding:10px 12px; border-bottom:1px solid var(--line); vertical-align:top; }
+  th { font-weight:500; background:#e4eeec; }
+  .tag { padding:2px 8px; border-radius:10px; font-size:.8rem; background:#d9e8e6; }
+  .tag.disabled { background:#f3d3d3; color:var(--bad); }
+  .btn { border:1.5px solid var(--accent); background:transparent; color:var(--accent); padding:5px 10px; border-radius:5px; font:500 .85rem 'DM Sans',sans-serif; cursor:pointer; margin:2px 2px 2px 0; }
+  .btn.danger { border-color:var(--bad); color:var(--bad); }
+  .btn:focus-visible { outline:3px solid var(--ink); outline-offset:2px; }
+  dialog { border:0; border-radius:10px; padding:22px; max-width:340px; width:92%; }
+  dialog::backdrop { background:rgba(0,0,0,.45); }
+  dialog svg { width:220px; height:220px; display:block; margin:10px auto; }
+  dialog code { word-break:break-all; font-size:.8rem; display:block; margin:8px 0; }
+  #msg { min-height:1.4em; font-weight:500; }
+</style>
+</head>
+<body>
+<header>
+  <h1>Events</h1>
+  <a href="events-print.html">Print cards</a>
+  <a href="create-event.html">New event</a>
+</header>
+<main>
+  <p id="msg" role="status">Loading…</p>
+  <input type="search" id="q" placeholder="Search title, host or venue">
+  <div class="scroll"><table>
+    <thead><tr><th>Event</th><th>Date</th><th>Replies</th><th>Status</th><th>Actions</th></tr></thead>
+    <tbody id="rows"></tbody>
+  </table></div>
+</main>
+<dialog id="dlg"><div id="dbody"></div><form method="dialog"><button class="btn">Close</button></form></dialog>
+
+<script>
+const SESSION_KEY = 'f27_admin_auth';
+const API = localStorage.getItem('videogift_api_url') || 'https://videogift-backend-3.onrender.com';
+const $ = id => document.getElementById(id);
+const sess = JSON.parse(sessionStorage.getItem(SESSION_KEY) || 'null');
+const token = sess && sess.token && sess.expires > Date.now() ? sess.token : null;
+if (!token) location.replace('login-postcards.html');
+let role = null, events = [];
+
+async function api(path, opt = {}) {
+  const r = await fetch(API + path, { ...opt, headers: { 'Content-Type':'application/json', Authorization:'Bearer ' + token } });
+  if (r.status === 401) { sessionStorage.removeItem(SESSION_KEY); location.replace('login-postcards.html'); }
+  const d = await r.json().catch(() => ({}));
+  if (!r.ok) throw new Error(d.error || d.message || 'Request failed (' + r.status + ')');
+  return d;
+}
+const linkFor = slug => { const u = new URL('event.html', location.href); u.search = '?e=' + slug; return u.href; };
+const cell = (tr, txt) => { const td = document.createElement('td'); td.textContent = txt; tr.append(td); return td; };
+function btn(label, fn, cls) { const b = document.createElement('button'); b.className = 'btn ' + (cls || ''); b.textContent = label; b.onclick = fn; return b; }
+
+function draw() {
+  const q = $('q').value.toLowerCase(), tb = $('rows'); tb.textContent = '';
+  events.filter(e => [e.title, e.host_names, e.venue].join(' ').toLowerCase().includes(q)).forEach(e => {
+    const tr = document.createElement('tr');
+    const t = cell(tr, e.title); t.append(document.createElement('br'));
+    const sm = document.createElement('small'); sm.textContent = e.type + (e.host_names ? ' · ' + e.host_names : ''); t.append(sm);
+    cell(tr, e.event_date ? new Date(e.event_date).toLocaleString([], { dateStyle:'medium', timeStyle:'short' }) : '-');
+    cell(tr, e.replies + ' replies, ' + e.coming + ' coming');
+    const st = cell(tr, ''); const tag = document.createElement('span'); tag.className = 'tag ' + e.status; tag.textContent = e.status; st.append(tag);
+    const act = document.createElement('td');
+    act.append(btn('QR', () => showQR(e)), btn('Copy link', () => navigator.clipboard.writeText(linkFor(e.slug)).then(() => note('Link copied.'))));
+    if (role === 'admin') {
+      act.append(
+        btn(e.status === 'live' ? 'Disable' : 'Enable', () => setStatus(e)),
+        btn('Replies', () => showReplies(e)),
+        btn('Delete', () => del(e), 'danger'));
+    }
+    tr.append(act); tb.append(tr);
+  });
+}
+const note = t => { $('msg').textContent = t; };
+
+function showQR(e) {
+  const url = linkFor(e.slug), qr = qrcode(0, 'H'); qr.addData(url); qr.make();
+  const svg = qr.createSvgTag({ cellSize:8, margin:4, scalable:true });
+  $('dbody').innerHTML = '<h3></h3>' + svg + '<code></code>';
+  $('dbody').querySelector('h3').textContent = e.title; $('dbody').querySelector('code').textContent = url;
+  const a = document.createElement('a'); a.className = 'btn'; a.textContent = 'Download SVG'; a.download = 'qr-' + e.slug + '.svg';
+  a.href = URL.createObjectURL(new Blob([svg], { type:'image/svg+xml' })); $('dbody').append(a);
+  $('dlg').showModal();
+}
+async function setStatus(e) {
+  const next = e.status === 'live' ? 'disabled' : 'live';
+  if (next === 'disabled' && !confirm('Disable this event? Its QR code will show "not found" until you enable it again.')) return;
+  try { await api('/api/admin/events/' + e.slug, { method:'PATCH', body:JSON.stringify({ status:next }) }); e.status = next; note('Status set to ' + next + '.'); draw(); }
+  catch (x) { note(x.message); }
+}
+async function showReplies(e) {
+  try {
+    const rows = await api('/api/admin/events/' + e.slug + '/rsvps');
+    $('dbody').textContent = ''; const h = document.createElement('h3'); h.textContent = e.title; $('dbody').append(h);
+    const ul = document.createElement('ul');
+    (rows.length ? rows : [{ guest_name:'No replies yet.', empty:true }]).forEach(r => { const li = document.createElement('li');
+      li.textContent = r.empty ? r.guest_name : r.guest_name + ': ' + (r.attending ? 'coming (' + r.guests + ')' : 'not coming'); ul.append(li); });
+    $('dbody').append(ul); $('dlg').showModal();
+  } catch (x) { note(x.message); }
+}
+async function del(e) {
+  if (!confirm('Delete "' + e.title + '" and its photo and video? Printed QR codes will stop working. This cannot be undone.')) return;
+  try { await api('/api/admin/events/' + e.slug, { method:'DELETE' }); events = events.filter(x => x !== e); note('Event deleted.'); draw(); }
+  catch (x) { note(x.message); }
+}
+
+(async () => {
+  try {
+    role = (await api('/api/admin/verify')).role;
+    events = await api('/api/admin/events');
+    note(events.length ? events.length + ' events' + (role === 'admin' ? '' : ' (view only)') : 'No events yet.');
+    draw(); $('q').oninput = draw;
+  } catch (x) { note(x.message); }
+})();
+</script>
+</body>
+</html>

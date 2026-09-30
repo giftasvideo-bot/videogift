@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Events | Print Invitation Cards</title>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,700&family=DM+Sans:wght@400;500&family=Noto+Sans+Ethiopic:wght@400;600&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcode-generator/1.4.4/qrcode.min.js"></script>
+<style>
+  :root { --bg:#f2f5f4; --ink:#123c40; --accent:#0f5257; --line:#b9cfcc; }
+  * { box-sizing:border-box; }
+  body { margin:0; background:var(--bg); color:var(--ink); font:400 .95rem/1.5 'DM Sans','Noto Sans Ethiopic',sans-serif; }
+  .bar { display:flex; gap:12px; flex-wrap:wrap; align-items:end; padding:16px 22px; background:var(--accent); color:#fff; }
+  .bar label { display:grid; gap:3px; font-size:.85rem; }
+  .bar select, .bar input { padding:8px; border-radius:5px; border:0; font:inherit; min-width:120px; max-width:280px; }
+  .bar a { color:#fff; margin-left:auto; }
+  .btn { background:#fff; color:var(--accent); border:0; padding:9px 16px; border-radius:5px; font:500 .95rem 'DM Sans',sans-serif; cursor:pointer; }
+  .btn:focus-visible, select:focus-visible, input:focus-visible { outline:3px solid #fff; outline-offset:2px; }
+  #note { padding:10px 22px; min-height:2.4em; font-weight:500; }
+  .sheet { display:grid; grid-template-columns:repeat(2, 105mm); justify-content:center; gap:0; }
+  .sheet.tag { grid-template-columns:repeat(2, 90mm); }
+  .card { width:105mm; height:148mm; background:#fff; border:.2mm dashed #999; padding:9mm; display:flex; flex-direction:column; align-items:center; text-align:center; break-inside:avoid; overflow:hidden; }
+  .sheet.tag .card { width:90mm; height:55mm; padding:4mm; flex-direction:row; gap:4mm; text-align:left; }
+  .card h2 { font:700 19pt/1.1 'Fraunces','Noto Sans Ethiopic',serif; margin:4mm 0 2mm; }
+  .sheet.tag .card h2 { font-size:12pt; margin:0 0 1mm; }
+  .card p { margin:0 0 1.5mm; font-size:10pt; }
+  .card .qr { width:52mm; height:52mm; margin:auto 0 2mm; }
+  .sheet.tag .card .qr { width:38mm; height:38mm; margin:0; flex:none; }
+  .card .qr svg { width:100%; height:100%; display:block; }
+  .card small { font-size:7.5pt; word-break:break-all; opacity:.8; }
+  .card .scan { font-size:9pt; font-weight:500; }
+  .card[data-type=wedding]  { border-top:3mm solid #b08d57; } .card[data-type=birthday] { border-top:3mm solid #1f3fbf; }
+  .card[data-type=church]   { border-top:3mm solid #2f6b52; } .card[data-type=memorial] { border-top:3mm solid #555; }
+  .card[data-type=general]  { border-top:3mm solid #0f5257; }
+  @page { size:A4; margin:0; }
+  @media print { .bar, #note { display:none; } body { background:#fff; } .card { border-color:#ccc; } }
+</style>
+</head>
+<body>
+<div class="bar">
+  <label>Event <select id="ev"></select></label>
+  <label>Cards <input type="number" id="qty" min="1" max="500" value="4"></label>
+  <label>Layout <select id="lay"><option value="card">Card, A6 (4 per page)</option><option value="tag">Small tag, 90x55 mm (10 per page)</option></select></label>
+  <button class="btn" id="pr">Print</button>
+  <a href="events-admin.html">Manage events</a>
+</div>
+<p id="note" role="status">Loading…</p>
+<div class="sheet" id="sheet"></div>
+
+<script>
+const SESSION_KEY = 'f27_admin_auth';
+const API = localStorage.getItem('videogift_api_url') || 'https://videogift-backend-3.onrender.com';
+const $ = id => document.getElementById(id);
+const sess = JSON.parse(sessionStorage.getItem(SESSION_KEY) || 'null');
+const token = sess && sess.token && sess.expires > Date.now() ? sess.token : null;
+if (!token) location.replace('login-postcards.html');
+let events = [];
+
+const linkFor = slug => { const u = new URL('event.html', location.href); u.search = '?e=' + slug; return u.href; };
+const add = (p, tag, cls, txt) => { const n = document.createElement(tag); if (cls) n.className = cls; if (txt) n.textContent = txt; p.append(n); return n; };
+
+function draw() {
+  const e = events.find(x => x.slug === $('ev').value), sheet = $('sheet'); sheet.textContent = '';
+  if (!e) return;
+  sheet.className = 'sheet' + ($('lay').value === 'tag' ? ' tag' : '');
+  const n = Math.min(Math.max(parseInt($('qty').value) || 1, 1), 500);
+  const url = linkFor(e.slug), qr = qrcode(0, 'H'); qr.addData(url); qr.make();
+  const svg = qr.createSvgTag({ cellSize:8, margin:2, scalable:true });
+  const when = e.event_date ? new Date(e.event_date).toLocaleString([], { dateStyle:'long', timeStyle:'short' }) : '';
+  for (let i = 0; i < n; i++) {
+    const c = add(sheet, 'div', 'card'); c.dataset.type = e.type;
+    const q = document.createElement('div'); q.className = 'qr'; q.innerHTML = svg;
+    if ($('lay').value === 'tag') {
+      c.append(q); const t = add(c, 'div');
+      add(t, 'h2', '', e.title); if (when) add(t, 'p', '', when); add(t, 'p', 'scan', 'Scan for photo, video and details'); add(t, 'small', '', url);
+    } else {
+      add(c, 'h2', '', e.title);
+      if (e.host_names) add(c, 'p', '', e.host_names);
+      if (when) add(c, 'p', '', when);
+      if (e.venue) add(c, 'p', '', e.venue);
+      c.append(q); add(c, 'p', 'scan', 'Scan to see your invitation'); add(c, 'small', '', url);
+    }
+  }
+  $('note').textContent = n + ' cards ready. Check the preview, then press Print. Turn off headers and footers in the print dialog.';
+}
+
+$('pr').onclick = () => { if ($('sheet').children.length) window.print(); };
+['ev', 'qty', 'lay'].forEach(id => $(id).addEventListener('input', draw));
+
+(async () => {
+  try {
+    const r = await fetch(API + '/api/admin/events', { headers:{ Authorization:'Bearer ' + token } });
+    if (r.status === 401) { sessionStorage.removeItem(SESSION_KEY); return location.replace('login-postcards.html'); }
+    if (!r.ok) throw new Error('Could not load events (' + r.status + ').');
+    events = (await r.json()).filter(e => e.status === 'live');
+    if (!events.length) return ($('note').textContent = 'No live events to print yet.');
+    events.forEach(e => { const o = document.createElement('option'); o.value = e.slug; o.textContent = e.title; $('ev').append(o); });
+    draw();
+  } catch (x) { $('note').textContent = x.message; }
+})();
+</script>
+</body>
+</html>
