@@ -479,9 +479,18 @@ app.patch('/api/admin/cards/:id/design', requireAuth, async (req, res) => {
 
   try {
     const { data: existing, error: lookupErr } = await supabase
-      .from('gifts').select('id, printed_at').eq('id', giftId).single();
+      .from('gifts').select('id, printed_at, product_type').eq('id', giftId).single();
     if (lookupErr || !existing) {
       return res.status(404).json({ error: 'Gift not found.' });
+    }
+
+    // Event cards are reserved for invitations, for every role (admin must unmark it first).
+    if (existing.product_type === 'event') {
+      return res.status(409).json({
+        error: 'This card is reserved for an event invitation and cannot be printed as a postcard.',
+        locked: true,
+        event: true
+      });
     }
 
     if (existing.printed_at && req.admin.role !== 'admin') {

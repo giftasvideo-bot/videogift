@@ -711,7 +711,7 @@
   // (via generateQrDataUrl) so the popup only ever needs to show a plain
   // <img>, never a live canvas.
   function printAndMark() {
-    const unsoldIds = sortIdsAscending(localRegistry.filter(id => !isCardSold(id)));
+    const unsoldIds = sortIdsAscending(localRegistry.filter(id => !isCardSold(id) && !eventSet.has(id)));
     if (unsoldIds.length === 0) {
       alert('🎉 Nothing to print — every card in the registry has already been sold.');
       return;
@@ -1045,7 +1045,7 @@
 
   function viewUnsoldList() {
     const printedMap = getPrintedMap();
-    const unsoldIds = sortIdsAscending(localRegistry.filter(id => !isCardSold(id)));
+    const unsoldIds = sortIdsAscending(localRegistry.filter(id => !isCardSold(id) && !eventSet.has(id)));
 
     const subtitle = document.getElementById('unsold-modal-subtitle');
     const grid = document.getElementById('unsold-grid');
@@ -1281,7 +1281,7 @@
     }
 
     const printedMap = getPrintedMap();
-    const unsoldIds = sortIdsAscending(localRegistry.filter(id => !isCardSold(id)));
+    const unsoldIds = sortIdsAscending(localRegistry.filter(id => !isCardSold(id) && !eventSet.has(id)));
 
     if (unsoldIds.length === 0) {
       alert('🎉 No unsold cards — everything currently in the registry has been sold.');

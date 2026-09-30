@@ -115,6 +115,7 @@
     .pc-badge.sold { background: #fff8e1; color: #7a6020; }
     .pc-badge.unsold { background: #f5f5f5; color: #9e9e9e; }
     .pc-badge.printed { background: var(--success-bg); color: var(--success-text); }
+    .pc-badge.event { background: #e3ecfb; color: #2c4a8f; }
     .pc-badge.not-printed { background: var(--pending-bg); color: var(--pending-text); }
     .pc-tile.locked { opacity: 0.65; cursor: not-allowed; }
     .pc-unlock-btn {
@@ -372,6 +373,7 @@
   // the grid still shows something useful if the backend is unreachable.
   const PC_PRINTED_KEY = 'f27_postcard_printed_ids';
   let printStatusMap = {}; // id -> {category, variant, printedAt, locked}
+  let eventSet = new Set(); // ids marked as event cards: reserved for invitations, never printed as postcards
   function getPcPrintedMap() {
     try { return JSON.parse(localStorage.getItem(PC_PRINTED_KEY)) || {}; }
     catch { return {}; }
@@ -472,6 +474,7 @@
       localRegistry = data.ids || [];
       buyerMap = data.buyers || {};
       printStatusMap = data.printStatus || {};
+      eventSet = new Set(data.eventCards || []);
       if (!currentRole && data.role) currentRole = data.role;
       // Merge server truth into the local cache so getPcPrintedMap() (used
       // for the grid badges/filters) reflects the database, not just this
@@ -500,9 +503,9 @@
   function visibleIdsForFilter() {
     const pcMap = getPcPrintedMap();
     return sortIdsAscending(localRegistry).filter(id => {
-      if (currentFilter === 'unsold') return !isCardSold(id);
+      if (currentFilter === 'unsold') return !isCardSold(id) && !eventSet.has(id);
       if (currentFilter === 'sold') return isCardSold(id);
-      if (currentFilter === 'pc-no') return !pcMap[id];
+      if (currentFilter === 'pc-no') return !pcMap[id] && !eventSet.has(id);
       if (currentFilter === 'pc-yes') return !!pcMap[id];
       return true;
     });
@@ -510,10 +513,10 @@
 
   function updateFilterCounts() {
     const pcMap = getPcPrintedMap();
-    const unsold = localRegistry.filter(id => !isCardSold(id)).length;
-    const sold = localRegistry.length - unsold;
+    const unsold = localRegistry.filter(id => !isCardSold(id) && !eventSet.has(id)).length;
+    const sold = localRegistry.filter(id => isCardSold(id)).length;
     const pcYes = localRegistry.filter(id => pcMap[id]).length;
-    const pcNo = localRegistry.length - pcYes;
+    const pcNo = localRegistry.filter(id => !pcMap[id] && !eventSet.has(id)).length;
     document.getElementById('count-all').textContent = `(${localRegistry.length})`;
     document.getElementById('count-unsold').textContent = `(${unsold})`;
     document.getElementById('count-sold').textContent = `(${sold})`;
@@ -532,7 +535,7 @@
   // different design), an admin must explicitly hit "Unlock" on that card
   // first; there's no other way around the lock.
   function isLocked(id) {
-    return !!printStatusMap[id];
+    return !!printStatusMap[id] || eventSet.has(id);
   }
   function toggleSelect(id) {
     if (isLocked(id)) return;
@@ -584,7 +587,8 @@
       const tile = document.createElement('div');
       tile.className = 'pc-tile' + (selectedIds.has(id) ? ' selected' : '') + (locked ? ' locked' : '');
       tile.onclick = () => toggleSelect(id);
-      const unlockBtn = (pcPrinted && currentRole === 'admin')
+      const isEvent = eventSet.has(id);
+      const unlockBtn = (pcPrinted && !isEvent && currentRole === 'admin')
         ? `<button class="pc-unlock-btn" title="Unlock — allow reprinting this card" onclick="event.stopPropagation(); unlockCard('${id}')">🔓 Unlock</button>`
         : '';
       tile.innerHTML = `
@@ -594,7 +598,9 @@
         </div>
         <div class="pc-badges">
           <span class="pc-badge ${sold ? 'sold' : 'unsold'}">${sold ? 'Sold' : 'Unsold'}</span>
-          <span class="pc-badge ${pcPrinted ? 'printed' : 'not-printed'}" title="${designLabel}">${pcPrinted ? (locked ? '🔒 ' : '') + badgeVerb + designLabel : 'Not printed'}</span>
+          ${isEvent
+            ? `<span class="pc-badge event" title="Reserved for an event invitation. Cannot be printed as a postcard.">🔒 🎉 Event card</span>`
+            : `<span class="pc-badge ${pcPrinted ? 'printed' : 'not-printed'}" title="${designLabel}">${pcPrinted ? (locked ? '🔒 ' : '') + badgeVerb + designLabel : 'Not printed'}</span>`}
         </div>
         ${unlockBtn}`;
       grid.appendChild(tile);
@@ -621,10 +627,10 @@
   // from another device a minute ago). Returns the IDs still OK to print,
   // or null if nothing is left to do.
   function guardAgainstLocked(ids) {
-    const blocked = ids.filter(id => printStatusMap[id]);
-    const allowed = ids.filter(id => !printStatusMap[id]);
+    const blocked = ids.filter(id => isLocked(id));
+    const allowed = ids.filter(id => !isLocked(id));
     if (blocked.length) {
-      alert(`🔒 ${blocked.length} of the selected card${ids.length > 1 ? 's' : ''} ${blocked.length > 1 ? 'are' : 'is'} already printed and locked, so ${blocked.length > 1 ? "they won't" : "it won't"} be included:\n${blocked.join(', ')}`);
+      alert(`🔒 ${blocked.length} of the selected card${ids.length > 1 ? 's' : ''} ${blocked.length > 1 ? 'are' : 'is'} already printed or reserved for an event and locked, so ${blocked.length > 1 ? "they won't" : "it won't"} be included:\n${blocked.join(', ')}`);
     }
     if (allowed.length === 0) return null;
     return allowed;
