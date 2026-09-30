@@ -426,11 +426,21 @@ app.patch('/api/gift/:id/event-card', requireAuth, requireAdmin, async (req, res
   const enabled = !(req.body && req.body.enabled === false);
   try {
     const { data: g, error: lookupErr } = await supabase
-      .from('gifts').select('id, video_url, product_type').eq('id', giftId).single();
+      .from('gifts').select('id, video_url, product_type, printed_at, design_category').eq('id', giftId).single();
     if (lookupErr || !g) return res.status(404).json({ error: 'Gift not found.' });
 
     if (enabled) {
       if (g.video_url) return res.status(409).json({ error: 'This card already has a video gift on it, so it cannot become an event card.' });
+      // Printed cards are locked (one QR code, one print). Warn instead of silently reusing them.
+      // The admin can confirm and retry with { force: true }.
+      if (g.printed_at && !(req.body && req.body.force === true)) {
+        return res.status(409).json({
+          error: 'This card is already printed and locked' + (g.design_category ? ' (design: ' + g.design_category + ')' : '') + '.',
+          locked: true,
+          printedAt: g.printed_at,
+          design: g.design_category || null
+        });
+      }
       const { error } = await supabase.from('gifts').update({ product_type: 'event' }).eq('id', giftId);
       if (error) throw error;
       return res.json({ success: true, isEvent: true });

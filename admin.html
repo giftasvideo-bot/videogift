@@ -882,20 +882,38 @@
     window.open('create-event.html?code=' + encodeURIComponent(id), '_blank');
   }
 
+  // Marks/unmarks a card as an event card. If the card is already printed (locked),
+  // the server answers 409 + locked:true; we tell the admin and only continue if they confirm.
+  async function setEventCard(id, enable) {
+    const send = async force => {
+      const res = await apiFetch(`${BACKEND_API_BASE}/api/gift/${id}/event-card`, {
+        method: 'PATCH',
+        body: JSON.stringify({ enabled: enable, force })
+      });
+      return { res, data: await res.json().catch(() => ({})) };
+    };
+    let { res, data } = await send(false);
+    if (res.status === 409 && data.locked) {
+      const when = data.printedAt && !isNaN(new Date(data.printedAt)) ? ' on ' + new Date(data.printedAt).toLocaleDateString() : '';
+      const ok = confirm(`\uD83D\uDD12 Card ${id} is already printed${when}${data.design ? ' (design: ' + data.design + ')' : ''} and locked.\n\nThe QR on the physical card was made for that print. Use it for an event anyway?`);
+      if (!ok) return false;
+      ({ res, data } = await send(true));
+    }
+    if (!res.ok) throw new Error(data.error || 'Server error');
+    if (enable) eventSet.add(id); else eventSet.delete(id);
+    if (buyerMap[id]) buyerMap[id].productType = enable ? 'event' : 'qr_only';
+    renderDashboardGrid();
+    syncStatusesWithDatabase();
+    return true;
+  }
+
   // One click: mark the card as an event card, then open the create form with its code filled in.
   async function useForEvent(id) {
     const win = window.open('', '_blank'); // opened first so the browser doesn't block the popup
     try {
-      const res = await apiFetch(`${BACKEND_API_BASE}/api/gift/${id}/event-card`, {
-        method: 'PATCH',
-        body: JSON.stringify({ enabled: true })
-      });
-      const data = await res.json().catch(() => ({}));
-      if (!res.ok) throw new Error(data.error || 'Server error');
-      eventSet.add(id);
-      renderDashboardGrid();
-      syncStatusesWithDatabase();
-      if (win) win.location.href = 'create-event.html?code=' + encodeURIComponent(id);
+      const done = await setEventCard(id, true);
+      if (done && win) win.location.href = 'create-event.html?code=' + encodeURIComponent(id);
+      else if (win) win.close();
     } catch (err) {
       if (win) win.close();
       alert('Could not use this card for an event: ' + err.message);
@@ -905,20 +923,8 @@
   async function toggleEventCard(id) {
     const enable = !eventSet.has(id);
     if (!enable && !confirm('Unmark ' + id + ' as an event card?')) return;
-    try {
-      const res = await apiFetch(`${BACKEND_API_BASE}/api/gift/${id}/event-card`, {
-        method: 'PATCH',
-        body: JSON.stringify({ enabled: enable })
-      });
-      const data = await res.json().catch(() => ({}));
-      if (!res.ok) throw new Error(data.error || 'Server error');
-      if (enable) eventSet.add(id); else eventSet.delete(id);
-      if (buyerMap[id]) buyerMap[id].productType = enable ? 'event' : 'qr_only';
-      renderDashboardGrid();
-      syncStatusesWithDatabase();
-    } catch (err) {
-      alert('Could not update card: ' + err.message);
-    }
+    try { await setEventCard(id, enable); }
+    catch (err) { alert('Could not update card: ' + err.message); }
   }
 
   let buyerModalCardId = null;
