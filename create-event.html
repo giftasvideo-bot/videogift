@@ -29,6 +29,12 @@
   .row { display:flex; gap:10px; flex-wrap:wrap; margin-top:12px; }
   #err { color:#a12a2a; min-height:1.4em; font-weight:500; }
   #rsvps li { margin:4px 0; }
+  #daysBox { border:1px solid var(--line); border-radius:8px; padding:14px; display:grid; gap:10px; }
+  #daysBox[hidden] { display:none; }
+  #daysBox legend { font-weight:500; padding:0 6px; }
+  .dayrow { display:grid; grid-template-columns:1fr 1fr; gap:8px; padding-bottom:10px; margin-bottom:10px; border-bottom:1px dashed var(--line); }
+  .dayrow .full { grid-column:1/-1; }
+  .dayrow button { justify-self:start; }
 </style>
 </head>
 <body>
@@ -37,16 +43,24 @@
   <p class="lead">Add your photo, video, and details. You'll get a QR code to print on your cards.</p>
 
   <form id="f">
+    <label id="codeLbl">Card code <small>(printed on your event card)</small>
+      <input name="code" id="code" required autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="e.g. RYVXP1"></label>
     <label>Event type
       <select name="type">
         <option value="wedding">Wedding</option><option value="birthday">Birthday</option>
-        <option value="church">Church / religious</option><option value="memorial">Memorial</option>
+        <option value="seminar">Seminar / multi-day</option><option value="church">Church / religious</option><option value="memorial">Memorial</option>
         <option value="general">Other</option>
       </select></label>
+    <fieldset id="daysBox" hidden>
+      <legend>Seminar days</legend>
+      <small>Add each day with its own title. You can change titles later.</small>
+      <div id="days"></div>
+      <button class="btn alt" id="addDay" type="button">+ Add day</button>
+    </fieldset>
     <label>Title <input name="title" required maxlength="120" placeholder="Selam & Dawit's Wedding"></label>
     <label>Hosts <small>(optional)</small><input name="host_names" maxlength="120" placeholder="Together with their families"></label>
     <div class="two">
-      <label>Date and time <input type="datetime-local" name="event_date"></label>
+      <label>Date and time <small>(seminars: optional)</small><input type="datetime-local" name="event_date"></label>
       <label>Venue <input name="venue" maxlength="200"></label>
     </div>
     <label>Map link <small>(Google Maps share link)</small><input type="url" name="map_url" placeholder="https://maps.app.goo.gl/…"></label>
@@ -59,6 +73,7 @@
 
   <section id="result" aria-live="polite">
     <h2>Your invitation is ready</h2>
+    <p id="cardNote" hidden>The QR code on your card now opens this invitation. The code below is an extra copy you can print elsewhere.</p>
     <div id="qr"></div>
     <p>Guests will open:</p><code id="link"></code>
     <div class="row">
@@ -74,15 +89,48 @@
 const API = 'https://videogift-backend-3.onrender.com';
 const $ = id => document.getElementById(id);
 let cur = {};
+const MAX_DAYS = 14;
+let admToken = null;
+try { const a = JSON.parse(sessionStorage.getItem('f27_admin_auth') || 'null'); if (a && a.token && a.expires > Date.now()) admToken = a.token; } catch {}
+{ const pre = new URLSearchParams(location.search).get('code'); if (pre) $('code').value = pre; }
+if (admToken) { $('code').required = false; $('codeLbl').firstChild.textContent = 'Card code (optional for admin) '; }
+function addDay(v = {}) {
+  const n = $('days').children.length + 1;
+  const r = document.createElement('div'); r.className = 'dayrow';
+  r.innerHTML = '<label>Date <input type="date" class="d-date"></label><label>Start time <input type="time" class="d-time"></label>' +
+    '<label class="full">Title for this day <input class="d-title" maxlength="120"></label><button class="btn alt" type="button">Remove day</button>';
+  r.querySelector('.d-date').value = v.date || ''; r.querySelector('.d-time').value = v.time || '';
+  r.querySelector('.d-title').value = v.title || ''; r.querySelector('.d-title').placeholder = 'Day ' + n + ': e.g. Opening and Vision';
+  r.querySelector('button').onclick = () => { if ($('days').children.length > 1) r.remove(); };
+  $('days').append(r);
+}
+function readDays() {
+  return [...$('days').children].map(r => ({ date:r.querySelector('.d-date').value, time:r.querySelector('.d-time').value, title:r.querySelector('.d-title').value.trim() }));
+}
+function syncType() {
+  const sem = document.querySelector('[name=type]').value === 'seminar';
+  $('daysBox').hidden = !sem;
+  if (sem && !$('days').children.length) addDay();
+}
+document.querySelector('[name=type]').onchange = syncType;
+$('addDay').onclick = () => { if ($('days').children.length < MAX_DAYS) addDay(); };
+syncType();
 
 $('f').onsubmit = async e => {
   e.preventDefault(); $('err').textContent = ''; $('go').disabled = true; $('go').textContent = 'Uploading…';
   const fd = new FormData(e.target);
   if (fd.getAll('photo').filter(f => f.size).length > 3) { $('err').textContent = 'Please choose up to 3 photos.'; $('go').disabled = false; $('go').textContent = 'Create invitation'; return; }
   for (const k of ['photo', 'video']) { const f = fd.get(k); if (f && !f.size) fd.delete(k); }
+  if (fd.get('type') === 'seminar') {
+    const days = readDays();
+    if (days.some(d => !d.date || !d.title)) { $('err').textContent = 'Each seminar day needs a date and a title.'; $('go').disabled = false; $('go').textContent = 'Create invitation'; return; }
+    days.sort((a, b) => a.date.localeCompare(b.date));
+    fd.set('days', JSON.stringify(days));
+    if (!fd.get('event_date')) fd.set('event_date', days[0].date + 'T' + (days[0].time || '00:00'));
+  }
   if (fd.get('event_date')) fd.set('event_date', new Date(fd.get('event_date')).toISOString());
   try {
-    const r = await fetch(`${API}/api/events`, { method:'POST', body:fd });
+    const r = await fetch(`${API}/api/events`, { method:'POST', body:fd, headers: admToken ? { Authorization:'Bearer ' + admToken } : {} });
     let d = {};
     try { d = await r.json(); } catch { throw new Error('The server did not accept the request (status ' + r.status + '). The events API may not be deployed yet.'); }
     if (!r.ok) throw new Error(d.error || 'Upload failed.');
@@ -93,7 +141,7 @@ $('f').onsubmit = async e => {
     $('qr').innerHTML = svg;
     $('dl').href = URL.createObjectURL(new Blob([svg], { type:'image/svg+xml' }));
     $('link').textContent = url.href; $('view').href = url.href; $('key').textContent = d.edit_token;
-    $('f').style.display = 'none'; $('result').style.display = 'block';
+    $('f').style.display = 'none'; $('result').style.display = 'block'; $('cardNote').hidden = !$('code').value.trim();
   } catch (x) { $('err').textContent = x.message; }
   $('go').disabled = false; $('go').textContent = 'Create invitation';
 };

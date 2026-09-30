@@ -10,6 +10,7 @@
   [data-type=wedding]  { --bg:#f6e9e6; --ink:#3b1f2b; --accent:#b08d57; --soft:#ecd5d0; }
   [data-type=birthday] { --bg:#fff3c4; --ink:#16308f; --accent:#1f3fbf; --soft:#ffe58a; }
   [data-type=church]   { --bg:#eceee9; --ink:#1e3a2f; --accent:#2f6b52; --soft:#d8dcd3; }
+  [data-type=seminar]  { --bg:#eef1f7; --ink:#1b2a4a; --accent:#2c4a8f; --soft:#d8e0f0; }
   [data-type=memorial] { --bg:#efefef; --ink:#2a2a2a; --accent:#555;    --soft:#dcdcdc; }
   * { box-sizing:border-box; }
   body { margin:0; background:var(--bg); color:var(--ink); font:400 1rem/1.6 'DM Sans','Noto Sans Ethiopic',sans-serif; }
@@ -42,17 +43,45 @@
   .choice .on { background:var(--accent); color:#fff; }
   .note { min-height:1.4em; font-weight:500; }
   .err { padding:80px 22px; text-align:center; }
+  .agenda { list-style:none; margin:0 0 18px; padding:0; display:grid; gap:10px; }
+  .agenda li { background:var(--soft); border-left:4px solid var(--accent); border-radius:6px; padding:10px 14px; }
+  .agenda .dd { font-weight:500; font-size:.9rem; }
+  .agenda .dt { font:700 1.1rem/1.3 'Fraunces','Noto Sans Ethiopic',serif; }
 </style>
 </head>
 <body>
 <main id="app"><p class="err">Loading invitation…</p></main>
 <script>
 const API = 'https://videogift-backend-3.onrender.com';
-const slug = new URLSearchParams(location.search).get('e');
+const qs = new URLSearchParams(location.search);
+let slug = qs.get('e');
+const card = qs.get('g');
 const app = document.getElementById('app');
 const el = (t, cls, txt) => { const n = document.createElement(t); if (cls) n.className = cls; if (txt) n.textContent = txt; return n; };
 
+const dayDate = d => { const [y, m, dd] = d.date.split('-').map(Number); const [h, mi] = (d.time || '').split(':').map(Number); return d.time ? new Date(y, m - 1, dd, h, mi) : new Date(y, m - 1, dd); };
+function icsDays(ev, days) {
+  const p = n => String(n).padStart(2, '0');
+  const loc = x => '' + x.getFullYear() + p(x.getMonth() + 1) + p(x.getDate()) + 'T' + p(x.getHours()) + p(x.getMinutes()) + '00';
+  const day = x => '' + x.getFullYear() + p(x.getMonth() + 1) + p(x.getDate());
+  const clean = s => (s || '').replace(/[\r\n,;]/g, ' ');
+  const out = ['BEGIN:VCALENDAR','VERSION:2.0'];
+  days.forEach((d, i) => {
+    const s = dayDate(d), e = new Date(s.getTime() + (d.time ? 3 * 3600e3 : 24 * 3600e3));
+    out.push('BEGIN:VEVENT', 'UID:' + slug + '-' + i + '@invite', 'DTSTAMP:' + new Date().toISOString().replace(/[-:]|\.\d{3}/g, ''),
+      'SUMMARY:' + clean(ev.title + ': ' + d.title), 'LOCATION:' + clean(ev.venue),
+      d.time ? 'DTSTART:' + loc(s) : 'DTSTART;VALUE=DATE:' + day(s), d.time ? 'DTEND:' + loc(e) : 'DTEND;VALUE=DATE:' + day(e), 'END:VEVENT');
+  });
+  out.push('END:VCALENDAR');
+  return out.join('\r\n');
+}
 function ics(ev) {
+  const days = Array.isArray(ev.days) ? ev.days.filter(d => d && d.date) : [];
+  if (days.length) {
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(new Blob([icsDays(ev, days)], { type:'text/calendar' }));
+    a.download = 'invitation.ics'; a.click(); return;
+  }
   const d = new Date(ev.event_date), f = x => x.toISOString().replace(/[-:]|\.\d{3}/g, '');
   const end = new Date(d.getTime() + 3 * 3600e3);
   const clean = s => (s || '').replace(/[\r\n,;]/g, ' ');
@@ -86,10 +115,20 @@ function render(ev) {
   const b = el('div','body');
   b.append(el('h1', '', ev.title));
   if (ev.host_names) b.append(el('p','hosts', ev.host_names));
-  if (ev.event_date) b.append(el('p','when', new Date(ev.event_date).toLocaleString([], { dateStyle:'full', timeStyle:'short' })));
+  const days = Array.isArray(ev.days) ? ev.days.filter(d => d && d.date) : [];
+  if (days.length) {
+    const ul = el('ul','agenda');
+    days.forEach(d => {
+      const li = el('li');
+      const when = dayDate(d).toLocaleString([], d.time ? { dateStyle:'full', timeStyle:'short' } : { dateStyle:'full' });
+      li.append(el('div','dd', when), el('div','dt', d.title || ''));
+      ul.append(li);
+    });
+    b.append(ul);
+  } else if (ev.event_date) b.append(el('p','when', new Date(ev.event_date).toLocaleString([], { dateStyle:'full', timeStyle:'short' })));
   if (ev.venue) b.append(el('p','where', ev.venue));
   const row = el('div','row');
-  if (ev.event_date) { const c = el('button','btn','Add to calendar'); c.onclick = () => ics(ev); row.append(c); }
+  if (ev.event_date || days.length) { const c = el('button','btn','Add to calendar'); c.onclick = () => ics(ev); row.append(c); }
   if (ev.map_url) { const m = el('a','btn','Open map'); m.href = ev.map_url; m.target = '_blank'; m.rel = 'noopener'; row.append(m); }
   if (row.children.length) b.append(row);
   if (ev.message) b.append(el('p','msg', ev.message));
@@ -122,7 +161,25 @@ function rsvpForm() {
   return f;
 }
 
+function renderReady(code) {
+  document.title = 'Create your invitation';
+  app.textContent = '';
+  const b = el('div','body'); b.style.paddingTop = '64px'; b.style.textAlign = 'center';
+  b.append(el('h1','','Your invitation card is ready'),
+    el('p','','Add your photos, video and event details. After that, the QR code on this card will open your invitation for everyone who scans it.'));
+  const a = el('a','btn fill','Create my invitation'); a.href = 'create-event.html?code=' + encodeURIComponent(code); a.style.display = 'inline-block';
+  b.append(a); app.append(b);
+}
+
 (async () => {
+  if (!slug && card) {
+    try {
+      const d = await (await fetch(`${API}/api/event-code/${encodeURIComponent(card)}/status`)).json();
+      if (d.state === 'created') slug = d.slug;
+      else if (d.state === 'ready') return renderReady(card);
+      else return location.replace('watch.html?id=' + encodeURIComponent(card));
+    } catch { return app.replaceChildren(el('p','err','Could not check this card. Please try again.')); }
+  }
   if (!slug) return app.replaceChildren(el('p','err','This link is missing its invitation code.'));
   try {
     const r = await fetch(`${API}/api/e/${encodeURIComponent(slug)}`);

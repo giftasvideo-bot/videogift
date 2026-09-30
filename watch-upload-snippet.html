@@ -1,0 +1,19 @@
+<!-- Paste as the FIRST <script> inside <head> of BOTH watch.html and upload.html.
+     Scans of a card sold as "Event" go to the event page; every other card behaves as before. -->
+<script>
+(function () {
+  var id = new URLSearchParams(location.search).get('id');
+  if (!id) return;
+  var root = document.documentElement;
+  root.style.visibility = 'hidden';
+  var show = function () { root.style.visibility = ''; };
+  var t = setTimeout(show, 2500);
+  fetch('https://videogift-backend-3.onrender.com/api/event-code/' + encodeURIComponent(id) + '/status')
+    .then(function (r) { return r.json(); })
+    .then(function (d) {
+      if (d.state === 'ready' || d.state === 'created') location.replace('event.html?g=' + encodeURIComponent(id));
+      else { clearTimeout(t); show(); }
+    })
+    .catch(function () { clearTimeout(t); show(); });
+})();
+</script>

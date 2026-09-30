@@ -922,6 +922,11 @@
         const data = await response.json();
         const status = data.status || 'pending';
         const hasVideo = !!data.video_url;
+        if (data.product_type === 'event') {
+          showMsg('success', translations[currentLang].msg_found_opening);
+          setTimeout(() => { window.location.href = `event.html?g=${encodeURIComponent(giftId)}`; }, 600);
+          return;
+        }
 
         if (hasVideo || status === 'uploaded' || status === 'viewed') {
           showMsg('success', translations[currentLang].msg_found_opening);
