@@ -167,7 +167,7 @@
 
   /* ---- Wedding: date, countdown, calendar panel with flower bouquets ---- */
   body.wed { overflow-x:hidden; }
-  .wed-date { position:relative; width:calc(100% - 32px); max-width:520px; margin:6px auto 32px; padding:48px 18px 44px; border-radius:24px; text-align:center; color:#f6ece0; background:#5b3a29; background:color-mix(in srgb, var(--accent) 80%, #000); box-shadow:0 18px 36px rgba(60,35,20,.28); }
+  .wed-date { position:relative; width:calc(100% - 32px); max-width:520px; margin:6px auto 32px; padding:48px 22px 40px; border-radius:24px; text-align:center; color:#f6ece0; background:#5b3a29; background:color-mix(in srgb, var(--accent) 80%, #000); box-shadow:0 18px 36px rgba(60,35,20,.28); }
   .wed-date > * { position:relative; z-index:1; }
   .wd-top { margin:0; display:flex; justify-content:center; gap:clamp(18px,10vw,60px); font:500 clamp(.95rem,3.8vw,1.15rem)/1 'Cormorant Garamond','Noto Sans Ethiopic',serif; letter-spacing:.14em; text-transform:uppercase; }
   .wd-big { display:flex; align-items:center; justify-content:center; gap:18px; margin:18px 0 26px; }
@@ -190,10 +190,23 @@
     -webkit-mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M12 21S4.5 16.4 2.4 11.8C.9 8.2 3.1 4.5 6.7 4.5c2 0 3.7 1.1 5.3 3 1.6-1.9 3.3-3 5.3-3 3.6 0 5.8 3.7 4.3 7.3C19.5 16.4 12 21 12 21z'/%3E%3C/svg%3E") center/contain no-repeat;
             mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M12 21S4.5 16.4 2.4 11.8C.9 8.2 3.1 4.5 6.7 4.5c2 0 3.7 1.1 5.3 3 1.6-1.9 3.3-3 5.3-3 3.6 0 5.8 3.7 4.3 7.3C19.5 16.4 12 21 12 21z'/%3E%3C/svg%3E") center/contain no-repeat; }
   .wd-add { display:inline-block; border:0; background:transparent; color:#f6ece0; font:500 1.1rem 'Cormorant Garamond','Noto Sans Ethiopic',serif; text-decoration:underline; text-underline-offset:4px; cursor:pointer; padding:6px 4px; }
-  .wed-date .wd-fl { position:absolute; z-index:2; pointer-events:none; width:min(48%,250px); }
-  .wed-date .wd-fl svg { display:block; width:100%; height:auto; overflow:visible; filter:drop-shadow(0 6px 8px rgba(0,0,0,.28)); }
-  .wd-fl-l { left:-13%; top:9%; }
-  .wd-fl-r { right:-12%; bottom:-9%; }
+  .wd-fl { position:absolute; z-index:3; pointer-events:none; width:29%; }
+  .wd-fl img { display:block; width:100%; height:auto; filter:drop-shadow(0 8px 10px rgba(0,0,0,.32)); }
+  .wd-fl-r { right:-8%; top:41%; } .wd-fl-r img { transform:rotate(10deg); }
+  .wd-fl-l { left:-8%; bottom:-1%; } .wd-fl-l img { transform:rotate(-12deg); }
+  .wed-date { max-width:640px; }
+  @media (min-width:640px) { .wd-fl { width:min(40%,270px); } .wd-fl-r { right:-19%; top:30%; } .wd-fl-l { left:-19%; bottom:10%; } }
+  .wd-intro, .wd-when { position:relative; z-index:2; }
+  .wd-h { margin:0 0 26px; font:700 clamp(1.4rem,6vw,1.9rem)/1.1 'Cormorant Garamond','Noto Sans Ethiopic',serif; letter-spacing:.06em; text-transform:uppercase; }
+  .wed-date .wc-parents { margin:0 0 26px; }
+  .wd-join { margin:0; font:600 1.02rem/1.55 'Cormorant Garamond','Noto Sans Ethiopic',serif; }
+  .wd-names { display:flex; flex-direction:column; align-items:center; margin:34px 0 36px; }
+  .wd-n { font:400 clamp(2rem,9vw,3.3rem)/1.1 'Cormorant Garamond','Noto Sans Ethiopic',serif; }
+  .wd-amp { font:400 clamp(2.6rem,12vw,3.8rem)/1.1 'Pinyon Script',cursive; margin:10px 0; }
+  .wd-cer { margin:0; font:500 clamp(1.15rem,5vw,1.5rem)/1.3 'Cormorant Garamond','Noto Sans Ethiopic',serif; letter-spacing:.04em; text-transform:uppercase; }
+  .wd-venue { margin:6px 0 24px; font:500 clamp(1.1rem,4.8vw,1.4rem)/1.35 'Cormorant Garamond','Noto Sans Ethiopic',serif; opacity:.92; }
+  .wd-links { display:flex; justify-content:center; flex-wrap:wrap; gap:4px 22px; }
+  .wd-links a.wd-add { text-decoration:underline; }
 
   /* ---- 3D photo gallery (coverflow) ---- */
   .cf { position:relative; --w:clamp(190px,58vw,320px); height:calc(var(--w) * 1.334 + 36px); perspective:1100px; overflow:hidden; touch-action:pan-y; outline:none; margin:8px 0 0; }
@@ -212,9 +225,9 @@
   .tl-card h3 { margin:0 0 16px; text-align:center; font:600 clamp(1.2rem,5vw,1.6rem)/1.1 'Cormorant Garamond','Noto Sans Ethiopic',serif; letter-spacing:.05em; text-transform:uppercase; }
   .tl-date { margin:-8px 0 14px; text-align:center; font:500 1rem/1.3 'Cormorant Garamond','Noto Sans Ethiopic',serif; opacity:.85; }
   .tl { list-style:none; margin:0; padding:0; }
-  .tl li { display:grid; grid-template-columns:1fr 28px 1.3fr; align-items:center; min-height:64px; }
-  .tl-time { text-align:right; font:500 1.2rem/1.2 'Cormorant Garamond','Noto Sans Ethiopic',serif; letter-spacing:.02em; }
-  .tl-time small { display:block; font-size:.82rem; opacity:.75; }
+  .tl li { display:grid; grid-template-columns:1.25fr 28px 1fr; align-items:center; min-height:64px; }
+  .tl-time { text-align:right; white-space:nowrap; font:500 clamp(1rem,4.4vw,1.2rem)/1.2 'Cormorant Garamond','Noto Sans Ethiopic',serif; letter-spacing:.02em; }
+  .tl-time small { display:inline; margin-left:.35em; font-size:inherit; opacity:.85; }
   .tl-dot { align-self:stretch; position:relative; }
   .tl-dot::before { content:''; position:absolute; left:50%; top:0; bottom:0; width:1px; background:rgba(246,236,224,.55); }
   .tl li:first-child .tl-dot::before { top:50%; }
@@ -414,44 +427,72 @@ function weddingArt() {
 }
 
 function weddingDate(ev, days, first) {
-  if (!first) return null;
   const MON = ['January','February','March','April','May','June','July','August','September','October','November','December'];
   const WD = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
   const pad = n => String(n).padStart(2, '0');
   const c = el('section', 'wed-date');
-  const hasTime = days.length ? !!days[0].time : (first.getHours() || first.getMinutes());
-  const top = el('p', 'wd-top');
-  if (hasTime) top.append(el('span', '', pad(first.getHours()) + ':' + pad(first.getMinutes())));
-  top.append(el('span', '', WD[first.getDay()]));
-  const my = el('div', 'wd-my'); my.append(el('span', '', MON[first.getMonth()]), el('span', '', String(first.getFullYear())));
-  const big = el('div', 'wd-big'); big.append(el('span', 'wd-day', String(first.getDate())), el('span', 'wd-bar'), my);
-  c.append(top, big);
-  const key = days.filter(d => d.time && d.title).slice(0, 2);
-  if (key.length) {
-    const tm = el('div', 'wd-times');
-    key.forEach(d => { const x = el('div'); x.append(el('small', '', d.title), el('b', '', d.time)); tm.append(x); });
-    c.append(tm);
+  c.append(el('h2', 'wd-h', 'Ceremony Info'));
+  const intro = el('div', 'wd-intro');
+  if (ev.host_names) {
+    const sides = ev.host_names.split('|').map(x => x.trim()).filter(Boolean);
+    if (sides.length === 2) {
+      const g = el('div', 'wc-parents');
+      sides.forEach(sd => { const col = el('div', 'wc-col'); sd.split('/').map(x => x.trim()).filter(Boolean).forEach(l => col.append(el('p', '', l))); g.append(col); });
+      intro.append(g);
+    } else intro.append(el('p', 'wc-host', ev.host_names));
   }
-  const cd = el('p', 'wd-count');
-  const tick = () => {
-    const ms = first - Date.now();
-    if (ms <= 0) { cd.textContent = 'The big day has arrived'; return; }
-    const d = Math.floor(ms / 864e5), h = Math.floor(ms / 36e5) % 24, m = Math.floor(ms / 6e4) % 60, sc = Math.floor(ms / 1e3) % 60;
-    cd.textContent = d + (d === 1 ? ' day ' : ' days ') + h + (h === 1 ? ' hour ' : ' hours ') + m + ' min ' + sc + ' sec';
-  };
-  tick(); const timer = setInterval(() => { if (!cd.isConnected) return clearInterval(timer); tick(); }, 1000);
-  c.append(el('p', 'wd-cdl', 'Countdown'), cd);
-  const cal = el('div', 'wd-cal'), g = el('div', 'wd-grid');
-  cal.append(el('p', 'wd-cal-title', MON[first.getMonth()] + ' ' + first.getFullYear()));
-  ['Mo','Tu','We','Th','Fr','Sa','Su'].forEach(x => g.append(el('span', 'wd-dow', x)));
-  const off = (new Date(first.getFullYear(), first.getMonth(), 1).getDay() + 6) % 7;
-  for (let i = 0; i < off; i++) g.append(el('span'));
-  const n = new Date(first.getFullYear(), first.getMonth() + 1, 0).getDate();
-  for (let d = 1; d <= n; d++) g.append(el('span', d === first.getDate() ? 'wd-d on' : 'wd-d', String(d)));
-  cal.append(g); c.append(cal);
-  const add = el('button', 'wd-add', 'Add to Calendar'); add.type = 'button'; add.onclick = () => ics(ev); c.append(add);
-  const fl = (cls, mirror) => { const f = el('div', 'wd-fl ' + cls); f.setAttribute('aria-hidden', 'true'); f.innerHTML = envFlowerSVG(mirror); return f; };
-  c.append(fl('wd-fl-l', false), fl('wd-fl-r', true));
+  intro.append(el('p', 'wd-join', 'Please join us as we celebrate'), el('p', 'wd-join', 'the beginning of our life together'));
+  const nm = weddingNames(ev.title), names = el('div', 'wd-names');
+  if (nm) names.append(el('span', 'wd-n', nm[0]), el('span', 'wd-amp', '&'), el('span', 'wd-n', nm[1]));
+  else names.append(el('span', 'wd-n', ev.title || ''));
+  intro.append(names);
+  const flR = el('div', 'wd-fl wd-fl-r'); flR.setAttribute('aria-hidden', 'true'); flR.append(envBouquet()); intro.append(flR);
+  c.append(intro);
+
+  const when = el('div', 'wd-when');
+  when.append(el('p', 'wd-cer', 'Wedding Ceremony'));
+  if (ev.venue) when.append(el('p', 'wd-venue', ev.venue));
+  if (first) {
+    const hasTime = days.length ? !!days[0].time : (first.getHours() || first.getMinutes());
+    const top = el('p', 'wd-top');
+    if (hasTime) top.append(el('span', '', 'At ' + pad(first.getHours()) + ':' + pad(first.getMinutes())));
+    top.append(el('span', '', WD[first.getDay()]));
+    const my = el('div', 'wd-my'); my.append(el('span', '', MON[first.getMonth()]), el('span', '', String(first.getFullYear())));
+    const big = el('div', 'wd-big'); big.append(el('span', 'wd-day', String(first.getDate())), el('span', 'wd-bar'), my);
+    when.append(top, big);
+    const key = days.filter(d => d.time && d.title).slice(0, 2);
+    if (key.length) {
+      const tm = el('div', 'wd-times');
+      key.forEach(d => { const x = el('div'); x.append(el('small', '', d.title), el('b', '', d.time)); tm.append(x); });
+      when.append(tm);
+    }
+  }
+  c.append(when);
+
+  if (first) {
+    const cd = el('p', 'wd-count');
+    const tick = () => {
+      const ms = first - Date.now();
+      if (ms <= 0) { cd.textContent = 'The big day has arrived'; return; }
+      const d = Math.floor(ms / 864e5), h = Math.floor(ms / 36e5) % 24, m = Math.floor(ms / 6e4) % 60, sc = Math.floor(ms / 1e3) % 60;
+      cd.textContent = d + (d === 1 ? ' day ' : ' days ') + h + (h === 1 ? ' hour ' : ' hours ') + m + ' min ' + sc + ' sec';
+    };
+    tick(); const timer = setInterval(() => { if (!cd.isConnected) return clearInterval(timer); tick(); }, 1000);
+    c.append(el('p', 'wd-cdl', 'Countdown'), cd);
+    const cal = el('div', 'wd-cal'), g = el('div', 'wd-grid');
+    cal.append(el('p', 'wd-cal-title', MON[first.getMonth()] + ' ' + first.getFullYear()));
+    ['Mo','Tu','We','Th','Fr','Sa','Su'].forEach(x => g.append(el('span', 'wd-dow', x)));
+    const off = (new Date(first.getFullYear(), first.getMonth(), 1).getDay() + 6) % 7;
+    for (let i = 0; i < off; i++) g.append(el('span'));
+    const n = new Date(first.getFullYear(), first.getMonth() + 1, 0).getDate();
+    for (let d = 1; d <= n; d++) g.append(el('span', d === first.getDate() ? 'wd-d on' : 'wd-d', String(d)));
+    cal.append(g); c.append(cal);
+  }
+  const lk = el('div', 'wd-links');
+  if (first) { const add = el('button', 'wd-add', 'Add to Calendar'); add.type = 'button'; add.onclick = () => ics(ev); lk.append(add); }
+  if (ev.map_url) { const m = el('a', 'wd-add', 'Open map'); m.href = ev.map_url; m.target = '_blank'; m.rel = 'noopener'; lk.append(m); }
+  if (lk.children.length) c.append(lk);
+  const flL = el('div', 'wd-fl wd-fl-l'); flL.setAttribute('aria-hidden', 'true'); flL.append(envBouquet()); c.append(flL);
   return c;
 }
 
@@ -654,7 +695,6 @@ function renderWedding(ev) {
     h.append(el('p','wed-eyebrow','The wedding of'));
     if (nm) t.append(el('span','wn',nm[0]), el('span','wamp','&'), el('span','wn',nm[1])); else t.textContent = ev.title;
     h.append(t); app.append(h);
-    const wc = weddingCard(ev, days, first); if (wc) app.append(wc);
     const wdt = weddingDate(ev, days, first); if (wdt) app.append(wdt);
     if (ev.rsvp_enabled) { confirmBtn = el('button', 'wc-confirm', 'Confirm attendance'); confirmBtn.type = 'button'; app.append(confirmBtn); }
     weddingArt(); envelopeIntro(ev, photos, first);
