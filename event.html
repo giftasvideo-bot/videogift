@@ -252,6 +252,12 @@
   .gb-item p { margin:6px 0 0; font:500 1.05rem/1.4 'Cormorant Garamond','Noto Sans Ethiopic',serif; overflow-wrap:anywhere; }
   .gb-empty { margin:14px 0 0; text-align:center; color:#8a7766; font:italic 500 1rem 'Cormorant Garamond',serif; }
 
+  /* ---- Wedding RSVP: same type as Wedding venue ---- */
+  .wed .rsvp-panel > h2 { margin:0 0 10px; font:600 clamp(1.15rem,4.8vw,1.5rem)/1.2 'Cormorant Garamond','Noto Sans Ethiopic',serif; letter-spacing:.05em; text-transform:uppercase; color:var(--ink); }
+  .wed .rsvp-panel form h2 { margin:0 0 6px; text-align:center; font:500 1.15rem/1.5 'Cormorant Garamond','Noto Sans Ethiopic',serif; letter-spacing:0; text-transform:none; color:var(--accent); }
+  .wed .rsvp-panel input, .wed .rsvp-panel .btn, .wed .rsvp-panel .note { font-family:'Cormorant Garamond','Noto Sans Ethiopic',serif; font-size:1.1rem; font-weight:600; }
+  .wed .rsvp-panel .btn { letter-spacing:.04em; }
+
   /* ---- Wedding venue map + confirm button ---- */
   .wc-confirm { display:block; margin:-12px auto 30px; border:0; border-radius:999px; padding:13px 30px; background:#5b3a29; color:#fff; font:600 .95rem 'Cormorant Garamond','Noto Sans Ethiopic',serif; letter-spacing:.08em; text-transform:uppercase; cursor:pointer; box-shadow:0 8px 18px rgba(60,35,20,.22); }
   .wv-title { margin:0 0 10px; text-align:center; font:600 clamp(1.15rem,4.8vw,1.5rem)/1.2 'Cormorant Garamond','Noto Sans Ethiopic',serif; letter-spacing:.05em; text-transform:uppercase; color:var(--ink); }
@@ -726,7 +732,7 @@ function renderWedding(ev) {
   const more = Array.isArray(ev.gallery_urls) ? ev.gallery_urls : [], allPhotos = photos.concat(more);
   if (allPhotos.length > (bday ? 0 : 1)) secs.push([bday ? 'Gallery' : 'Photos', p => p.append(coverflow(allPhotos))]);
   if (ev.video_url) secs.push(['Video', p => { const v = el('video'); v.src = ev.video_url; v.controls = true; v.preload = 'metadata'; v.playsInline = true; p.append(v); }]);
-  if (ev.rsvp_enabled) secs.push(['RSVP', p => p.append(rsvpForm())]);
+  if (ev.rsvp_enabled) secs.push(['RSVP', p => { if (!bday) p.classList.add('rsvp-panel'); p.append(rsvpForm()); }]);
   if (!secs.length && !bday) { if (photos.length) app.append(slideshow(photos)); return; }
 
   const nav = el('nav','wnav'); nav.setAttribute('role','tablist'); nav.setAttribute('aria-label','Invitation sections');
