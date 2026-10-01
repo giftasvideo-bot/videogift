@@ -4,10 +4,10 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>You're invited</title>
-<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,700&family=DM+Sans:wght@400;500&family=Noto+Sans+Ethiopic:wght@400;600&family=Pinyon+Script&family=Cormorant+Garamond:wght@500;600&family=Chewy&family=Fredoka:wght@400;500;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,700&family=DM+Sans:wght@400;500&family=Noto+Sans+Ethiopic:wght@400;600&family=Pinyon+Script&family=Cormorant+Garamond:wght@400;500;600&family=Chewy&family=Fredoka:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
   :root { --bg:#eef4f3; --ink:#123c40; --accent:#0f5257; --soft:#d9e8e6; }
-  [data-type=wedding]  { --bg:#f3ecdc; --ink:#4a3a24; --accent:#7a5c3a; --soft:#e7dcc4; }
+  [data-type=wedding]  { --bg:#eee6d6; --ink:#4d3326; --accent:#6b4a38; --soft:#e2d6bf; }
   [data-type=birthday] { --bg:#ffe1dc; --ink:#2b2a52; --accent:#6f63d9; --soft:#fff3f0; }
   [data-type=church]   { --bg:#eceee9; --ink:#1e3a2f; --accent:#2f6b52; --soft:#d8dcd3; }
   [data-type=seminar]  { --bg:#eef1f7; --ink:#1b2a4a; --accent:#2c4a8f; --soft:#d8e0f0; }
@@ -15,7 +15,7 @@
   body[data-theme=white]    { --bg:#ffffff; --ink:#2b2b2b; --accent:#8a6d3b; --soft:#f0ece4; }
   body[data-theme=black]    { --bg:#1c1c1c; --ink:#f2ece0; --accent:#c9a96a; --soft:#2d2d2d; --on:#1c1c1c; }
   body[data-theme=grey]     { --bg:#e9e9e9; --ink:#2f2f2f; --accent:#6b5b45; --soft:#d8d8d8; }
-  body[data-theme=cream]    { --bg:#f3ecdc; --ink:#4a3a24; --accent:#7a5c3a; --soft:#e7dcc4; }
+  body[data-theme=cream]    { --bg:#eee6d6; --ink:#4d3326; --accent:#6b4a38; --soft:#e2d6bf; }
   body[data-theme=navy]     { --bg:#22384f; --ink:#f4efe3; --accent:#d8b978; --soft:#2f4862; --on:#22384f; }
   body[data-theme=burgundy] { --bg:#6b2233; --ink:#f7ece6; --accent:#e0bf8a; --soft:#7d3245; --on:#4a1421; }
   body.bday[data-theme=pink]  { --bg:#ffd9e8; --ink:#4a1f3a; --accent:#d6336c; --soft:#fff0f6; --ring:#f9b8d1; --band1:#e85c92; --band2:#d6336c; }
@@ -105,6 +105,7 @@
   .bday .sgroup h3 { font:600 .95rem 'Fredoka',sans-serif; letter-spacing:.06em; }
   .bday .times li { border-top:2px dotted var(--accent); }
   .bday .times .tm, .bday .times .tt { font-family:'Fredoka','Noto Sans Ethiopic',sans-serif; }
+  .bday .row { justify-content:center; }
   .bday .btn { border-radius:999px; font-family:'Fredoka',sans-serif; }
   .bday input { color:#222; }
   .bday form { background:#fff; border-radius:18px; }
@@ -138,6 +139,64 @@
     .bd-art svg.bl.b2 { animation-delay:-2s; } .bd-art svg.bl.b3 { animation-delay:-3.5s; }
   }
   @keyframes bdFloat { 0%,100% { transform:translateY(0) rotate(var(--r,0deg)); } 50% { transform:translateY(-9px) rotate(var(--r,0deg)); } }
+
+
+  /* ---- Wedding: paper look, stacked names, ceremony card ---- */
+  body.wed::before { content:''; position:fixed; inset:0; z-index:0; pointer-events:none; opacity:.55;
+    background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='300'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.8' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 .45 0 0 0 0 .38 0 0 0 0 .28 0 0 0 .2 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E"); }
+  .wed #app { position:relative; z-index:1; }
+  .wed-art { position:fixed; left:50%; bottom:0; transform:translateX(-50%); width:min(100%,780px); height:64vh; z-index:0; pointer-events:none; color:var(--accent); opacity:.14; fill:none; stroke:currentColor; stroke-width:1.4; }
+  .wed-head { padding:54px 22px 28px; }
+  .wed-eyebrow { margin:0 0 20px; font:500 clamp(.75rem,2.6vw,.95rem)/1 'Cormorant Garamond','Noto Sans Ethiopic',serif; letter-spacing:.4em; text-transform:uppercase; color:var(--accent); }
+  .wed-names { display:flex; flex-direction:column; align-items:center; margin:0; font:400 clamp(2.6rem,12.5vw,4rem)/1.08 'Cormorant Garamond','Noto Sans Ethiopic',serif; letter-spacing:.01em; text-transform:none; color:var(--ink); }
+  .wed-names .wamp { font:400 clamp(3rem,15vw,4.8rem)/1 'Pinyon Script',cursive; color:var(--accent); opacity:.8; margin:2px 0; }
+  .wed-card { width:calc(100% - 32px); max-width:520px; margin:6px auto 32px; padding:38px 26px 34px; border-radius:24px; text-align:center; color:#f6ece0; background:#5b3a29; background:color-mix(in srgb, var(--accent) 80%, #000); box-shadow:0 18px 36px rgba(60,35,20,.28); }
+  .wed-card h2 { margin:0 0 18px; font:600 clamp(1.3rem,5.4vw,1.7rem)/1.1 'Cormorant Garamond','Noto Sans Ethiopic',serif; letter-spacing:.06em; text-transform:uppercase; }
+  .wc-host { margin:0; font:italic 500 1.05rem/1.4 'Cormorant Garamond','Noto Sans Ethiopic',serif; opacity:.92; }
+  .wc-parents { display:grid; grid-template-columns:1fr 1fr; }
+  .wc-col { padding:0 10px; }
+  .wc-col + .wc-col { border-left:1px solid rgba(246,236,224,.45); }
+  .wc-col p { margin:4px 0; font:600 1rem/1.35 'Cormorant Garamond','Noto Sans Ethiopic',serif; }
+  .wc-rule { width:56px; height:0; border:0; border-top:1px solid currentColor; opacity:.45; margin:18px auto; }
+  .wc-small { margin:0 0 8px; font:500 .8rem/1.2 'Cormorant Garamond','Noto Sans Ethiopic',serif; letter-spacing:.28em; text-transform:uppercase; opacity:.85; }
+  .wc-date { margin:0; font:600 clamp(1.15rem,4.8vw,1.5rem)/1.3 'Cormorant Garamond','Noto Sans Ethiopic',serif; }
+  .wc-time, .wc-venue { margin:5px 0 0; font:500 1.1rem/1.4 'Cormorant Garamond','Noto Sans Ethiopic',serif; opacity:.92; }
+  .wc-btns { display:flex; gap:10px; justify-content:center; flex-wrap:wrap; margin-top:24px; }
+  .wed .wed-card .btn { color:#f6ece0; border-color:rgba(246,236,224,.7); background:transparent; }
+  /* ---- Wedding envelope intro ---- */
+  .env-intro { position:fixed; inset:0; z-index:999; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:34px; outline:none; cursor:pointer; overflow:hidden;
+    --e1:#68503a; --e2:#59432f; --e3:#765b42; --e4:#4a3726;
+    --e1:color-mix(in srgb, var(--accent) 86%, #000); --e2:color-mix(in srgb, var(--accent) 70%, #000); --e3:color-mix(in srgb, var(--accent) 100%, #fff 8%); --e4:color-mix(in srgb, var(--accent) 55%, #000);
+    background:radial-gradient(circle at 50% 30%, color-mix(in srgb, var(--bg) 82%, #fff), var(--bg) 70%); transition:opacity .7s ease; }
+  .env-intro.out { opacity:0; pointer-events:none; }
+  .env-top { position:absolute; top:6vh; left:0; right:0; text-align:center; margin:0; font:500 clamp(.8rem,2.8vw,1rem)/1 'Cormorant Garamond','Noto Sans Ethiopic',serif; letter-spacing:.38em; text-transform:uppercase; color:var(--accent); transition:opacity .4s; }
+  .env-stage { position:relative; width:min(88vw,440px); aspect-ratio:10/7; margin-top:clamp(40px,12vh,110px); perspective:1400px; filter:drop-shadow(0 14px 22px rgba(0,0,0,.28)); }
+  .env-stage > * { position:absolute; }
+  .env-back { inset:0; background:var(--e4); border-radius:5px; z-index:1; }
+  .env-card { left:7%; right:7%; top:9%; bottom:9%; z-index:2; background:#fffdf7; border-radius:3px; box-shadow:0 0 0 1px rgba(0,0,0,.06);
+    display:flex; flex-direction:column; align-items:center; justify-content:center; gap:5px; padding:6% 5%; text-align:center; color:#4a3a24; overflow:hidden; transition:transform .9s cubic-bezier(.3,.7,.2,1); }
+  .env-photo { width:38%; aspect-ratio:1; object-fit:cover; border-radius:50%; border:3px solid #d9c08a; margin-bottom:4px; }
+  .env-of { margin:0; font:500 clamp(.6rem,2.2vw,.8rem)/1.2 'Cormorant Garamond','Noto Sans Ethiopic',serif; letter-spacing:.3em; text-transform:uppercase; color:#7a5c3a; }
+  .env-title { margin:0; font:600 clamp(1rem,5vw,1.6rem)/1.15 'Cormorant Garamond','Noto Sans Ethiopic',serif; letter-spacing:.08em; display:-webkit-box; -webkit-line-clamp:3; -webkit-box-orient:vertical; overflow:hidden; }
+  .env-date { margin:0; font:500 clamp(.6rem,2.2vw,.8rem)/1.2 'Cormorant Garamond','Noto Sans Ethiopic',serif; letter-spacing:.2em; text-transform:uppercase; color:#7a5c3a; }
+  .env-l, .env-r, .env-b { inset:0; z-index:3; }
+  .env-l { background:var(--e1); clip-path:polygon(0 0, 50% 56%, 0 100%); }
+  .env-r { background:var(--e2); clip-path:polygon(100% 0, 50% 56%, 100% 100%); }
+  .env-b { background:var(--e3); clip-path:polygon(0 100%, 50% 56%, 100% 100%); }
+  .env-flap { left:0; right:0; top:0; height:60%; z-index:4; transform-origin:50% 0; clip-path:polygon(0 0, 100% 0, 50% 100%); background:linear-gradient(180deg, var(--e3), var(--e1)); }
+  .env-seal { left:50%; top:58%; width:17%; aspect-ratio:1; z-index:5; transform:translate(-50%,-50%); border-radius:50%; display:grid; place-items:center;
+    background:radial-gradient(circle at 35% 30%, #f6e3a4, #cba74f 55%, #977529); box-shadow:0 3px 8px rgba(0,0,0,.35), inset 0 0 0 3px rgba(255,255,255,.28), inset 0 -3px 6px rgba(0,0,0,.22);
+    font:400 clamp(1.1rem,6vw,2rem)/1 'Pinyon Script',cursive; color:rgba(88,58,8,.85); animation:envPulse 1.8s ease-in-out infinite; transition:opacity .3s, transform .3s; }
+  .env-hint { margin:0; font:500 clamp(.7rem,2.6vw,.9rem)/1 'Cormorant Garamond','Noto Sans Ethiopic',serif; letter-spacing:.3em; text-transform:uppercase; color:var(--accent); animation:envHint 1.8s ease-in-out infinite; transition:opacity .3s; }
+  @keyframes envPulse { 50% { transform:translate(-50%,-50%) scale(1.08); } }
+  @keyframes envHint { 50% { opacity:.45; } }
+  @keyframes envFlap { 0% { transform:rotateX(0); z-index:4; } 49% { z-index:4; } 50% { z-index:0; } 100% { transform:rotateX(180deg); z-index:0; } }
+  .env-intro.open .env-flap { animation:envFlap .75s ease-in-out forwards; }
+  .env-intro.open .env-seal { animation:none; opacity:0; transform:translate(-50%,-50%) scale(.7); }
+  .env-intro.open .env-hint, .env-intro.open .env-top { opacity:0; animation:none; }
+  .env-intro.open .env-card { transform:translateY(-46%); transition-delay:.5s; }
+  .env-intro.lift .env-card { z-index:6; transform:translateY(-30%) scale(1.12); transition:transform .7s ease; transition-delay:0s; }
+  @media (prefers-reduced-motion: reduce) { .env-seal, .env-hint { animation:none; } .env-intro { transition-duration:.2s; } }
 </style>
 </head>
 <body>
@@ -247,6 +306,68 @@ function birthdayHero(ev, photos, first, onMore) {
   return hero;
 }
 
+function weddingNames(title) {
+  const t = String(title || '').replace(/['\u2019]s\s+wedding\s*$/i, '').replace(/\s+wedding\s*$/i, '').trim();
+  const p = t.split(/\s*(?:&|\+|\band\b)\s*/i).filter(Boolean);
+  return p.length === 2 ? p : null;
+}
+
+function weddingArt() {
+  const NS = 'http://www.w3.org/2000/svg', s = document.createElementNS(NS, 'svg');
+  s.setAttribute('viewBox', '0 0 400 300'); s.setAttribute('class', 'wed-art'); s.setAttribute('aria-hidden', 'true'); s.setAttribute('preserveAspectRatio', 'xMidYMax meet');
+  ['M30 300V160Q30 100 62 58Q94 100 94 160V300', 'M44 300V162Q44 112 62 84Q80 112 80 162V300', 'M62 84V300',
+   'M370 300V160Q370 100 338 58Q306 100 306 160V300', 'M356 300V162Q356 112 338 84Q320 112 320 162V300', 'M338 84V300',
+   'M150 300V150L200 30L250 150V300', 'M150 150H250', 'M180 300V210Q180 180 200 165Q220 180 220 210V300', 'M200 30V8M192 17H208',
+   'M0 286H400M0 293H400'].forEach(d => { const p = document.createElementNS(NS, 'path'); p.setAttribute('d', d); s.append(p); });
+  document.body.prepend(s);
+}
+
+function weddingCard(ev, days, first) {
+  const c = el('section', 'wed-card');
+  c.append(el('h2', '', 'Ceremony Info'));
+  if (ev.host_names) {
+    const sides = ev.host_names.split('|').map(x => x.trim()).filter(Boolean);
+    if (sides.length === 2) {
+      const g = el('div', 'wc-parents');
+      sides.forEach(sd => { const col = el('div', 'wc-col'); sd.split('/').map(x => x.trim()).filter(Boolean).forEach(l => col.append(el('p', '', l))); g.append(col); });
+      c.append(g, el('hr', 'wc-rule'));
+    } else c.append(el('p', 'wc-host', ev.host_names), el('hr', 'wc-rule'));
+  }
+  if (first) {
+    c.append(el('p', 'wc-small', 'Save the date'), el('p', 'wc-date', first.toLocaleDateString([], { dateStyle:'full' })));
+    if (days.length ? days[0].time : (ev.event_date && (first.getHours() || first.getMinutes()))) c.append(el('p', 'wc-time', first.toLocaleTimeString([], { timeStyle:'short' })));
+  }
+  if (ev.venue) c.append(el('p', 'wc-venue', ev.venue));
+  const b = el('div', 'wc-btns');
+  if (first) { const k = el('button', 'btn', 'Add to calendar'); k.type = 'button'; k.onclick = () => ics(ev); b.append(k); }
+  if (ev.map_url) { const m = el('a', 'btn', 'Open map'); m.href = ev.map_url; m.target = '_blank'; m.rel = 'noopener'; b.append(m); }
+  if (b.children.length) c.append(b);
+  return c.children.length > 1 ? c : null;
+}
+
+function envelopeIntro(ev, photos, first) {
+  if (/[?&]nointro/.test(location.search)) return;
+  const o = el('div','env-intro'); o.setAttribute('role','button'); o.tabIndex = 0; o.setAttribute('aria-label','Open the invitation');
+  o.append(el('p','env-top','You\u2019re invited'));
+  const st = el('div','env-stage'), card = el('div','env-card');
+  if (photos[0]) { const i = el('img','env-photo'); i.src = photos[0]; i.alt = ''; card.append(i); }
+  const nm = weddingNames(ev.title);
+  card.append(el('p','env-of','The Wedding of'), el('p','env-title', nm ? nm[0] + ' & ' + nm[1] : ev.title));
+  if (first) card.append(el('p','env-date', first.toLocaleDateString([], { dateStyle:'long' })));
+  const seal = el('div','env-seal'); seal.append(el('span','','&'));
+  st.append(el('div','env-back'), card, el('div','env-l'), el('div','env-r'), el('div','env-b'), el('div','env-flap'), seal);
+  o.append(st, el('p','env-hint','Tap to open'));
+  const html = document.documentElement; let done = false;
+  const finish = () => { o.classList.add('out'); html.style.overflow = ''; setTimeout(() => o.remove(), 800); };
+  const open = () => {
+    if (done) return; done = true;
+    if (matchMedia('(prefers-reduced-motion: reduce)').matches) return finish();
+    o.classList.add('open'); setTimeout(() => o.classList.add('lift'), 1450); setTimeout(finish, 2250);
+  };
+  o.onclick = open; o.onkeydown = e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); open(); } };
+  html.style.overflow = 'hidden'; document.body.append(o); o.focus({ preventScroll:true });
+}
+
 function renderWedding(ev) {
   const bday = ev.type === 'birthday';
   document.body.classList.add(bday ? 'bday' : 'wed');
@@ -255,16 +376,17 @@ function renderWedding(ev) {
   const photos = (ev.photo_urls && ev.photo_urls.length) ? ev.photo_urls : (ev.photo_url ? [ev.photo_url] : []);
   const days = Array.isArray(ev.days) ? ev.days.filter(d => d && d.date) : [];
   const first = days.length ? dayDate(days[0]) : (ev.event_date ? new Date(ev.event_date) : null);
-  const h = el('header','wed-head'), of = el('div','wed-of');
-  of.append(el('span','','The'), el('span','wed-script','Wedding'), el('span','','of'));
-  h.append(of, el('h1','wed-names',ev.title));
-  if (ev.host_names) h.append(el('p','wed-host', ev.host_names));
-  const bits = [first && first.toLocaleDateString([], { dateStyle:'long' }), ev.venue].filter(Boolean);
-  if (bits.length) h.append(el('p','wed-line', bits.join('  \u2022  ')));
-  if (!bday) app.append(h);
+  if (!bday) {
+    const h = el('header','wed-head'), nm = weddingNames(ev.title), t = el('h1','wed-names');
+    h.append(el('p','wed-eyebrow','The wedding of'));
+    if (nm) t.append(el('span','wn',nm[0]), el('span','wamp','&'), el('span','wn',nm[1])); else t.textContent = ev.title;
+    h.append(t); app.append(h);
+    const wc = weddingCard(ev, days, first); if (wc) app.append(wc);
+    weddingArt(); envelopeIntro(ev, photos, first);
+  }
 
   const secs = [];
-  if (ev.about || ev.message) secs.push(['About us', p => { if (ev.about) p.append(el('p','msg', ev.about)); if (ev.message) p.append(el('p','msg', ev.message)); }]);
+  if (ev.about || ev.message) secs.push([bday ? 'About me' : 'About us', p => { if (ev.about) p.append(el('p','msg', ev.about)); if (ev.message) p.append(el('p','msg', ev.message)); }]);
   if (days.length || ev.event_date) secs.push(['Schedule', p => {
     if (days.length) {
       const groups = new Map();
@@ -286,7 +408,7 @@ function renderWedding(ev) {
     if (ev.map_url) { const r = el('div','row'), m = el('a','btn','Open map'); m.href = ev.map_url; m.target = '_blank'; m.rel = 'noopener'; r.append(m); p.append(r); }
   }]);
   const more = Array.isArray(ev.gallery_urls) ? ev.gallery_urls : [], allPhotos = photos.concat(more);
-  if (allPhotos.length > 1) secs.push([bday ? 'Gallery' : 'Photos', p => { const g = el('div','wgrid'); allPhotos.forEach(u => { const i = el('img'); i.src = u; i.alt = ''; i.loading = 'lazy'; g.append(i); }); p.append(g); }]);
+  if (allPhotos.length > (bday ? 0 : 1)) secs.push([bday ? 'Gallery' : 'Photos', p => { const g = el('div','wgrid'); allPhotos.forEach(u => { const i = el('img'); i.src = u; i.alt = ''; i.loading = 'lazy'; g.append(i); }); p.append(g); }]);
   if (ev.video_url) secs.push(['Video', p => { const v = el('video'); v.src = ev.video_url; v.controls = true; v.preload = 'metadata'; v.playsInline = true; p.append(v); }]);
   if (ev.rsvp_enabled) secs.push(['RSVP', p => p.append(rsvpForm())]);
   if (!secs.length && !bday) { if (photos.length) app.append(slideshow(photos)); return; }
@@ -305,7 +427,7 @@ function renderWedding(ev) {
     if (!home) p.append(el('h2','',name));
     fill(p); tabs.push(t); panels.push(p); nav.append(t); holder.append(p);
   };
-  if (bday) add('Home', p => p.append(birthdayHero(ev, photos, first, () => { const k = tabs.findIndex(t => t.textContent === 'About us'); if (k > -1) show(k, true); })), true);
+  if (bday) add('Home', p => p.append(birthdayHero(ev, photos, first, () => { const k = tabs.findIndex(t => t.textContent === 'About me'); if (k > -1) show(k, true); })), true);
   else if (photos.length) add('Home', p => p.append(slideshow(photos)), true);
   secs.forEach(([name, fill]) => add(name, fill));
   app.append(nav, holder); show(0);

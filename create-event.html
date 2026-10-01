@@ -37,7 +37,7 @@
   .dayrow { display:grid; grid-template-columns:1fr 1fr; gap:8px; padding-bottom:10px; margin-bottom:10px; border-bottom:1px dashed var(--line); }
   .dayrow .full { grid-column:1/-1; }
   .dayrow button { justify-self:start; }
-  .wedOnly[hidden], .dayrow [hidden], #hostLbl[hidden], #galLbl[hidden], #themeBox[hidden] { display:none; }
+  .wedOnly[hidden], .dayrow [hidden], #hostLbl[hidden], #galLbl[hidden], #themeBox[hidden], #aboutLbl[hidden] { display:none; }
   .swatches { border:1px solid var(--line); border-radius:8px; padding:10px 14px 14px; display:flex; gap:14px; flex-wrap:wrap; align-items:center; }
   .swatches legend { font-weight:500; padding:0 6px; }
   .swatches label { display:block; position:relative; cursor:pointer; }
@@ -74,7 +74,7 @@
         <option value="general">Other</option>
       </select></label>
     <label>Title <input name="title" required maxlength="120" placeholder="Selam & Dawit's Wedding"></label>
-    <label class="wedOnly" hidden>About us <small>(your story, shown in the "About us" section)</small><textarea name="about" maxlength="2000"></textarea></label>
+    <label id="aboutLbl" hidden><span id="aboutTxt">About us</span> <small id="aboutHint">(your story, shown in the "About us" section)</small><textarea name="about" maxlength="2000"></textarea></label>
     <label><span id="dateTxt">Date and time</span> <small id="dateHint">(optional if you add a schedule below)</small><input type="datetime-local" name="event_date" id="evDate"></label>
     <fieldset id="daysBox" hidden>
       <legend id="daysLegend">Seminar days</legend>
@@ -86,7 +86,7 @@
       <legend>Background color</legend>
       <div id="themeOpts" style="display:flex;gap:14px;flex-wrap:wrap"></div>
     </fieldset>
-    <label id="hostLbl">Hosts <small>(optional)</small><input name="host_names" maxlength="120" placeholder="Together with their families"></label>
+    <label id="hostLbl"><span id="hostTxt">Hosts</span> <small id="hostHint">(optional)</small><input name="host_names" maxlength="120" placeholder="Together with their families"></label>
     <label>Venue <input name="venue" maxlength="200"></label>
     <label>Map link <small>(Google Maps share link)</small><input type="url" name="map_url" placeholder="https://maps.app.goo.gl/…"></label>
     <label>Message <small>(optional)</small><textarea name="message" maxlength="1000"></textarea></label>
@@ -174,7 +174,9 @@ function syncType() {
   $('daysLegend').textContent = wed ? 'Time schedule' : 'Seminar days';
   $('daysHelp').textContent = wed ? 'Add each moment of the wedding day with its time, for example 9:00 church ceremony, 12:00 photos, 6:00 reception. All items use the wedding date above.' : 'Add each day with its own title. You can change titles later.';
   document.querySelectorAll('.wedOnly').forEach(x => x.hidden = !wed);
-  $('hostLbl').hidden = wed;
+  $('hostTxt').textContent = wed ? 'Parents / families' : 'Hosts';
+  $('hostHint').textContent = wed ? '(optional. Groom\u2019s side | bride\u2019s side. Use / for a new line)' : '(optional)';
+  $('f').host_names.placeholder = wed ? 'Mr. & Mrs. Tadesse / Alemu | Mr. & Mrs. Bekele / Almaz' : 'Together with their families';
   const ed = $('evDate'), want = wed ? 'date' : 'datetime-local';
   if (ed.type !== want) { ed.type = want; ed.value = ''; }
   $('dateTxt').textContent = wed ? 'Wedding date' : 'Date and time';
@@ -183,6 +185,9 @@ function syncType() {
   $('photoLbl').textContent = (wed || bday) ? 'Main photos' : 'Photos';
   $('themeBox').hidden = !(wed || bday); renderThemes();
   $('galLbl').hidden = !(wed || bday);
+  $('aboutLbl').hidden = !(wed || bday);
+  $('aboutTxt').textContent = bday ? 'About me' : 'About us';
+  $('aboutHint').textContent = '(your story, shown in the "' + (bday ? 'About me' : 'About us') + '" section)';
   $('galTxt').textContent = bday ? 'Gallery photos' : 'Additional photos';
   $('galHint').textContent = '(up to 20, shown in the "' + (bday ? 'Gallery' : 'Photos') + '" section. JPG, PNG or WebP, up to 50 MB each)';
   if ((sem || wed) && !$('days').children.length) addDay();
@@ -244,7 +249,6 @@ $('f').onsubmit = async e => {
   if (fd.getAll('photo').filter(f => f.size).length > 3) { $('err').textContent = 'Please choose up to 3 photos.'; $('go').disabled = false; $('go').textContent = 'Create invitation'; return; }
   if (fd.getAll('gallery').filter(f => f.size).length > 20) { $('err').textContent = 'Please choose up to 20 additional photos.'; $('go').disabled = false; $('go').textContent = 'Create invitation'; return; }
   if (!['wedding', 'birthday'].includes(fd.get('type'))) fd.delete('theme');
-  if (fd.get('type') === 'wedding') fd.delete('host_names');
   { const gal = [...$('f').gallery.files].filter(f => f.size); fd.delete('gallery');
     if (['wedding', 'birthday'].includes(fd.get('type'))) gal.forEach(f => fd.append('gallery', f)); }
   fd.set('rsvp_enabled', $('rsvpOn').checked ? 'true' : 'false');
