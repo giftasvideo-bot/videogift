@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>You're invited</title>
+<script src="i18n.js"></script>
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,700&family=DM+Sans:wght@400;500&family=Noto+Sans+Ethiopic:wght@400;600&family=Pinyon+Script&family=Cormorant+Garamond:wght@400;500;600&family=Chewy&family=Fredoka:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
   :root { --bg:#eef4f3; --ink:#123c40; --accent:#0f5257; --soft:#d9e8e6; }
@@ -317,6 +318,7 @@ const qs = new URLSearchParams(location.search);
 let slug = qs.get('e');
 const card = qs.get('g');
 const app = document.getElementById('app');
+{ const ld = app.querySelector('.err'); if (ld) ld.textContent = T('Loading invitation\u2026'); }
 const el = (t, cls, txt) => { const n = document.createElement(t); if (cls) n.className = cls; if (txt) n.textContent = txt; return n; };
 
 const dayDate = d => { const [y, m, dd] = d.date.split('-').map(Number); const [h, mi] = (d.time || '').split(':').map(Number); return d.time ? new Date(y, m - 1, dd, h, mi) : new Date(y, m - 1, dd); };
@@ -355,10 +357,10 @@ function ics(ev) {
 
 function slideshow(urls) {
   if (urls.length === 1) { const i = el('img','photo'); i.src = urls[0]; i.alt = ''; return i; }
-  const box = el('div','slides'); box.setAttribute('role','group'); box.setAttribute('aria-label','Photo slideshow');
+  const box = el('div','slides'); box.setAttribute('role','group'); box.setAttribute('aria-label',T('Photo slideshow'));
   const imgs = urls.map((u, k) => { const i = el('img','slide'); i.src = u; i.alt = ''; if (!k) i.classList.add('on'); box.append(i); return i; });
   const dots = el('div','dots');
-  const btns = urls.map((_, k) => { const b = el('button','dot'); b.type = 'button'; b.setAttribute('aria-label','Photo ' + (k + 1));
+  const btns = urls.map((_, k) => { const b = el('button','dot'); b.type = 'button'; b.setAttribute('aria-label',T('Photo') + ' ' + (k + 1));
     b.onclick = () => { go(k); restart(); }; dots.append(b); return b; });
   let cur = 0, timer;
   function go(k) { imgs[cur].classList.remove('on'); btns[cur].classList.remove('on'); cur = k; imgs[cur].classList.add('on'); btns[cur].classList.add('on'); }
@@ -405,13 +407,13 @@ function birthdayHero(ev, photos, first, onMore) {
   const t = el('div', 'bd-text');
   const m = (ev.title || '').match(/^(.*?)\s*\b(birthday.*)$/i);
   if (m && m[2]) { if (m[1]) t.append(el('p', 'bd-pre', m[1])); t.append(el('h1', 'bd-big', m[2].charAt(0).toUpperCase() + m[2].slice(1))); }
-  else t.append(el('h1', 'bd-big', ev.title || 'Birthday'));
+  else t.append(el('h1', 'bd-big', ev.title || T('Birthday')));
   if (ev.host_names) t.append(el('p', 'bd-venue', ev.host_names));
-  if (first) t.append(el('p', 'bd-date', first.toLocaleDateString([], { dateStyle: 'medium' })));
+  if (first) t.append(el('p', 'bd-date', first.toLocaleDateString(LOC, { dateStyle: 'medium' })));
   if (ev.venue) t.append(el('p', 'bd-venue', ev.venue));
   const blurb = (ev.message || ev.about || '').trim();
   if (blurb) t.append(el('p', 'bd-blurb', blurb.length > 170 ? blurb.slice(0, 167).trim() + '\u2026' : blurb));
-  if (ev.about || blurb.length > 170) { const b = el('button', 'bd-more', 'Read More'); b.type = 'button'; b.onclick = onMore; t.append(b); }
+  if (ev.about || blurb.length > 170) { const b = el('button', 'bd-more', T('Read More')); b.type = 'button'; b.onclick = onMore; t.append(b); }
   hero.append(art, t);
   return hero;
 }
@@ -433,11 +435,11 @@ function weddingArt() {
 }
 
 function weddingDate(ev, days, first) {
-  const MON = ['January','February','March','April','May','June','July','August','September','October','November','December'];
-  const WD = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+  const MON = MONTHS;
+  const WD = WEEKDAYS;
   const pad = n => String(n).padStart(2, '0');
   const c = el('section', 'wed-date');
-  c.append(el('h2', 'wd-h', 'Ceremony Info'));
+  c.append(el('h2', 'wd-h', T('Ceremony Info')));
   const intro = el('div', 'wd-intro');
   if (ev.host_names) {
     const sides = ev.host_names.split('|').map(x => x.trim()).filter(Boolean);
@@ -447,7 +449,7 @@ function weddingDate(ev, days, first) {
       intro.append(g);
     } else intro.append(el('p', 'wc-host', ev.host_names));
   }
-  intro.append(el('p', 'wd-join', 'Please join us as we celebrate'), el('p', 'wd-join', 'the beginning of our life together'));
+  intro.append(el('p', 'wd-join', T('Please join us as we celebrate')), el('p', 'wd-join', T('the beginning of our life together')));
   const nm = weddingNames(ev.title), names = el('div', 'wd-names');
   if (nm) names.append(el('span', 'wd-n', nm[0]), el('span', 'wd-amp', '&'), el('span', 'wd-n', nm[1]));
   else names.append(el('span', 'wd-n', ev.title || ''));
@@ -456,7 +458,7 @@ function weddingDate(ev, days, first) {
   c.append(intro);
 
   const when = el('div', 'wd-when');
-  when.append(el('p', 'wd-cer', 'Wedding Ceremony'));
+  when.append(el('p', 'wd-cer', T('Wedding Ceremony')));
   if (ev.venue) when.append(el('p', 'wd-venue', ev.venue));
   if (first) {
     const top = el('p', 'wd-top');
@@ -471,15 +473,15 @@ function weddingDate(ev, days, first) {
     const cd = el('p', 'wd-count');
     const tick = () => {
       const ms = first - Date.now();
-      if (ms <= 0) { cd.textContent = 'The big day has arrived'; return; }
+      if (ms <= 0) { cd.textContent = T('The big day has arrived'); return; }
       const d = Math.floor(ms / 864e5), h = Math.floor(ms / 36e5) % 24, m = Math.floor(ms / 6e4) % 60, sc = Math.floor(ms / 1e3) % 60;
-      cd.textContent = d + (d === 1 ? ' day ' : ' days ') + h + (h === 1 ? ' hour ' : ' hours ') + m + ' min ' + sc + ' sec';
+      cd.textContent = LANG === 'am' ? d + ' \u1240\u1295 ' + h + ' \u1230\u12D3\u1275 ' + m + ' \u12F0\u1242\u1243 ' + sc + ' \u1230\u12A8\u1295\u12F5' : d + (d === 1 ? ' day ' : ' days ') + h + (h === 1 ? ' hour ' : ' hours ') + m + ' min ' + sc + ' sec';
     };
     tick(); const timer = setInterval(() => { if (!cd.isConnected) return clearInterval(timer); tick(); }, 1000);
-    c.append(el('p', 'wd-cdl', 'Countdown'), cd);
+    c.append(el('p', 'wd-cdl', T('Countdown')), cd);
     const cal = el('div', 'wd-cal'), g = el('div', 'wd-grid');
     cal.append(el('p', 'wd-cal-title', MON[first.getMonth()] + ' ' + first.getFullYear()));
-    ['Mo','Tu','We','Th','Fr','Sa','Su'].forEach(x => g.append(el('span', 'wd-dow', x)));
+    DOW.forEach(x => g.append(el('span', 'wd-dow', x)));
     const off = (new Date(first.getFullYear(), first.getMonth(), 1).getDay() + 6) % 7;
     for (let i = 0; i < off; i++) g.append(el('span'));
     const n = new Date(first.getFullYear(), first.getMonth() + 1, 0).getDate();
@@ -487,8 +489,8 @@ function weddingDate(ev, days, first) {
     cal.append(g); c.append(cal);
   }
   const lk = el('div', 'wd-links');
-  if (first) { const add = el('button', 'wd-add', 'Add to Calendar'); add.type = 'button'; add.onclick = () => ics(ev); lk.append(add); }
-  if (ev.map_url) { const m = el('a', 'wd-add', 'Open map'); m.href = ev.map_url; m.target = '_blank'; m.rel = 'noopener'; lk.append(m); }
+  if (first) { const add = el('button', 'wd-add', T('Add to Calendar')); add.type = 'button'; add.onclick = () => ics(ev); lk.append(add); }
+  if (ev.map_url) { const m = el('a', 'wd-add', T('Open map')); m.href = ev.map_url; m.target = '_blank'; m.rel = 'noopener'; lk.append(m); }
   if (lk.children.length) c.append(lk);
   const flL = el('div', 'wd-fl wd-fl-l'); flL.setAttribute('aria-hidden', 'true'); flL.append(envBouquet()); c.append(flL);
   return c;
@@ -496,7 +498,7 @@ function weddingDate(ev, days, first) {
 
 function weddingCard(ev, days, first) {
   const c = el('section', 'wed-card');
-  c.append(el('h2', '', 'Ceremony Info'));
+  c.append(el('h2', '', T('Ceremony Info')));
   if (ev.host_names) {
     const sides = ev.host_names.split('|').map(x => x.trim()).filter(Boolean);
     if (sides.length === 2) {
@@ -506,27 +508,27 @@ function weddingCard(ev, days, first) {
     } else c.append(el('p', 'wc-host', ev.host_names), el('hr', 'wc-rule'));
   }
   if (first) {
-    c.append(el('p', 'wc-small', 'Save the date'), el('p', 'wc-date', first.toLocaleDateString([], { dateStyle:'full' })));
-    if (days.length ? days[0].time : (ev.event_date && (first.getHours() || first.getMinutes()))) c.append(el('p', 'wc-time', first.toLocaleTimeString([], { timeStyle:'short' })));
+    c.append(el('p', 'wc-small', T('Save the date')), el('p', 'wc-date', first.toLocaleDateString(LOC, { dateStyle:'full' })));
+    if (days.length ? days[0].time : (ev.event_date && (first.getHours() || first.getMinutes()))) c.append(el('p', 'wc-time', first.toLocaleTimeString(LOC, { timeStyle:'short' })));
   }
   if (ev.venue) c.append(el('p', 'wc-venue', ev.venue));
   const b = el('div', 'wc-btns');
-  if (first) { const k = el('button', 'btn', 'Add to calendar'); k.type = 'button'; k.onclick = () => ics(ev); b.append(k); }
-  if (ev.map_url) { const m = el('a', 'btn', 'Open map'); m.href = ev.map_url; m.target = '_blank'; m.rel = 'noopener'; b.append(m); }
+  if (first) { const k = el('button', 'btn', T('Add to calendar')); k.type = 'button'; k.onclick = () => ics(ev); b.append(k); }
+  if (ev.map_url) { const m = el('a', 'btn', T('Open map')); m.href = ev.map_url; m.target = '_blank'; m.rel = 'noopener'; b.append(m); }
   if (b.children.length) c.append(b);
   return c.children.length > 1 ? c : null;
 }
 
 function coverflow(urls) {
   const n = urls.length; let cur = 0, x0 = null, moved = false;
-  const wrap = el('div'), box = el('div', 'cf'); box.tabIndex = 0; box.setAttribute('role', 'group'); box.setAttribute('aria-label', 'Photo gallery');
+  const wrap = el('div'), box = el('div', 'cf'); box.tabIndex = 0; box.setAttribute('role', 'group'); box.setAttribute('aria-label', T('Photo gallery'));
   const items = urls.map((u, i) => {
-    const f = el('div', 'cf-item'), im = el('img'); im.src = u; im.alt = 'Photo ' + (i + 1) + ' of ' + n; im.loading = 'lazy'; im.draggable = false; f.append(im);
+    const f = el('div', 'cf-item'), im = el('img'); im.src = u; im.alt = T('Photo') + ' ' + (i + 1) + (LANG === 'am' ? ' / ' : ' of ') + n; im.loading = 'lazy'; im.draggable = false; f.append(im);
     f.onclick = () => { if (moved) { moved = false; return; } if (i !== cur) go(i); };
     box.append(f); return f;
   });
   const dots = el('div', 'cf-dots');
-  const dd = urls.map((_, i) => { const b = el('button', 'cf-dot'); b.type = 'button'; b.setAttribute('aria-label', 'Photo ' + (i + 1)); b.onclick = () => go(i); dots.append(b); return b; });
+  const dd = urls.map((_, i) => { const b = el('button', 'cf-dot'); b.type = 'button'; b.setAttribute('aria-label', T('Photo') + ' ' + (i + 1)); b.onclick = () => go(i); dots.append(b); return b; });
   function layout() {
     items.forEach((f, i) => {
       let d = i - cur; if (n > 2) { if (d > n / 2) d -= n; else if (d < -n / 2) d += n; }
@@ -541,7 +543,7 @@ function coverflow(urls) {
   function go(k) { cur = (k + n) % n; layout(); }
   if (n > 1) {
     const p = el('button', 'cf-nav p', '\u2039'), q = el('button', 'cf-nav n', '\u203A');
-    p.type = q.type = 'button'; p.setAttribute('aria-label', 'Previous photo'); q.setAttribute('aria-label', 'Next photo');
+    p.type = q.type = 'button'; p.setAttribute('aria-label', T('Previous photo')); q.setAttribute('aria-label', T('Next photo'));
     p.onclick = () => go(cur - 1); q.onclick = () => go(cur + 1); box.append(p, q);
     box.onpointerdown = e => { x0 = e.clientX; moved = false; };
     box.onpointerup = e => { if (x0 === null) return; const dx = e.clientX - x0; x0 = null; if (Math.abs(dx) > 40) { moved = true; go(cur + (dx < 0 ? 1 : -1)); } };
@@ -552,15 +554,15 @@ function coverflow(urls) {
 }
 
 function guestbook(list) {
-  const card = el('section', 'gb-card'), f = el('form'), name = el('input'), msg = el('textarea'), send = el('button', 'gb-send', 'Send wishes'), note = el('p', 'note'), box = el('div', 'gb-list');
-  card.append(el('h3', '', 'Guestbook'));
-  name.placeholder = 'Enter your name*'; name.required = true; name.maxLength = 60; name.setAttribute('aria-label', 'Your name');
-  msg.placeholder = 'Enter your wishes*'; msg.required = true; msg.maxLength = 500; msg.setAttribute('aria-label', 'Your wishes');
+  const card = el('section', 'gb-card'), f = el('form'), name = el('input'), msg = el('textarea'), send = el('button', 'gb-send', T('Send wishes')), note = el('p', 'note'), box = el('div', 'gb-list');
+  card.append(el('h3', '', T('Guestbook')));
+  name.placeholder = T('Enter your name*'); name.required = true; name.maxLength = 60; name.setAttribute('aria-label', T('Your name'));
+  msg.placeholder = T('Enter your wishes*'); msg.required = true; msg.maxLength = 500; msg.setAttribute('aria-label', T('Your wishes'));
   send.type = 'submit';
-  const empty = el('p', 'gb-empty', 'Be the first to leave a wish.');
+  const empty = el('p', 'gb-empty', T('Be the first to leave a wish.'));
   const item = w => {
     const d = el('div', 'gb-item'), h = el('div', 'gb-head');
-    h.append(el('b', '', w.name || ''), el('span', 'gb-date', w.created_at ? new Date(w.created_at).toLocaleString([], { dateStyle:'medium', timeStyle:'short' }) : ''));
+    h.append(el('b', '', w.name || ''), el('span', 'gb-date', w.created_at ? new Date(w.created_at).toLocaleString(LOC, { dateStyle:'medium', timeStyle:'short' }) : ''));
     d.append(h, el('p', '', w.message || '')); return d;
   };
   list.forEach(w => box.append(item(w)));
@@ -570,11 +572,11 @@ function guestbook(list) {
     try {
       const r = await fetch(`${API}/api/e/${encodeURIComponent(slug)}/wishes`, { method:'POST', headers:{ 'Content-Type':'application/json' },
         body: JSON.stringify({ name:name.value.trim(), message:msg.value.trim() }) });
-      if (!r.ok) throw new Error((await r.json().catch(() => ({}))).error || 'please try again');
+      if (!r.ok) throw new Error((await r.json().catch(() => ({}))).error || T('please try again'));
       const w = await r.json().catch(() => ({}));
       box.prepend(item({ name:w.name || name.value.trim(), message:w.message || msg.value.trim(), created_at:w.created_at || new Date().toISOString() }));
-      empty.remove(); name.value = ''; msg.value = ''; note.textContent = 'Thank you for your wishes!';
-    } catch (x) { note.textContent = 'Could not send: ' + x.message; }
+      empty.remove(); name.value = ''; msg.value = ''; note.textContent = T('Thank you for your wishes!');
+    } catch (x) { note.textContent = T('Could not send: ') + T(x.message); }
     send.disabled = false;
   };
   card.append(f);
@@ -584,11 +586,11 @@ function guestbook(list) {
 
 function weddingVenue(p, ev) {
   p.classList.add('tl-panel');
-  p.append(el('h3', 'wv-title', 'Wedding venue'));
+  p.append(el('h3', 'wv-title', T('Wedding venue')));
   if (ev.venue) {
     p.append(el('p', 'wv-name', ev.venue));
     const m = el('div', 'wv-map'), f = el('iframe');
-    f.src = 'https://www.google.com/maps?q=' + encodeURIComponent(ev.venue) + '&output=embed'; f.title = 'Map of ' + ev.venue;
+    f.src = 'https://www.google.com/maps?q=' + encodeURIComponent(ev.venue) + '&output=embed'; f.title = T('Map of ') + ev.venue;
     f.loading = 'lazy'; f.referrerPolicy = 'no-referrer-when-downgrade'; f.setAttribute('allowfullscreen', ''); m.append(f); p.append(m);
   }
   const href = ev.map_url || (ev.venue ? 'https://www.google.com/maps/dir/?api=1&destination=' + encodeURIComponent(ev.venue) : '');
@@ -596,7 +598,7 @@ function weddingVenue(p, ev) {
     const a = el('a', 'wv-dir'); a.href = href; a.target = '_blank'; a.rel = 'noopener';
     const NS = 'http://www.w3.org/2000/svg', s = document.createElementNS(NS, 'svg'), pa = document.createElementNS(NS, 'path');
     s.setAttribute('viewBox', '0 0 24 24'); s.setAttribute('aria-hidden', 'true'); pa.setAttribute('d', 'M3 11L21 3L13 21L11 13Z'); s.append(pa);
-    a.append(s, document.createTextNode('Get directions')); p.append(a);
+    a.append(s, document.createTextNode(T('Get directions'))); p.append(a);
   }
 }
 
@@ -657,17 +659,17 @@ function envBouquet() { const i = new Image(); i.src = ENV_BOUQUET; i.alt = ''; 
 
 function envelopeIntro(ev, photos, first) {
   if (/[?&]nointro/.test(location.search)) return;
-  const o = el('div','env-intro'); o.setAttribute('role','button'); o.tabIndex = 0; o.setAttribute('aria-label','Open the invitation');
-  o.append(el('p','env-top','You\u2019re invited'));
+  const o = el('div','env-intro'); o.setAttribute('role','button'); o.tabIndex = 0; o.setAttribute('aria-label',T('Open the invitation'));
+  o.append(el('p','env-top',T('You\u2019re invited')));
   const st = el('div','env-stage'), card = el('div','env-card');
   if (photos[0]) { const i = el('img','env-photo'); i.src = photos[0]; i.alt = ''; card.append(i); }
   const nm = weddingNames(ev.title);
-  card.append(el('p','env-of','The Wedding of'), el('p','env-title', nm ? nm[0] + ' & ' + nm[1] : ev.title));
-  if (first) card.append(el('p','env-date', first.toLocaleDateString([], { dateStyle:'long' })));
+  card.append(el('p','env-of',T('The Wedding of')), el('p','env-title', nm ? nm[0] + ' & ' + nm[1] : ev.title));
+  if (first) card.append(el('p','env-date', first.toLocaleDateString(LOC, { dateStyle:'long' })));
   const seal = el('div','env-seal'); seal.innerHTML = envSealSVG();
   const flL = el('div','env-flower env-fl-l'), flR = el('div','env-flower env-fl-r'); flL.append(envBouquet()); flR.append(envBouquet());
   st.append(el('div','env-back'), card, el('div','env-l'), el('div','env-r'), el('div','env-b'), el('div','env-flap'), flL, flR, seal);
-  o.append(st, el('p','env-hint','Tap to open'));
+  o.append(st, el('p','env-hint',T('Tap to open')));
   const html = document.documentElement; let done = false;
   const finish = () => { o.classList.add('out'); html.style.overflow = ''; setTimeout(() => o.remove(), 800); };
   const open = () => {
@@ -690,17 +692,17 @@ function renderWedding(ev) {
   const first = days.length ? dayDate(days[0]) : (ev.event_date ? new Date(ev.event_date) : null);
   if (!bday) {
     const h = el('header','wed-head'), nm = weddingNames(ev.title), t = el('h1','wed-names');
-    h.append(el('p','wed-eyebrow','The wedding of'));
+    h.append(el('p','wed-eyebrow',T('The wedding of')));
     if (nm) t.append(el('span','wn',nm[0]), el('span','wamp','&'), el('span','wn',nm[1])); else t.textContent = ev.title;
     h.append(t); app.append(h);
     const wdt = weddingDate(ev, days, first); if (wdt) app.append(wdt);
-    if (ev.rsvp_enabled) { confirmBtn = el('button', 'wc-confirm', 'Confirm attendance'); confirmBtn.type = 'button'; app.append(confirmBtn); }
+    if (ev.rsvp_enabled) { confirmBtn = el('button', 'wc-confirm', T('Confirm attendance')); confirmBtn.type = 'button'; app.append(confirmBtn); }
     weddingArt(); envelopeIntro(ev, photos, first);
   }
 
   const secs = [];
-  if (ev.about || ev.message) secs.push([bday ? 'About me' : 'About us', p => { if (ev.about) p.append(el('p','msg', ev.about)); if (ev.message) p.append(el('p','msg', ev.message)); }]);
-  if (days.length || ev.event_date) secs.push(['Schedule', p => {
+  if (ev.about || ev.message) secs.push([T(bday ? 'About me' : 'About us'), p => { if (ev.about) p.append(el('p','msg', ev.about)); if (ev.message) p.append(el('p','msg', ev.message)); }]);
+  if (days.length || ev.event_date) secs.push([T('Schedule'), p => {
     if (days.length) {
       const groups = new Map();
       days.forEach(d => { (groups.get(d.date) || groups.set(d.date, []).get(d.date)).push(d); });
@@ -708,34 +710,34 @@ function renderWedding(ev) {
         if (!bday) {
           p.classList.add('tl-panel');
           const card = el('div','tl-card'), ul = el('ul','tl');
-          card.append(el('h3','','Wedding day schedule'));
-          if (groups.size > 1) card.append(el('p','tl-date', dayDate(items[0]).toLocaleDateString([], { dateStyle:'full' })));
+          card.append(el('h3','',T('Wedding day schedule')));
+          if (groups.size > 1) card.append(el('p','tl-date', dayDate(items[0]).toLocaleDateString(LOC, { dateStyle:'full' })));
           items.forEach(d => { const li = el('li'), t = el('span','tl-time', d.time || ''); if (d.end) t.append(el('small','','\u2013 ' + d.end)); li.append(t, el('span','tl-dot'), el('span','tl-title', d.title || '')); ul.append(li); });
           card.append(ul); p.append(card); return;
         }
         const g = el('div','sgroup');
-        g.append(el('h3','',dayDate(items[0]).toLocaleDateString([], { dateStyle:'full' })));
+        g.append(el('h3','',dayDate(items[0]).toLocaleDateString(LOC, { dateStyle:'full' })));
         const ul = el('ul','times');
         items.forEach(d => { const li = el('li');
-          li.append(el('span','tm', d.time ? dayDate(d).toLocaleTimeString([], { timeStyle:'short' }) + (d.end ? ' \u2013 ' + dayDate({ date:d.date, time:d.end }).toLocaleTimeString([], { timeStyle:'short' }) : '') : ''), el('span','tt', d.title || ''));
+          li.append(el('span','tm', d.time ? dayDate(d).toLocaleTimeString(LOC, { timeStyle:'short' }) + (d.end ? ' \u2013 ' + dayDate({ date:d.date, time:d.end }).toLocaleTimeString(LOC, { timeStyle:'short' }) : '') : ''), el('span','tt', d.title || ''));
           ul.append(li); });
         g.append(ul); p.append(g);
       });
-    } else p.append(el('p','when', new Date(ev.event_date).toLocaleString([], { dateStyle:'full', timeStyle:'short' })));
-    const r = el('div','row'), c = el('button','btn','Add to calendar'); c.onclick = () => ics(ev); r.append(c); p.append(r);
+    } else p.append(el('p','when', new Date(ev.event_date).toLocaleString(LOC, { dateStyle:'full', timeStyle:'short' })));
+    const r = el('div','row'), c = el('button','btn',T('Add to calendar')); c.onclick = () => ics(ev); r.append(c); p.append(r);
   }]);
-  if (ev.venue || ev.map_url) secs.push(['Venue', p => {
+  if (ev.venue || ev.map_url) secs.push([T('Venue'), p => {
     if (!bday) return weddingVenue(p, ev);
     if (ev.venue) p.append(el('p','where', ev.venue));
-    if (ev.map_url) { const r = el('div','row'), m = el('a','btn','Open map'); m.href = ev.map_url; m.target = '_blank'; m.rel = 'noopener'; r.append(m); p.append(r); }
+    if (ev.map_url) { const r = el('div','row'), m = el('a','btn',T('Open map')); m.href = ev.map_url; m.target = '_blank'; m.rel = 'noopener'; r.append(m); p.append(r); }
   }]);
   const more = Array.isArray(ev.gallery_urls) ? ev.gallery_urls : [], allPhotos = photos.concat(more);
-  if (allPhotos.length > (bday ? 0 : 1)) secs.push([bday ? 'Gallery' : 'Photos', p => p.append(coverflow(allPhotos))]);
-  if (ev.video_url) secs.push(['Video', p => { const v = el('video'); v.src = ev.video_url; v.controls = true; v.preload = 'metadata'; v.playsInline = true; p.append(v); }]);
-  if (ev.rsvp_enabled) secs.push(['RSVP', p => { if (!bday) p.classList.add('rsvp-panel'); p.append(rsvpForm()); }]);
+  if (allPhotos.length > (bday ? 0 : 1)) secs.push([T(bday ? 'Gallery' : 'Photos'), p => p.append(coverflow(allPhotos))]);
+  if (ev.video_url) secs.push([T('Video'), p => { const v = el('video'); v.src = ev.video_url; v.controls = true; v.preload = 'metadata'; v.playsInline = true; p.append(v); }]);
+  if (ev.rsvp_enabled) secs.push([T('RSVP'), p => { if (!bday) p.classList.add('rsvp-panel'); p.append(rsvpForm()); }]);
   if (!secs.length && !bday) { if (photos.length) app.append(slideshow(photos)); return; }
 
-  const nav = el('nav','wnav'); nav.setAttribute('role','tablist'); nav.setAttribute('aria-label','Invitation sections');
+  const nav = el('nav','wnav'); nav.setAttribute('role','tablist'); nav.setAttribute('aria-label',T('Invitation sections'));
   const holder = el('div');
   const tabs = [], panels = [];
   const show = (k, jump) => {
@@ -750,16 +752,16 @@ function renderWedding(ev) {
     if (!home) p.append(el('h2','',name));
     fill(p); tabs.push(t); panels.push(p); nav.append(t); holder.append(p);
   };
-  if (bday) add('Home', p => p.append(birthdayHero(ev, photos, first, () => { const k = tabs.findIndex(t => t.textContent === 'About me'); if (k > -1) show(k, true); })), true);
-  else if (photos.length) add('Home', p => p.append(slideshow(photos)), true);
+  if (bday) add(T('Home'), p => p.append(birthdayHero(ev, photos, first, () => { const k = tabs.findIndex(t => t.textContent === T('About me')); if (k > -1) show(k, true); })), true);
+  else if (photos.length) add(T('Home'), p => p.append(slideshow(photos)), true);
   secs.forEach(([name, fill]) => add(name, fill));
   if (bday) app.append(nav, holder); else app.append(holder);
   show(0);
-  if (confirmBtn) confirmBtn.onclick = () => { const k = tabs.findIndex(t => t.textContent === 'RSVP'); if (k > -1) show(k, true); };
+  if (confirmBtn) confirmBtn.onclick = () => { const k = tabs.findIndex(t => t.textContent === T('RSVP')); if (k > -1) show(k, true); };
   if (!bday && slug) fetch(`${API}/api/e/${encodeURIComponent(slug)}/wishes`).then(r => r.ok ? r.json() : Promise.reject()).then(d => {
     const list = Array.isArray(d) ? d : (Array.isArray(d.wishes) ? d.wishes : []);
     const cur = tabs.findIndex(t => t.getAttribute('aria-selected') === 'true');
-    add('Guestbook', p => { p.classList.add('tl-panel'); p.append(guestbook(list)); }); show(cur < 0 ? 0 : cur);
+    add(T('Guestbook'), p => { p.classList.add('tl-panel'); p.append(guestbook(list)); }); show(cur < 0 ? 0 : cur);
   }).catch(() => {});
   if (bday) app.append(el('div', 'bd-band'));
 }
@@ -779,7 +781,7 @@ function render(ev) {
     h.append(of, el('h1','wed-names',ev.title));
     if (ev.host_names) h.append(el('p','wed-host', ev.host_names));
     const first = days0.length ? dayDate(days0[0]) : (ev.event_date ? new Date(ev.event_date) : null);
-    const bits = [first && first.toLocaleDateString([], { dateStyle:'long' }), ev.venue].filter(Boolean);
+    const bits = [first && first.toLocaleDateString(LOC, { dateStyle:'long' }), ev.venue].filter(Boolean);
     if (bits.length) h.append(el('p','wed-line', bits.join('  •  ')));
     app.append(h);
   }
@@ -794,16 +796,16 @@ function render(ev) {
     const ul = el('ul','agenda');
     days.forEach(d => {
       const li = el('li');
-      const when = dayDate(d).toLocaleString([], d.time ? { dateStyle:'full', timeStyle:'short' } : { dateStyle:'full' });
+      const when = dayDate(d).toLocaleString(LOC, d.time ? { dateStyle:'full', timeStyle:'short' } : { dateStyle:'full' });
       li.append(el('div','dd', when), el('div','dt', d.title || ''));
       ul.append(li);
     });
     b.append(ul);
-  } else if (ev.event_date && !wed) b.append(el('p','when', new Date(ev.event_date).toLocaleString([], { dateStyle:'full', timeStyle:'short' })));
+  } else if (ev.event_date && !wed) b.append(el('p','when', new Date(ev.event_date).toLocaleString(LOC, { dateStyle:'full', timeStyle:'short' })));
   if (ev.venue && !wed) b.append(el('p','where', ev.venue));
   const row = el('div','row');
-  if (ev.event_date || days.length) { const c = el('button','btn','Add to calendar'); c.onclick = () => ics(ev); row.append(c); }
-  if (ev.map_url) { const m = el('a','btn','Open map'); m.href = ev.map_url; m.target = '_blank'; m.rel = 'noopener'; row.append(m); }
+  if (ev.event_date || days.length) { const c = el('button','btn',T('Add to calendar')); c.onclick = () => ics(ev); row.append(c); }
+  if (ev.map_url) { const m = el('a','btn',T('Open map')); m.href = ev.map_url; m.target = '_blank'; m.rel = 'noopener'; row.append(m); }
   if (row.children.length) b.append(row);
   if (ev.message) b.append(el('p','msg', ev.message));
   if (ev.video_url) { const v = el('video'); v.src = ev.video_url; v.controls = true; v.preload = 'metadata'; v.playsInline = true; b.append(v); }
@@ -813,15 +815,15 @@ function render(ev) {
 
 function rsvpForm() {
   let attending = true;
-  const f = el('form'); f.append(el('h2','','Will you come?'));
-  const name = el('input'); name.placeholder = 'Your name'; name.required = true; name.maxLength = 100;
-  const n = el('input'); n.type = 'number'; n.min = 1; n.max = 20; n.value = 1; n.setAttribute('aria-label','Number of guests');
-  const ch = el('div','choice'), yes = el('button','btn on','Yes, I\'ll be there'), no = el('button','btn','Can\'t make it');
+  const f = el('form'); f.append(el('h2','',T('Will you come?')));
+  const name = el('input'); name.placeholder = T('Your name'); name.required = true; name.maxLength = 100;
+  const n = el('input'); n.type = 'number'; n.min = 1; n.max = 20; n.value = 1; n.setAttribute('aria-label',T('Number of guests'));
+  const ch = el('div','choice'), yes = el('button','btn on',T("Yes, I\'ll be there")), no = el('button','btn',T("Can\'t make it"));
   yes.type = no.type = 'button';
   yes.onclick = () => { attending = true; yes.classList.add('on'); no.classList.remove('on'); };
   no.onclick = () => { attending = false; no.classList.add('on'); yes.classList.remove('on'); };
   ch.append(yes, no);
-  const send = el('button','btn fill','Send reply'), note = el('p','note');
+  const send = el('button','btn fill',T('Send reply')), note = el('p','note');
   f.append(name, ch, n, send, note);
   f.onsubmit = async e => {
     e.preventDefault(); send.disabled = true;
@@ -829,19 +831,19 @@ function rsvpForm() {
       const r = await fetch(`${API}/api/e/${encodeURIComponent(slug)}/rsvp`, { method:'POST', headers:{'Content-Type':'application/json'},
         body: JSON.stringify({ name:name.value, attending, guests:n.value }) });
       if (!r.ok) throw new Error((await r.json()).error);
-      note.textContent = 'Reply sent. Thank you!'; f.querySelectorAll('input,button').forEach(x => x.disabled = true);
-    } catch (x) { note.textContent = 'Could not send: ' + x.message; send.disabled = false; }
+      note.textContent = T('Reply sent. Thank you!'); f.querySelectorAll('input,button').forEach(x => x.disabled = true);
+    } catch (x) { note.textContent = T('Could not send: ') + T(x.message); send.disabled = false; }
   };
   return f;
 }
 
 function renderReady(code) {
-  document.title = 'Create your invitation';
+  document.title = T('Create your invitation');
   app.textContent = '';
   const b = el('div','body'); b.style.paddingTop = '64px'; b.style.textAlign = 'center';
-  b.append(el('h1','','Your invitation card is ready'),
-    el('p','','Add your photos, video and event details. After that, the QR code on this card will open your invitation for everyone who scans it.'));
-  const a = el('a','btn fill','Create my invitation'); a.href = 'create-event.html?code=' + encodeURIComponent(code); a.style.display = 'inline-block';
+  b.append(el('h1','',T('Your invitation card is ready')),
+    el('p','',T('Add your photos, video and event details. After that, the QR code on this card will open your invitation for everyone who scans it.')));
+  const a = el('a','btn fill',T('Create my invitation')); a.href = 'create-event.html?code=' + encodeURIComponent(code); a.style.display = 'inline-block';
   b.append(a); app.append(b);
 }
 
@@ -852,14 +854,14 @@ function renderReady(code) {
       if (d.state === 'created') slug = d.slug;
       else if (d.state === 'ready') return renderReady(card);
       else return location.replace('watch.html?id=' + encodeURIComponent(card));
-    } catch { return app.replaceChildren(el('p','err','Could not check this card. Please try again.')); }
+    } catch { return app.replaceChildren(el('p','err',T('Could not check this card. Please try again.'))); }
   }
-  if (!slug) return app.replaceChildren(el('p','err','This link is missing its invitation code.'));
+  if (!slug) return app.replaceChildren(el('p','err',T('This link is missing its invitation code.')));
   try {
     const r = await fetch(`${API}/api/e/${encodeURIComponent(slug)}`);
     if (!r.ok) throw 0;
     render(await r.json());
-  } catch { app.replaceChildren(el('p','err','This invitation could not be found. Check the link and try again.')); }
+  } catch { app.replaceChildren(el('p','err',T('This invitation could not be found. Check the link and try again.'))); }
 })();
 </script>
 </body>
