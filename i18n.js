@@ -23,7 +23,7 @@
     'Be the first to leave a wish.': 'መጀመሪያ መልካም ምኞት የሚተውት ይሁኑ።',
     'Thank you for your wishes!': 'ለመልካም ምኞትዎ እናመሰግናለን!',
     'Could not send: ': 'መላክ አልተቻለም፦ ', 'please try again': 'እባክዎ እንደገና ይሞክሩ',
-    'Wedding venue': 'የሠርጉ ቦታ', 'Map of ': 'ካርታ፦ ',
+    'Wedding venue': 'የሠርጉ ቦታ', 'Play music': 'ሙዚቃ ክፈት', 'Mute music': 'ሙዚቃ ዝጋ', 'Map of ': 'ካርታ፦ ',
     'The wedding of': 'የሠርግ ጥሪ', 'The Wedding of': 'የሠርግ ጥሪ',
     'You\u2019re invited': 'ተጋብዘዋል', 'Open the invitation': 'ግብዣውን ክፈት', 'Tap to open': 'ለመክፈት ይንኩ',
     'About me': 'ስለ እኔ', 'About us': 'ስለ እኛ', 'Schedule': 'የጊዜ ሰሌዳ', 'Venue': 'ቦታ',

@@ -308,6 +308,7 @@
   .env-intro.open .env-card { transform:translateY(-46%); transition-delay:.5s; }
   .env-intro.lift .env-card { z-index:6; transform:translateY(-30%) scale(1.12); transition:transform .7s ease; transition-delay:0s; }
   @media (prefers-reduced-motion: reduce) { .env-seal, .env-hint { animation:none; } .env-intro { transition-duration:.2s; } }
+  #sndBtn{position:fixed;left:14px;bottom:calc(14px + env(safe-area-inset-bottom,0px));z-index:1000;width:44px;height:44px;border-radius:50%;border:1px solid rgba(0,0,0,.3);background:rgba(255,255,255,.94);font-size:1.2rem;cursor:pointer;box-shadow:0 2px 8px rgba(0,0,0,.2)}
 </style>
 </head>
 <body>
@@ -320,6 +321,16 @@ const card = qs.get('g');
 const app = document.getElementById('app');
 { const ld = app.querySelector('.err'); if (ld) ld.textContent = T('Loading invitation\u2026'); }
 const el = (t, cls, txt) => { const n = document.createElement(t); if (cls) n.className = cls; if (txt) n.textContent = txt; return n; };
+// Background music: put music.mp3 next to this file. It starts when the envelope is tapped (or the 🔇 button) and can be muted.
+const music = (() => {
+  const a = new Audio('music.mp3'); a.loop = true; a.preload = 'none';
+  const b = el('button'); b.id = 'sndBtn'; b.type = 'button';
+  const sync = () => { b.textContent = a.paused ? '\uD83D\uDD07' : '\uD83D\uDD0A'; b.setAttribute('aria-label', T(a.paused ? 'Play music' : 'Mute music')); };
+  b.onclick = () => { a.paused ? a.play().catch(() => {}) : a.pause(); sync(); };
+  a.onplay = a.onpause = sync; a.onerror = () => b.remove(); sync();
+  document.body.append(b);
+  return { start: () => a.play().catch(() => {}) };
+})();
 
 const dayDate = d => { const [y, m, dd] = d.date.split('-').map(Number); const [h, mi] = (d.time || '').split(':').map(Number); return d.time ? new Date(y, m - 1, dd, h, mi) : new Date(y, m - 1, dd); };
 function icsDays(ev, days) {
@@ -673,7 +684,7 @@ function envelopeIntro(ev, photos, first) {
   const html = document.documentElement; let done = false;
   const finish = () => { o.classList.add('out'); html.style.overflow = ''; setTimeout(() => o.remove(), 800); };
   const open = () => {
-    if (done) return; done = true;
+    if (done) return; done = true; music.start();
     if (matchMedia('(prefers-reduced-motion: reduce)').matches) return finish();
     o.classList.add('open'); setTimeout(() => o.classList.add('lift'), 1450); setTimeout(finish, 2250);
   };
