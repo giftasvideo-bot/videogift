@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="referrer" content="no-referrer">
 <title>Edit your invitation</title>
+<script src="form-i18n.js"></script>
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,700&family=DM+Sans:wght@400;500&family=Noto+Sans+Ethiopic:wght@400;600&display=swap" rel="stylesheet">
 <style>
   :root { --bg:#f2f5f4; --ink:#123c40; --accent:#0f5257; --line:#b9cfcc; }
@@ -116,7 +117,7 @@ const token = new URLSearchParams(location.hash.replace(/^#/, '')).get('k');
 const MAX_DAYS = 14;
 let ev = null;
 
-const fail = t => { $('loading').textContent = t; $('loading').hidden = false; $('app').hidden = true; };
+const fail = t => { $('loading').textContent = FT(t); $('loading').hidden = false; $('app').hidden = true; };
 const say = (t, cls) => { $('msg').textContent = t; $('msg').className = cls || ''; };
 const h = { 'x-edit-token': token || '' };
 
@@ -131,7 +132,7 @@ function fillThemes() {
   const t = $('f').type.value, sel = $('f').theme;
   if (!THEMES[t] || themeFor === t) return;
   themeFor = t; sel.textContent = '';
-  THEMES[t].forEach(([v, n]) => sel.append(new Option(n, v)));
+  THEMES[t].forEach(([v, n]) => sel.append(new Option(FT(n), v)));
 }
 function addDay(v = {}) {
   const n = $('days').children.length + 1;
@@ -142,7 +143,7 @@ function addDay(v = {}) {
   r.querySelector('.d-date').value = v.date || ''; r.querySelector('.d-time').value = v.time || ''; r.querySelector('.d-end').value = v.end || '';
   r.querySelector('.d-title').value = v.title || ''; r.querySelector('.d-title').placeholder = 'Day ' + n;
   r.querySelector('button').onclick = () => { if ($('days').children.length > 1) r.remove(); };
-  $('days').append(r); labelRows();
+  $('days').append(r); labelRows(); applyFormLang();
 }
 function labelRows() {
   const w = isWed();
@@ -179,6 +180,7 @@ const syncType = () => {
   $('aboutHint').textContent = '(your story, shown in the "' + (bday ? 'About me' : 'About us') + '" section)';
   $('galName').textContent = bday ? 'Gallery photos' : 'Additional photos';
   $('galHint').textContent = '(up to 20, shown in the "' + (bday ? 'Gallery' : 'Photos') + '" section. JPG, PNG or WebP, up to 50 MB each)';
+  applyFormLang();
 };
 const localDT = d => { if (!d) return ''; const t = new Date(d); t.setMinutes(t.getMinutes() - t.getTimezoneOffset()); return t.toISOString().slice(0, 16); };
 
@@ -224,7 +226,7 @@ function fill(e) {
   } else { const s = document.createElement('small'); s.textContent = 'No video yet.'; $('video').append(s); }
 
   const u = new URL('event.html', location.href); u.search = '?e=' + e.slug; $('view').href = u.href;
-  $('loading').hidden = true; $('app').hidden = false;
+  $('loading').hidden = true; $('app').hidden = false; applyFormLang();
 }
 
 async function load() {
@@ -241,24 +243,24 @@ $('f').type.onchange = syncType;
 $('addDay').onclick = () => { if ($('days').children.length < MAX_DAYS) addDay(); };
 
 $('f').onsubmit = async e => {
-  e.preventDefault(); say('');
+  e.preventDefault(); say(FT(''));
   const f = e.target, fd = new FormData();
   ['type', 'title', 'host_names', 'venue', 'map_url', 'message'].forEach(k => fd.set(k, f[k].value));
   fd.set('rsvp_enabled', f.rsvp_enabled.checked ? 'true' : 'false');
   let evDate = f.event_date.value;
   if (isWed() || isBday()) { fd.set('theme', f.theme.value); fd.set('about', f.about.value); }
   if (isWed()) {
-    if (!evDate) return say('Please choose the wedding date.', 'err');
+    if (!evDate) return say(FT('Please choose the wedding date.'), 'err');
     const days = readDays().filter(d => d.time || d.title || d.end);
     days.forEach(d => { d.date = evDate; });
-    if (days.some(d => !d.time)) return say('Each schedule item needs a time.', 'err');
-    if (days.some(d => d.end && d.end === d.time)) return say('End time must be different from the start time.', 'err');
+    if (days.some(d => !d.time)) return say(FT('Each schedule item needs a time.'), 'err');
+    if (days.some(d => d.end && d.end === d.time)) return say(FT('End time must be different from the start time.'), 'err');
     days.sort((a, b) => a.time.localeCompare(b.time));
     fd.set('days', JSON.stringify(days));
     evDate = evDate + 'T' + (days.length ? days[0].time : '00:00');
   } else if (f.type.value === 'seminar') {
     const days = readDays();
-    if (!days.length || days.some(d => !d.date || !d.title)) return say('Each seminar day needs a date and a title.', 'err');
+    if (!days.length || days.some(d => !d.date || !d.title)) return say(FT('Each seminar day needs a date and a title.'), 'err');
     days.sort((a, b) => a.date.localeCompare(b.date));
     fd.set('days', JSON.stringify(days));
   } else fd.set('days', '[]');
@@ -267,28 +269,28 @@ $('f').onsubmit = async e => {
   const photos = (ev.photo_urls && ev.photo_urls.length) ? ev.photo_urls : (ev.photo_url ? [ev.photo_url] : []);
   const removed = [...document.querySelectorAll('.rm-photo')].filter(c => c.checked).map(c => c.value);
   const keep = photos.filter(u => !removed.includes(u)), added = [...f.photo.files];
-  if (keep.length + added.length > 3) return say('Maximum 3 photos. Remove one first or choose fewer files.', 'err');
+  if (keep.length + added.length > 3) return say(FT('Maximum 3 photos. Remove one first or choose fewer files.'), 'err');
   fd.set('keep_photos', JSON.stringify(keep)); added.forEach(x => fd.append('photo', x));
   if (isWed() || isBday()) {
     const gal = Array.isArray(ev.gallery_urls) ? ev.gallery_urls : [];
     const rmG = [...document.querySelectorAll('.rm-gallery')].filter(c => c.checked).map(c => c.value);
     const keepG = gal.filter(u => !rmG.includes(u)), addG = [...f.gallery.files];
-    if (keepG.length + addG.length > 20) return say('Maximum 20 additional photos. Remove some or choose fewer files.', 'err');
+    if (keepG.length + addG.length > 20) return say(FT('Maximum 20 additional photos. Remove some or choose fewer files.'), 'err');
     fd.set('keep_gallery', JSON.stringify(keepG)); addG.forEach(x => fd.append('gallery', x));
   }
   if (f.video.files[0]) fd.set('video', f.video.files[0]);
   else if ($('rmVideo') && $('rmVideo').checked) fd.set('remove_video', '1');
 
-  $('save').disabled = true; say('Saving…');
+  $('save').disabled = true; say(FT('Saving…'));
   try {
     const r = await fetch(`${API}/api/events/${encodeURIComponent(slug)}/edit`, { method: 'POST', headers: h, body: fd });
     const d = await r.json().catch(() => ({}));
     if (!r.ok) throw new Error(d.error || 'Save failed (' + r.status + ').');
-    say('Saved. Your invitation is updated.', 'ok');
+    say(FT('Saved. Your invitation is updated.'), 'ok');
     f.photo.value = ''; f.video.value = ''; f.gallery.value = '';
     await load();
-    say('Saved. Your invitation is updated.', 'ok');
-  } catch (x) { say(x.message, 'err'); }
+    say(FT('Saved. Your invitation is updated.'), 'ok');
+  } catch (x) { say(FT(x.message), 'err'); }
   $('save').disabled = false;
 };
 
@@ -297,11 +299,11 @@ $('rs').onclick = async () => {
   const li = t => { const n = document.createElement('li'); n.textContent = t; list.append(n); };
   try {
     const r = await fetch(`${API}/api/events/${encodeURIComponent(slug)}/rsvps`, { headers: h });
-    if (!r.ok) return li('Could not load replies.');
+    if (!r.ok) return li(FT('Could not load replies.'));
     const rows = await r.json();
-    if (!rows.length) return li('No replies yet.');
-    rows.forEach(x => li(`${x.guest_name}: ${x.attending ? 'coming (' + x.guests + ')' : 'not coming'}`));
-  } catch { li('Could not load replies.'); }
+    if (!rows.length) return li(FT('No replies yet.'));
+    rows.forEach(x => li(`${x.guest_name}: ${x.attending ? FT('coming') + ' (' + x.guests + ')' : FT('not coming')}`));
+  } catch { li(FT('Could not load replies.')); }
 };
 
 load();

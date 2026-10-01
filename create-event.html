@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Create your invitation</title>
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,700&family=DM+Sans:wght@400;500&family=Noto+Sans+Ethiopic:wght@400;600&display=swap" rel="stylesheet">
+<script src="form-i18n.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcode-generator/1.4.4/qrcode.min.js"></script>
 <style>
   :root { --bg:#f2f5f4; --ink:#123c40; --accent:#0f5257; --line:#b9cfcc; }
@@ -123,7 +124,7 @@ const MAX_DAYS = 14;
 let admToken = null;
 try { const a = JSON.parse(sessionStorage.getItem('f27_admin_auth') || 'null'); if (a && a.token && a.expires > Date.now()) admToken = a.token; } catch {}
 { const pre = new URLSearchParams(location.search).get('code'); if (pre) $('code').value = pre; }
-if (admToken) { $('code').required = false; $('codeLbl').firstChild.textContent = 'Card code (optional for admin) '; }
+if (admToken) { $('code').required = false; $('codeLbl').firstChild.textContent = FT('Card code (optional for admin) '); }
 function addDay(v = {}) {
   const n = $('days').children.length + 1;
   const r = document.createElement('div'); r.className = 'dayrow';
@@ -133,7 +134,7 @@ function addDay(v = {}) {
   const prev = $('days').lastElementChild; r.querySelector('.d-date').value = v.date || (prev ? prev.querySelector('.d-date').value : ''); r.querySelector('.d-time').value = v.time || '';
   r.querySelector('.d-title').value = v.title || ''; r.querySelector('.d-title').placeholder = isWed() ? 'e.g. Church ceremony' : 'Day ' + n + ': e.g. Opening and Vision';
   r.querySelector('button').onclick = () => { if ($('days').children.length > 1) r.remove(); };
-  $('days').append(r); labelRows();
+  $('days').append(r); labelRows(); applyFormLang();
 }
 function labelRows() {
   const w = isWed();
@@ -161,8 +162,8 @@ function renderThemes() {
   if (!THEMES[t] || themeFor === t) return;
   themeFor = t; const box = $('themeOpts'); box.textContent = '';
   THEMES[t].forEach(([v, name, col], i) => {
-    const l = document.createElement('label'); l.title = name;
-    const r = document.createElement('input'); r.type = 'radio'; r.name = 'theme'; r.value = v; r.setAttribute('aria-label', name);
+    const l = document.createElement('label'); l.title = FT(name);
+    const r = document.createElement('input'); r.type = 'radio'; r.name = 'theme'; r.value = v; r.setAttribute('aria-label', FT(name));
     r.checked = t === 'wedding' ? v === 'cream' : i === 0;
     const sp = document.createElement('span'); sp.style.background = col;
     l.append(r, sp); box.append(l);
@@ -192,6 +193,7 @@ function syncType() {
   $('galHint').textContent = '(up to 20, shown in the "' + (bday ? 'Gallery' : 'Photos') + '" section. JPG, PNG or WebP, up to 50 MB each)';
   if ((sem || wed) && !$('days').children.length) addDay();
   labelRows();
+  applyFormLang();
 }
 document.querySelector('[name=type]').onchange = syncType;
 $('addDay').onclick = () => { if ($('days').children.length < MAX_DAYS) addDay(); };
@@ -206,21 +208,21 @@ async function cardStatus(code) {
   catch { return {}; }
 }
 async function openEditFor(slug) {
-  if (!admToken) return showPaste('An invitation already exists for this card. Paste your private edit link below to change it.');
+  if (!admToken) return showPaste(FT('An invitation already exists for this card. Paste your private edit link below to change it.'));
   try {
     const r = await fetch(`${API}/api/admin/events/${encodeURIComponent(slug)}/edit-link`, { headers:{ Authorization:'Bearer ' + admToken } });
     const d = await r.json();
     if (!r.ok) throw new Error(d.error || 'Could not open the edit page.');
     window.open(editPage(slug, d.edit_token), '_blank');
-  } catch (x) { $('err').textContent = x.message; }
+  } catch (x) { $('err').textContent = FT(x.message); }
 }
 $('editBtn').onclick = async () => {
-  $('err').textContent = '';
+  $('err').textContent = FT('');
   const code = $('code').value.trim();
   if (!code) return showPaste();
   const s = await cardStatus(code);
   if (s.state === 'created') return openEditFor(s.slug);
-  if (s.state === 'ready') { $('err').textContent = 'No invitation has been created with this card yet. Fill in the form below to create it.'; return; }
+  if (s.state === 'ready') { $('err').textContent = FT('No invitation has been created with this card yet. Fill in the form below to create it.'); return; }
   showPaste();
 };
 $('pasteGo').onclick = () => {
@@ -229,7 +231,7 @@ $('pasteGo').onclick = () => {
     const e = u.searchParams.get('e'), k = new URLSearchParams(u.hash.replace(/^#/, '')).get('k');
     if (!e || !k) throw 0;
     location.href = editPage(e, k);
-  } catch { $('err').textContent = 'That does not look like an edit link. Paste the full link you were given.'; }
+  } catch { $('err').textContent = FT('That does not look like an edit link. Paste the full link you were given.'); }
 };
 // If this card already has an invitation, say so instead of showing an empty form
 (async () => {
@@ -238,16 +240,16 @@ $('pasteGo').onclick = () => {
   const s = await cardStatus(code);
   if (s.state !== 'created') return;
   $('f').style.display = 'none';
-  $('existingMsg').textContent = 'This card already has an invitation.';
+  $('existingMsg').textContent = FT('This card already has an invitation.');
   const u = new URL('event.html', location.href); u.search = '?e=' + s.slug; $('exView').href = u.href;
   $('existing').hidden = false;
 })();
 
 $('f').onsubmit = async e => {
-  e.preventDefault(); $('err').textContent = ''; $('go').disabled = true; $('go').textContent = 'Uploading…';
+  e.preventDefault(); $('err').textContent = FT(''); $('go').disabled = true; $('go').textContent = FT('Uploading…');
   const fd = new FormData(e.target);
-  if (fd.getAll('photo').filter(f => f.size).length > 3) { $('err').textContent = 'Please choose up to 3 photos.'; $('go').disabled = false; $('go').textContent = 'Create invitation'; return; }
-  if (fd.getAll('gallery').filter(f => f.size).length > 20) { $('err').textContent = 'Please choose up to 20 additional photos.'; $('go').disabled = false; $('go').textContent = 'Create invitation'; return; }
+  if (fd.getAll('photo').filter(f => f.size).length > 3) { $('err').textContent = FT('Please choose up to 3 photos.'); $('go').disabled = false; $('go').textContent = FT('Create invitation'); return; }
+  if (fd.getAll('gallery').filter(f => f.size).length > 20) { $('err').textContent = FT('Please choose up to 20 additional photos.'); $('go').disabled = false; $('go').textContent = FT('Create invitation'); return; }
   if (!['wedding', 'birthday'].includes(fd.get('type'))) fd.delete('theme');
   { const gal = [...$('f').gallery.files].filter(f => f.size); fd.delete('gallery');
     if (['wedding', 'birthday'].includes(fd.get('type'))) gal.forEach(f => fd.append('gallery', f)); }
@@ -257,15 +259,15 @@ $('f').onsubmit = async e => {
     const wd = fd.get('event_date');
     const days = readDays().filter(d => d.time || d.title || d.end);
     days.forEach(d => { d.date = wd; });
-    if (days.some(d => !d.time)) { $('err').textContent = 'Each schedule item needs a time.'; $('go').disabled = false; $('go').textContent = 'Create invitation'; return; }
-    if (days.some(d => d.end && d.end === d.time)) { $('err').textContent = 'End time must be different from the start time.'; $('go').disabled = false; $('go').textContent = 'Create invitation'; return; }
+    if (days.some(d => !d.time)) { $('err').textContent = FT('Each schedule item needs a time.'); $('go').disabled = false; $('go').textContent = FT('Create invitation'); return; }
+    if (days.some(d => d.end && d.end === d.time)) { $('err').textContent = FT('End time must be different from the start time.'); $('go').disabled = false; $('go').textContent = FT('Create invitation'); return; }
     days.sort((a, b) => a.time.localeCompare(b.time));
     if (days.length) fd.set('days', JSON.stringify(days));
     fd.set('event_date', wd + 'T' + (days.length ? days[0].time : '00:00'));
   }
   if (fd.get('type') === 'seminar') {
     const days = readDays();
-    if (days.some(d => !d.date || !d.title)) { $('err').textContent = 'Each seminar day needs a date and a title.'; $('go').disabled = false; $('go').textContent = 'Create invitation'; return; }
+    if (days.some(d => !d.date || !d.title)) { $('err').textContent = FT('Each seminar day needs a date and a title.'); $('go').disabled = false; $('go').textContent = FT('Create invitation'); return; }
     days.sort((a, b) => a.date.localeCompare(b.date));
     fd.set('days', JSON.stringify(days));
     if (!fd.get('event_date')) fd.set('event_date', days[0].date + 'T' + (days[0].time || '00:00'));
@@ -285,20 +287,20 @@ $('f').onsubmit = async e => {
     $('link').textContent = url.href; $('view').href = url.href;
     const eu = new URL('edit-event.html', location.href); eu.search = '?e=' + d.slug; eu.hash = 'k=' + d.edit_token;
     $('editLink').textContent = eu.href; $('editGo').href = eu.href;
-    $('copyEdit').onclick = () => navigator.clipboard.writeText(eu.href).then(() => { $('copyEdit').textContent = 'Copied'; });
+    $('copyEdit').onclick = () => navigator.clipboard.writeText(eu.href).then(() => { $('copyEdit').textContent = FT('Copied'); });
     $('f').style.display = 'none'; $('result').style.display = 'block'; $('cardNote').hidden = !$('code').value.trim();
-  } catch (x) { $('err').textContent = x.message; }
-  $('go').disabled = false; $('go').textContent = 'Create invitation';
+  } catch (x) { $('err').textContent = FT(x.message); }
+  $('go').disabled = false; $('go').textContent = FT('Create invitation');
 };
 
 $('rs').onclick = async () => {
   const r = await fetch(`${API}/api/events/${cur.slug}/rsvps`, { headers:{ 'x-edit-token':cur.edit_token } });
   const list = $('rsvps'); list.textContent = '';
-  if (!r.ok) return list.append(Object.assign(document.createElement('li'), { textContent:'Could not load replies.' }));
+  if (!r.ok) return list.append(Object.assign(document.createElement('li'), { textContent:FT('Could not load replies.') }));
   const rows = await r.json();
-  if (!rows.length) return list.append(Object.assign(document.createElement('li'), { textContent:'No replies yet.' }));
+  if (!rows.length) return list.append(Object.assign(document.createElement('li'), { textContent:FT('No replies yet.') }));
   rows.forEach(x => list.append(Object.assign(document.createElement('li'),
-    { textContent:`${x.guest_name}: ${x.attending ? 'coming (' + x.guests + ')' : 'not coming'}` })));
+    { textContent:`${x.guest_name}: ${x.attending ? FT('coming') + ' (' + x.guests + ')' : FT('not coming')}` })));
 };
 </script>
 </body>
