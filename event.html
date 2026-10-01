@@ -453,19 +453,11 @@ function weddingDate(ev, days, first) {
   when.append(el('p', 'wd-cer', 'Wedding Ceremony'));
   if (ev.venue) when.append(el('p', 'wd-venue', ev.venue));
   if (first) {
-    const hasTime = days.length ? !!days[0].time : (first.getHours() || first.getMinutes());
     const top = el('p', 'wd-top');
-    if (hasTime) top.append(el('span', '', 'At ' + pad(first.getHours()) + ':' + pad(first.getMinutes())));
     top.append(el('span', '', WD[first.getDay()]));
     const my = el('div', 'wd-my'); my.append(el('span', '', MON[first.getMonth()]), el('span', '', String(first.getFullYear())));
     const big = el('div', 'wd-big'); big.append(el('span', 'wd-day', String(first.getDate())), el('span', 'wd-bar'), my);
     when.append(top, big);
-    const key = days.filter(d => d.time && d.title).slice(0, 2);
-    if (key.length) {
-      const tm = el('div', 'wd-times');
-      key.forEach(d => { const x = el('div'); x.append(el('small', '', d.title), el('b', '', d.time)); tm.append(x); });
-      when.append(tm);
-    }
   }
   c.append(when);
 
