@@ -46,6 +46,26 @@
   .swatches span { display:block; width:36px; height:36px; border-radius:50%; border:1px solid #888; }
   .swatches input:checked + span { outline:3px solid var(--accent); outline-offset:3px; }
   .swatches input:focus-visible + span { outline:3px solid var(--ink); outline-offset:3px; }
+  .tpls { border:1px solid var(--line); border-radius:8px; padding:10px 14px 14px; display:grid; gap:10px; }
+  .tpls legend { font-weight:500; padding:0 6px; }
+  .tplgrid { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+  .tpl { display:grid; gap:6px; align-content:start; position:relative; cursor:pointer; border:2px solid var(--line); border-radius:10px; padding:8px; background:#fff; }
+  .tpl input { position:absolute; opacity:0; width:1px; height:1px; pointer-events:none; }
+  .tpl:has(input:checked) { border-color:var(--accent); box-shadow:0 0 0 2px var(--accent); }
+  .tpl:has(input:focus-visible) { outline:3px solid var(--ink); outline-offset:2px; }
+  .tpl.on { border-color:var(--accent); box-shadow:0 0 0 2px var(--accent); }
+  .tpl b { font-weight:700; }
+  .tpl .btn { padding:8px 12px; font-size:.9rem; justify-self:start; }
+  .tpl-thumb { position:relative; aspect-ratio:3/4; overflow:hidden; border-radius:6px; background:#eee; }
+  .tpl-thumb iframe { position:absolute; top:0; left:0; width:390px; height:520px; border:0; transform-origin:0 0; pointer-events:none; background:#fff; }
+  @media (max-width:460px) { .tplgrid { grid-template-columns:1fr; } }
+  #pv { position:fixed; inset:0; z-index:100; background:#123c40; display:flex; flex-direction:column; align-items:center; }
+  #pv[hidden] { display:none; }
+  .pv-bar { display:flex; gap:10px; align-items:center; justify-content:space-between; width:min(100%,430px); padding:10px; color:#fff; }
+  .pv-bar .btn { padding:9px 14px; font-size:.9rem; }
+  .pv-bar .btn.alt { color:#fff; border-color:#fff; }
+  .pv-bar .btn:not(.alt) { background:#fff; color:var(--accent); }
+  #pvFrame { flex:1; width:min(100%,430px); border:0; background:#fff; border-radius:12px 12px 0 0; }
 </style>
 </head>
 <body>
@@ -74,6 +94,11 @@
         <option value="seminar">Seminar / multi-day</option><option value="church">Church / religious</option><option value="memorial">Memorial</option>
         <option value="general">Other</option>
       </select></label>
+    <fieldset class="tpls wedOnly" id="tplBox" hidden>
+      <legend>Invitation design</legend>
+      <small>Tap a design to choose it. Press Preview to see a full sample before you decide.</small>
+      <div class="tplgrid" id="tplOpts"></div>
+    </fieldset>
     <label>Title <input name="title" required maxlength="120" placeholder="Selam & Dawit's Wedding"></label>
     <label id="aboutLbl" hidden><span id="aboutTxt">About us</span> <small id="aboutHint">(your story, shown in the "About us" section)</small><textarea name="about" maxlength="2000"></textarea></label>
     <label><span id="dateTxt">Date and time</span> <small id="dateHint">(optional if you add a schedule below)</small><input type="datetime-local" name="event_date" id="evDate"></label>
@@ -116,6 +141,10 @@
     <ul id="rsvps"></ul>
   </section>
 </main>
+<div id="pv" role="dialog" aria-modal="true" aria-labelledby="pvName" hidden>
+  <div class="pv-bar"><b id="pvName"></b><span style="display:flex;gap:8px"><button class="btn" id="pvUse" type="button">Use this design</button><button class="btn alt" id="pvX" type="button">Close</button></span></div>
+  <iframe id="pvFrame" title="Design preview"></iframe>
+</div>
 <script>
 const API = 'https://videogift-backend-3.onrender.com';
 const $ = id => document.getElementById(id);
@@ -169,6 +198,53 @@ function renderThemes() {
     l.append(r, sp); box.append(l);
   });
 }
+// ---------- Invitation design (wedding templates) with live previews ----------
+const TEMPLATES = [
+  ['classic', 'Classic envelope', 'Opens with a wax-sealed envelope, then a paper-style page. You choose the background colour.'],
+  ['basket', 'Basket & flowers', 'Warm maroon and gold with a hand-drawn basket border, countdown and a 3D photo gallery.']
+];
+const tplVal = () => { const r = document.querySelector('#f [name=template]:checked'); return r ? r.value : 'classic'; };
+function previewURL(id, thumb) {
+  const f = $('f'), u = new URL('event.html', location.href);
+  u.searchParams.set('demo', id);
+  const t = (f.elements['title'].value || '').trim(); if (t) u.searchParams.set('title', t);
+  const th = f.elements['theme'] ? f.elements['theme'].value : ''; if (th && id === 'classic') u.searchParams.set('theme', th);
+  if (thumb) u.searchParams.set('thumb', '1');
+  return u.href;
+}
+function refreshThumbs() {
+  document.querySelectorAll('#tplOpts iframe').forEach(fr => { const u = previewURL(fr.dataset.id, true); if (fr.dataset.u !== u) { fr.dataset.u = u; fr.src = u; } });
+}
+function fitThumbs() {
+  document.querySelectorAll('.tpl-thumb').forEach(t => { const w = t.clientWidth; if (w) t.firstChild.style.transform = 'scale(' + (w / 390) + ')'; });
+}
+function openPreview(id, name) {
+  $('pvName').textContent = FT(name); $('pvFrame').src = previewURL(id, false); $('pv').hidden = false; document.body.style.overflow = 'hidden';
+  $('pvUse').onclick = () => { const r = document.querySelector('#f [name=template][value="' + id + '"]'); if (r) { r.checked = true; r.dispatchEvent(new Event('change', { bubbles:true })); } closePreview(); };
+  $('pvX').focus();
+}
+function closePreview() { $('pv').hidden = true; $('pvFrame').src = 'about:blank'; document.body.style.overflow = ''; }
+$('pvX').onclick = closePreview;
+document.addEventListener('keydown', e => { if (e.key === 'Escape' && !$('pv').hidden) closePreview(); });
+function renderTemplates() {
+  const box = $('tplOpts'); box.textContent = '';
+  TEMPLATES.forEach(([id, name, desc], i) => {
+    const l = document.createElement('label'); l.className = 'tpl';
+    const r = document.createElement('input'); r.type = 'radio'; r.name = 'template'; r.value = id; r.checked = i === 0;
+    const th = document.createElement('div'); th.className = 'tpl-thumb';
+    const fr = document.createElement('iframe'); fr.title = FT(name); fr.loading = 'lazy'; fr.tabIndex = -1; fr.setAttribute('aria-hidden', 'true'); fr.dataset.id = id; th.append(fr);
+    const b = document.createElement('b'); b.textContent = FT(name);
+    const s = document.createElement('small'); s.textContent = FT(desc);
+    const p = document.createElement('button'); p.type = 'button'; p.className = 'btn alt'; p.textContent = FT('Preview'); p.onclick = e => { e.preventDefault(); openPreview(id, name); };
+    l.append(r, th, b, s, p); box.append(l);
+  });
+}
+$('f').addEventListener('change', e => {
+  if (e.target.name === 'template') syncType();
+  else if (e.target.name === 'theme' || e.target.name === 'title') refreshThumbs();
+});
+window.addEventListener('resize', fitThumbs);
+renderTemplates();
 function syncType() {
   const sem = typeVal() === 'seminar', wed = isWed();
   $('daysBox').hidden = !(sem || wed);
@@ -184,7 +260,8 @@ function syncType() {
   $('dateHint').hidden = wed; ed.required = wed;
   const bday = isBday();
   $('photoLbl').textContent = (wed || bday) ? 'Main photos' : 'Photos';
-  $('themeBox').hidden = !(wed || bday); renderThemes();
+  $('themeBox').hidden = !(wed || bday) || (wed && tplVal() === 'basket'); renderThemes();
+  refreshThumbs(); requestAnimationFrame(fitThumbs);
   $('galLbl').hidden = !(wed || bday);
   $('aboutLbl').hidden = !(wed || bday);
   $('aboutTxt').textContent = bday ? 'About me' : 'About us';
@@ -251,6 +328,7 @@ $('f').onsubmit = async e => {
   if (fd.getAll('photo').filter(f => f.size).length > 3) { $('err').textContent = FT('Please choose up to 3 photos.'); $('go').disabled = false; $('go').textContent = FT('Create invitation'); return; }
   if (fd.getAll('gallery').filter(f => f.size).length > 20) { $('err').textContent = FT('Please choose up to 20 additional photos.'); $('go').disabled = false; $('go').textContent = FT('Create invitation'); return; }
   if (!['wedding', 'birthday'].includes(fd.get('type'))) fd.delete('theme');
+  if (fd.get('type') !== 'wedding') fd.delete('template');
   { const gal = [...$('f').gallery.files].filter(f => f.size); fd.delete('gallery');
     if (['wedding', 'birthday'].includes(fd.get('type'))) gal.forEach(f => fd.append('gallery', f)); }
   fd.set('rsvp_enabled', $('rsvpOn').checked ? 'true' : 'false');

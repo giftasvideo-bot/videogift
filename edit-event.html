@@ -44,6 +44,26 @@
   .gal { display:grid; grid-template-columns:repeat(auto-fill,minmax(120px,1fr)); gap:10px; }
   .gal .thumb { max-width:100%; aspect-ratio:1; object-fit:cover; }
   .gal label.inline { font-size:.85rem; }
+  .tpls { border:1px solid var(--line); border-radius:8px; padding:10px 14px 14px; display:grid; gap:10px; }
+  .tpls legend { font-weight:500; padding:0 6px; }
+  .tplgrid { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+  .tpl { display:grid; gap:6px; align-content:start; position:relative; cursor:pointer; border:2px solid var(--line); border-radius:10px; padding:8px; background:#fff; }
+  .tpl input { position:absolute; opacity:0; width:1px; height:1px; pointer-events:none; }
+  .tpl:has(input:checked) { border-color:var(--accent); box-shadow:0 0 0 2px var(--accent); }
+  .tpl:has(input:focus-visible) { outline:3px solid var(--ink); outline-offset:2px; }
+  .tpl.on { border-color:var(--accent); box-shadow:0 0 0 2px var(--accent); }
+  .tpl b { font-weight:700; }
+  .tpl .btn { padding:8px 12px; font-size:.9rem; justify-self:start; }
+  .tpl-thumb { position:relative; aspect-ratio:3/4; overflow:hidden; border-radius:6px; background:#eee; }
+  .tpl-thumb iframe { position:absolute; top:0; left:0; width:390px; height:520px; border:0; transform-origin:0 0; pointer-events:none; background:#fff; }
+  @media (max-width:460px) { .tplgrid { grid-template-columns:1fr; } }
+  #pv { position:fixed; inset:0; z-index:100; background:#123c40; display:flex; flex-direction:column; align-items:center; }
+  #pv[hidden] { display:none; }
+  .pv-bar { display:flex; gap:10px; align-items:center; justify-content:space-between; width:min(100%,430px); padding:10px; color:#fff; }
+  .pv-bar .btn { padding:9px 14px; font-size:.9rem; }
+  .pv-bar .btn.alt { color:#fff; border-color:#fff; }
+  .pv-bar .btn:not(.alt) { background:#fff; color:var(--accent); }
+  #pvFrame { flex:1; width:min(100%,430px); border:0; background:#fff; border-radius:12px 12px 0 0; }
 </style>
 </head>
 <body>
@@ -60,6 +80,11 @@
           <option value="seminar">Seminar / multi-day</option><option value="church">Church / religious</option><option value="memorial">Memorial</option>
           <option value="general">Other</option>
         </select></label>
+    <fieldset class="tpls wedOnly" id="tplBox" hidden>
+      <legend>Invitation design</legend>
+      <small>Tap a design to choose it. Press Preview to see a full sample before you decide.</small>
+      <div class="tplgrid" id="tplOpts"></div>
+    </fieldset>
       <fieldset class="box" id="daysBox" hidden>
         <legend id="daysLegend">Seminar days</legend>
         <small id="daysHelp">Each day needs a date and a title.</small>
@@ -108,6 +133,10 @@
   </div>
 </main>
 
+<div id="pv" role="dialog" aria-modal="true" aria-labelledby="pvName" hidden>
+  <div class="pv-bar"><b id="pvName"></b><span style="display:flex;gap:8px"><button class="btn" id="pvUse" type="button">Use this design</button><button class="btn alt" id="pvX" type="button">Close</button></span></div>
+  <iframe id="pvFrame" title="Design preview"></iframe>
+</div>
 <script>
 const API = 'https://videogift-backend-3.onrender.com';
 const $ = id => document.getElementById(id);
@@ -156,6 +185,53 @@ function labelRows() {
   $('addDay').textContent = w ? '+ Add to schedule' : '+ Add day';
 }
 const readDays = () => [...$('days').children].map(r => ({ date: r.querySelector('.d-date').value, time: r.querySelector('.d-time').value, title: r.querySelector('.d-title').value.trim(), end: r.querySelector('.d-end').value || undefined }));
+// ---------- Invitation design (wedding templates) with live previews ----------
+const TEMPLATES = [
+  ['classic', 'Classic envelope', 'Opens with a wax-sealed envelope, then a paper-style page. You choose the background colour.'],
+  ['basket', 'Basket & flowers', 'Warm maroon and gold with a hand-drawn basket border, countdown and a 3D photo gallery.']
+];
+const tplVal = () => { const r = document.querySelector('#f [name=template]:checked'); return r ? r.value : 'classic'; };
+function previewURL(id, thumb) {
+  const f = $('f'), u = new URL('event.html', location.href);
+  u.searchParams.set('demo', id);
+  const t = (f.elements['title'].value || '').trim(); if (t) u.searchParams.set('title', t);
+  const th = f.elements['theme'] ? f.elements['theme'].value : ''; if (th && id === 'classic') u.searchParams.set('theme', th);
+  if (thumb) u.searchParams.set('thumb', '1');
+  return u.href;
+}
+function refreshThumbs() {
+  document.querySelectorAll('#tplOpts iframe').forEach(fr => { const u = previewURL(fr.dataset.id, true); if (fr.dataset.u !== u) { fr.dataset.u = u; fr.src = u; } });
+}
+function fitThumbs() {
+  document.querySelectorAll('.tpl-thumb').forEach(t => { const w = t.clientWidth; if (w) t.firstChild.style.transform = 'scale(' + (w / 390) + ')'; });
+}
+function openPreview(id, name) {
+  $('pvName').textContent = FT(name); $('pvFrame').src = previewURL(id, false); $('pv').hidden = false; document.body.style.overflow = 'hidden';
+  $('pvUse').onclick = () => { const r = document.querySelector('#f [name=template][value="' + id + '"]'); if (r) { r.checked = true; r.dispatchEvent(new Event('change', { bubbles:true })); } closePreview(); };
+  $('pvX').focus();
+}
+function closePreview() { $('pv').hidden = true; $('pvFrame').src = 'about:blank'; document.body.style.overflow = ''; }
+$('pvX').onclick = closePreview;
+document.addEventListener('keydown', e => { if (e.key === 'Escape' && !$('pv').hidden) closePreview(); });
+function renderTemplates() {
+  const box = $('tplOpts'); box.textContent = '';
+  TEMPLATES.forEach(([id, name, desc], i) => {
+    const l = document.createElement('label'); l.className = 'tpl';
+    const r = document.createElement('input'); r.type = 'radio'; r.name = 'template'; r.value = id; r.checked = i === 0;
+    const th = document.createElement('div'); th.className = 'tpl-thumb';
+    const fr = document.createElement('iframe'); fr.title = FT(name); fr.loading = 'lazy'; fr.tabIndex = -1; fr.setAttribute('aria-hidden', 'true'); fr.dataset.id = id; th.append(fr);
+    const b = document.createElement('b'); b.textContent = FT(name);
+    const s = document.createElement('small'); s.textContent = FT(desc);
+    const p = document.createElement('button'); p.type = 'button'; p.className = 'btn alt'; p.textContent = FT('Preview'); p.onclick = e => { e.preventDefault(); openPreview(id, name); };
+    l.append(r, th, b, s, p); box.append(l);
+  });
+}
+$('f').addEventListener('change', e => {
+  if (e.target.name === 'template') syncType();
+  else if (e.target.name === 'theme' || e.target.name === 'title') refreshThumbs();
+});
+window.addEventListener('resize', fitThumbs);
+renderTemplates();
 const syncType = () => {
   const sem = $('f').type.value === 'seminar', wed = isWed();
   $('daysBox').hidden = !(sem || wed);
@@ -173,7 +249,8 @@ const syncType = () => {
   labelRows();
   $('rsvpLbl').hidden = $('f').type.value === 'memorial';
   const bday = isBday();
-  fillThemes(); $('themeLbl').hidden = !(wed || bday);
+  fillThemes(); $('themeLbl').hidden = !(wed || bday) || (wed && tplVal() === 'basket');
+  refreshThumbs(); requestAnimationFrame(fitThumbs);
   $('galleryBox').hidden = !(wed || bday);
   $('aboutLbl').hidden = !(wed || bday);
   $('aboutTxt').textContent = bday ? 'About me' : 'About us';
@@ -192,6 +269,7 @@ function fill(e) {
   f.event_date.type = e.type === 'wedding' ? 'date' : 'datetime-local';
   f.event_date.value = e.type === 'wedding' ? (dl0.length ? dl0[0].date : localDT(e.event_date).slice(0, 10)) : localDT(e.event_date); f.venue.value = e.venue || ''; f.map_url.value = e.map_url || '';
   f.message.value = e.message || ''; f.rsvp_enabled.checked = !!e.rsvp_enabled;
+  { const tr = f.querySelector('[name=template][value="' + (e.template === 'basket' ? 'basket' : 'classic') + '"]'); if (tr) tr.checked = true; }
   $('days').textContent = '';
   (Array.isArray(e.days) ? e.days : []).filter(d => d && d.date).forEach(addDay);
   syncType();
@@ -249,6 +327,7 @@ $('f').onsubmit = async e => {
   fd.set('rsvp_enabled', f.rsvp_enabled.checked ? 'true' : 'false');
   let evDate = f.event_date.value;
   if (isWed() || isBday()) { fd.set('theme', f.theme.value); fd.set('about', f.about.value); }
+  if (isWed()) fd.set('template', tplVal());
   if (isWed()) {
     if (!evDate) return say(FT('Please choose the wedding date.'), 'err');
     const days = readDays().filter(d => d.time || d.title || d.end);
