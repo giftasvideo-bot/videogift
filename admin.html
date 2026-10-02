@@ -587,6 +587,15 @@
     return out;
   }
 
+  // Cards marked as event cards open the event page directly, so scanning is active as soon as the card is marked.
+  function buildCardUrl(id) {
+    if (eventSet.has(id) || eventCreatedMap[id]) {
+      const base = window.location.origin + window.location.pathname.replace('admin.html', '');
+      return `${base}event.html?g=${encodeURIComponent(id)}`;
+    }
+    return buildWatchUrl(id);
+  }
+
   function buildWatchUrl(id) {
     const base = window.location.origin + window.location.pathname.replace('admin.html', '');
     return `${base}watch.html?id=${id}`;
@@ -646,11 +655,12 @@
       if ([...nextViewed].sort().join() !== [...viewedSet].sort().join()) { viewedSet = nextViewed; renderDashboardGrid(); }
       localRegistry.forEach(id => {
         let remoteStatus = data.statuses[id] || 'pending';
+        const evLabel = eventCreatedMap[id] ? 'EVENT LIVE' : (eventSet.has(id) && remoteStatus === 'pending') ? 'PENDING · ACTIVE' : '';
         if (printStatusMap[id] && (remoteStatus === 'pending' || remoteStatus === 'viewed')) remoteStatus = 'printed';
         const badge = document.getElementById(`badge-${id}`);
         if (badge) {
-          badge.textContent = remoteStatus.toUpperCase();
-          badge.className = `status-badge status-${remoteStatus}`;
+          badge.textContent = evLabel || remoteStatus.toUpperCase();
+          badge.className = `status-badge status-${evLabel ? 'uploaded' : remoteStatus}`;
           badge.style.opacity = '1';
         }
         // Show upload attempt count
@@ -842,7 +852,7 @@
     }
 
     visibleIds.forEach(id => {
-      const targetWatchUrl = buildWatchUrl(id);
+      const targetWatchUrl = buildCardUrl(id);
       const printed = !!printedMap[id];
       const buyer = buyerMap[id];
       const isSold = !!(buyer && (buyer.buyerName || buyer.buyerContact || buyer.buyerNote || (buyer.price !== null && buyer.price !== undefined)));
@@ -1424,7 +1434,7 @@
   }
 
   function copyWatchLink(id) {
-    const url = buildWatchUrl(id);
+    const url = buildCardUrl(id);
     navigator.clipboard.writeText(url).then(() => {
       alert(`✅ Link copied!\n\n${url}`);
     });

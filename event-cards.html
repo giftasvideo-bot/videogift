@@ -187,7 +187,8 @@
       <div class="ev-meta" style="margin-bottom:12px;">Every card in the registry, same as the admin dashboard. Pick one to create an event.</div>
     <div class="form-group"><input type="text" id="cd-search" placeholder="Search card code" oninput="renderCardQrs(true)"></div>
     <div class="view-toggle" id="cd-filters">
-      <button class="filter-btn active" data-f="available">Available <span></span></button>
+      <button class="filter-btn active" data-f="active">Active (pending) <span></span></button>
+      <button class="filter-btn" data-f="available">Available <span></span></button>
       <button class="filter-btn" data-f="marked">Event cards, no event yet <span></span></button>
       <button class="filter-btn" data-f="created">Event created <span></span></button>
       <button class="filter-btn" data-f="printed">Printed (not for events) <span></span></button>
@@ -213,13 +214,14 @@
   const $ = id => document.getElementById(id);
   const esc = t => String(t == null ? '' : t).replace(/[&<>"']/g, c => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[c]));
   const base = window.location.origin + window.location.pathname.replace(/[^\/]*$/, '');
-  const watchUrl = id => base + 'watch.html?id=' + id;
-  let ids = [], buyers = {}, evCards = new Set(), evByCard = {}, printed = new Set(), filter = 'available', shown = 60, lastLoad = 0;
+  const watchUrl = id => (evCards.has(id) || evByCard[id]) ? base + 'event.html?g=' + encodeURIComponent(id) : base + 'watch.html?id=' + id;
+  let ids = [], buyers = {}, evCards = new Set(), evByCard = {}, printed = new Set(), filter = 'active', shown = 60, lastLoad = 0;
 
   const isSold = id => { const b = buyers[id]; return !!(b && (b.buyerName || b.buyerContact || b.buyerNote || (b.price !== null && b.price !== undefined))); };
   // Sold for something other than an event (QR only / postcard) => not available for events
   const soldBlocked = id => isSold(id) && (buyers[id].productType !== 'event');
   const stateOf = id => evByCard[id] ? 'created' : evCards.has(id) ? 'marked' : printed.has(id) ? 'printed' : soldBlocked(id) ? 'sold' : 'available';
+  const inFilter = (id, f) => f === 'all' || (f === 'active' ? ['available', 'marked'].includes(stateOf(id)) : stateOf(id) === f);
   const sorted = a => [...a].sort((x, y) => x.localeCompare(y, undefined, { numeric: true }));
 
   window.loadCardQrs = async function () {
@@ -237,21 +239,21 @@
 
   function visible() {
     const q = $('cd-search').value.trim().toLowerCase();
-    return ids.filter(id => (filter === 'all' || stateOf(id) === filter) && (!q || id.toLowerCase().includes(q)));
+    return ids.filter(id => inFilter(id, filter) && (!q || id.toLowerCase().includes(q)));
   }
   window.renderCardQrs = function (reset) {
     if (reset) shown = 60;
     document.querySelectorAll('#cd-filters button').forEach(b => {
       const f = b.dataset.f;
       b.classList.toggle('active', f === filter);
-      b.lastElementChild.textContent = '(' + (f === 'all' ? ids.length : ids.filter(id => stateOf(id) === f).length) + ')';
+      b.lastElementChild.textContent = '(' + ids.filter(id => inFilter(id, f)).length + ')';
     });
     const list = visible(), grid = $('cd-grid'), page = list.slice(0, shown);
     $('cd-msg').textContent = list.length + ' of ' + ids.length + ' cards';
     $('cd-more').style.display = list.length > shown ? '' : 'none';
     grid.innerHTML = page.map(id => {
       const st = stateOf(id);
-      const badge = st === 'sold' ? '<span class="cd-badge sold" title="Sold cards cannot be used for events.">🧾 Sold</span>' : st === 'printed' ? '<span class="cd-badge sold" title="Printed cards cannot be used for events.">🔒 Printed</span>' : st === 'created' ? '<span class="cd-badge created">✅ Event created</span>' : st === 'marked' ? '<span class="cd-badge marked">🎉 Event card</span>' : '<span class="cd-badge">Available</span>';
+      const badge = st === 'sold' ? '<span class="cd-badge sold" title="Sold cards cannot be used for events.">🧾 Sold</span>' : st === 'printed' ? '<span class="cd-badge sold" title="Printed cards cannot be used for events.">🔒 Printed</span>' : st === 'created' ? '<span class="cd-badge created">✅ Event created</span>' : st === 'marked' ? '<span class="cd-badge created">⏳ Pending · 🎉 Event card · Active</span>' : '<span class="cd-badge created">⏳ Pending · Active</span>';
       const acts = st === 'created'
         ? `<button class="btn btn-secondary" data-act="view">✅ Event created · View</button>`
         : st === 'marked'
