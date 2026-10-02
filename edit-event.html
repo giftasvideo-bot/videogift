@@ -64,6 +64,8 @@
   .pv-bar .btn.alt { color:#fff; border-color:#fff; }
   .pv-bar .btn:not(.alt) { background:#fff; color:var(--accent); }
   #pvFrame { flex:1; width:min(100%,430px); border:0; background:#fff; border-radius:12px 12px 0 0; }
+  #ethBox { display:grid; grid-template-columns:1fr 1.8fr 1.1fr; gap:8px; }
+  #ethBox[hidden] { display:none; }
 </style>
 </head>
 <body>
@@ -76,6 +78,7 @@
     <form id="f">
     <div style="display:grid;gap:4px;border:1px dashed var(--line);border-radius:8px;padding:10px 12px;background:#fff">
       <label style="display:flex;gap:8px;align-items:center;font-weight:500"><input type="checkbox" id="amType" style="width:auto"> <span>ኢትዮጵያ ፊደል ይተይቡ · Type in Amharic with English letters</span></label>
+      <label style="display:flex;gap:8px;align-items:center;font-weight:500"><input type="checkbox" id="ethCal" style="width:auto"> <span>የኢትዮጵያ አቆጣጠር ተጠቀም · Use the Ethiopian calendar for the date</span></label>
       <small>Example: <b>selam</b> → ሰላም · <b>abeba</b> → አበባ · Capital <b>T C P S</b> give ጠ ጨ ጰ ጸ · Type <b>'</b> to separate two letters</small>
     </div>
       <label>Event type
@@ -101,7 +104,9 @@
       <label id="themeLbl" hidden>Background color
         <select name="theme"></select></label>
       <div class="two">
-        <label><span id="dateTxt">Date and time</span> <small id="dateHint">(seminars: optional)</small><input type="datetime-local" name="event_date" id="evDate"></label>
+        <label><span id="dateTxt">Date and time</span> <small id="dateHint">(seminars: optional)</small><input type="datetime-local" name="event_date" id="evDate"><span id="ethBox" hidden role="group" aria-label="የኢትዮጵያ ቀን">
+          <select id="ethD" aria-label="ቀን"></select><select id="ethM" aria-label="ወር"></select><select id="ethY" aria-label="ዓመት"></select>
+          <small id="ethInfo" style="grid-column:1/-1"></small></span></label>
         <label>Venue <input name="venue" maxlength="200"></label>
       </div>
       <label>Map link <small>(Google Maps share link)</small><input type="url" name="map_url" placeholder="https://maps.app.goo.gl/…"></label>
@@ -203,6 +208,65 @@
     sync(true); setTimeout(sync, 300); setTimeout(sync, 1200);
     document.addEventListener('click', () => setTimeout(sync, 120));
   });
+})();
+</script>
+<script>
+/* Ethiopian (Ge'ez) calendar date picker for the wedding date. Shows when the page language is Amharic; saves a normal date. */
+(function () {
+  const EM = ['\u1218\u1235\u12A8\u1228\u121D', '\u1325\u1245\u121D\u1275', '\u12C5\u12F3\u122D', '\u1273\u12C5\u1233\u1235', '\u1325\u122D', '\u12E8\u12AB\u1272\u1275', '\u1218\u130B\u1262\u1275', '\u121A\u12EB\u12DD\u12EB', '\u130D\u1295\u1266\u1275', '\u1230\u1294', '\u1210\u121D\u120C', '\u1290\u1210\u1234', '\u1333\u1309\u121C\u1295'];
+  const g2j = (y, m, d) => { const a = Math.floor((14 - m) / 12), yy = y + 4800 - a, mm = m + 12 * a - 3; return d + Math.floor((153 * mm + 2) / 5) + 365 * yy + Math.floor(yy / 4) - Math.floor(yy / 100) + Math.floor(yy / 400) - 32045; };
+  const e2j = (y, m, d) => 1723856 + 365 * y + Math.floor(y / 4) + 30 * m + d - 31;
+  const j2e = j => { const k = j - 1723856, r = ((k % 1461) + 1461) % 1461, n = (r % 365) + 365 * Math.floor(r / 1460); return { y:4 * Math.floor(k / 1461) + Math.floor(r / 365) - Math.floor(r / 1460), m:Math.floor(n / 30) + 1, d:(n % 30) + 1 }; };
+  const j2g = j => { const a = j + 32044, b = Math.floor((4 * a + 3) / 146097), c = a - Math.floor(146097 * b / 4), d = Math.floor((4 * c + 3) / 1461), e = c - Math.floor(1461 * d / 4), m = Math.floor((5 * e + 2) / 153); return { y:100 * b + d - 4800 + Math.floor(m / 10), m:m + 3 - 12 * Math.floor(m / 10), d:e - Math.floor((153 * m + 2) / 5) + 1 }; };
+  window.ethCal = { g2j, e2j, j2e, j2g, EM };
+  const dim = (y, m) => m < 13 ? 30 : (y % 4 === 3 ? 6 : 5), pad = n => String(n).padStart(2, '0');
+  let shown = false, lastAm = null, wired = false;
+  const $ = id => document.getElementById(id);
+  const opt = (v, t) => { const o = document.createElement('option'); o.value = v; o.textContent = t; return o; };
+  function ensureYear(y) { const sy = $('ethY'); if (![...sy.options].some(o => +o.value === y)) { sy.append(opt(y, y)); [...sy.options].slice(1).sort((a, b) => a.value - b.value).forEach(o => sy.append(o)); } }
+  function fillDays() {
+    const sd = $('ethD'), y = +$('ethY').value || 2018, m = +$('ethM').value, keep = sd.value, n = m ? dim(y, m) : 30;
+    sd.textContent = ''; sd.append(opt('', '\u1240\u1295'));
+    for (let i = 1; i <= n; i++) sd.append(opt(i, i));
+    sd.value = keep && +keep <= n ? keep : '';
+  }
+  function info(g) { $('ethInfo').textContent = g ? '= ' + new Date(g.y, g.m - 1, g.d).toLocaleDateString('en-GB', { day:'numeric', month:'long', year:'numeric' }) : ''; }
+  function fromNative() {
+    const v = $('evDate').value.slice(0, 10);
+    if (!/^\d{4}-\d\d-\d\d$/.test(v)) { $('ethD').value = ''; $('ethM').value = ''; $('ethY').value = ''; fillDays(); info(null); return; }
+    const [Y, M, D] = v.split('-').map(Number), e = j2e(g2j(Y, M, D));
+    ensureYear(e.y); $('ethY').value = e.y; $('ethM').value = e.m; fillDays(); $('ethD').value = e.d; info({ y:Y, m:M, d:D });
+  }
+  function toNative() {
+    const y = +$('ethY').value, m = +$('ethM').value, d = +$('ethD').value, ev = $('evDate');
+    if (y && m && d) { const g = j2g(e2j(y, m, d)); ev.value = g.y + '-' + pad(g.m) + '-' + pad(g.d); info(g); }
+    else { ev.value = ''; info(null); }
+    ev.dispatchEvent(new Event('change', { bubbles:true }));
+  }
+  const isAm = () => { try { if (typeof FT === 'function' && FT('Event type') !== 'Event type') return true; } catch (x) {} return document.documentElement.lang === 'am'; };
+  function wire() {
+    if (wired) return; wired = true;
+    const sy = $('ethY'), sm = $('ethM'), cy = j2e(g2j(new Date().getFullYear(), new Date().getMonth() + 1, new Date().getDate())).y;
+    sy.append(opt('', '\u12D3\u121D\u1275')); for (let y = cy - 1; y <= cy + 8; y++) sy.append(opt(y, y));
+    sm.append(opt('', '\u12C8\u122D')); EM.forEach((n, i) => sm.append(opt(i + 1, n)));
+    fillDays();
+    sy.onchange = sm.onchange = () => { fillDays(); toNative(); }; $('ethD').onchange = toNative;
+    $('ethCal').addEventListener('change', () => window.ethApply());
+    document.addEventListener('click', () => setTimeout(() => window.ethApply(), 150));
+  }
+  window.ethApply = function () {
+    const cb = $('ethCal'), ev = $('evDate'); if (!cb || !ev) return;
+    wire();
+    const am = isAm(); if (am !== lastAm) { cb.checked = am; lastAm = am; }
+    const want = cb.checked && ev.type === 'date';
+    if (want && !shown) fromNative();
+    if (want && shown && document.activeElement !== ev) fromNative();
+    shown = want;
+    $('ethBox').hidden = !want; ev.style.display = want ? 'none' : '';
+    ev.parentElement.style.gridColumn = want ? '1 / -1' : '';
+    ev.required = !want && ev.type === 'date' && !!$('code');
+  };
+  document.addEventListener('DOMContentLoaded', () => { window.ethApply(); setTimeout(window.ethApply, 400); setTimeout(window.ethApply, 1500); });
 })();
 </script>
 <script>
@@ -321,7 +385,7 @@ const syncType = () => {
   $('rsvpLbl').hidden = $('f').type.value === 'memorial';
   const bday = isBday();
   fillThemes(); $('themeLbl').hidden = !(wed || bday) || (wed && tplVal() === 'basket');
-  refreshThumbs(); requestAnimationFrame(fitThumbs);
+  refreshThumbs(); requestAnimationFrame(fitThumbs); if (window.ethApply) ethApply();
   $('galleryBox').hidden = !(wed || bday);
   $('aboutLbl').hidden = !(wed || bday);
   $('aboutTxt').textContent = bday ? 'About me' : 'About us';
