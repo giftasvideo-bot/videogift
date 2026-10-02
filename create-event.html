@@ -38,7 +38,7 @@
   .dayrow { display:grid; grid-template-columns:1fr 1fr; gap:8px; padding-bottom:10px; margin-bottom:10px; border-bottom:1px dashed var(--line); }
   .dayrow .full { grid-column:1/-1; }
   .dayrow button { justify-self:start; }
-  .wedOnly[hidden], .dayrow [hidden], #hostLbl[hidden], #galLbl[hidden], #themeBox[hidden], #aboutLbl[hidden] { display:none; }
+  .wedOnly[hidden], .dayrow [hidden], #hostLbl[hidden], #galLbl[hidden], #themeBox[hidden], #aboutLbl[hidden], #aboutAmLbl[hidden] { display:none; }
   .swatches { border:1px solid var(--line); border-radius:8px; padding:10px 14px 14px; display:flex; gap:14px; flex-wrap:wrap; align-items:center; }
   .swatches legend { font-weight:500; padding:0 6px; }
   .swatches label { display:block; position:relative; cursor:pointer; }
@@ -107,7 +107,9 @@
       <div class="tplgrid" id="tplOpts"></div>
     </fieldset>
     <label>Title <input name="title" required maxlength="120" placeholder="Selam & Dawit's Wedding"></label>
+    <label>Title in Amharic <small>(Amharic · በአማርኛ, optional)</small><input name="title_am" maxlength="120" lang="am"></label>
     <label id="aboutLbl" hidden><span id="aboutTxt">About us</span> <small id="aboutHint">(your story, shown in the "About us" section)</small><textarea name="about" maxlength="1980"></textarea></label>
+    <label id="aboutAmLbl" hidden>About in Amharic <small>(Amharic · በአማርኛ, optional)</small><textarea name="about_am" maxlength="1980" lang="am"></textarea></label>
     <label><span id="dateTxt">Date and time</span> <small id="dateHint">(optional if you add a schedule below)</small><input type="datetime-local" name="event_date" id="evDate"><span id="ethBox" hidden role="group" aria-label="የኢትዮጵያ ቀን">
           <select id="ethD" aria-label="ቀን"></select><select id="ethM" aria-label="ወር"></select><select id="ethY" aria-label="ዓመት"></select>
           <small id="ethInfo" style="grid-column:1/-1"></small></span></label>
@@ -122,9 +124,12 @@
       <div id="themeOpts" style="display:flex;gap:14px;flex-wrap:wrap"></div>
     </fieldset>
     <label id="hostLbl"><span id="hostTxt">Hosts</span> <small id="hostHint">(optional)</small><input name="host_names" maxlength="120" placeholder="Together with their families"></label>
+    <label id="hostAmLbl">Hosts in Amharic <small>(Amharic · በአማርኛ, optional)</small><input name="host_names_am" maxlength="120" lang="am"></label>
     <label>Venue <input name="venue" maxlength="200"></label>
+    <label>Venue in Amharic <small>(Amharic · በአማርኛ, optional)</small><input name="venue_am" maxlength="200" lang="am"></label>
     <label>Map link <small>(Google Maps share link)</small><input type="url" name="map_url" placeholder="https://maps.app.goo.gl/…"></label>
     <label>Message <small>(optional)</small><textarea name="message" maxlength="1000"></textarea></label>
+    <label>Message in Amharic <small>(Amharic · በአማርኛ, optional)</small><textarea name="message_am" maxlength="1000" lang="am"></textarea></label>
     <label><span id="photoLbl">Photos</span> <small>(up to 3, shown as a slideshow. JPG, PNG or WebP, up to 50 MB each)</small><input type="file" name="photo" multiple accept="image/jpeg,image/png,image/webp"></label>
     <label id="galLbl" hidden><span id="galTxt">Additional photos</span> <small id="galHint">(up to 20, shown in the "Photos" section. JPG, PNG or WebP, up to 50 MB each)</small><input type="file" name="gallery" multiple accept="image/jpeg,image/png,image/webp"></label>
     <label>Video <small>(MP4, MOV or WebM, up to 50 MB. Shorter videos load faster for guests.)</small><input type="file" name="video" accept="video/mp4,video/quicktime,video/webm"></label>
@@ -219,7 +224,7 @@
 })();
 </script>
 <script>
-/* Ethiopian (Ge'ez) calendar date picker for the wedding date. Shows when the page language is Amharic; saves a normal date. */
+/* Ethiopian (Ge'ez) calendar pickers. When the page language is Amharic (or the checkbox is ticked) every date field -- the event date and each schedule/seminar day -- is shown as an Ethiopian day / month / year picker. The saved value is still a normal date. */
 (function () {
   const EM = ['\u1218\u1235\u12A8\u1228\u121D', '\u1325\u1245\u121D\u1275', '\u12C5\u12F3\u122D', '\u1273\u12C5\u1233\u1235', '\u1325\u122D', '\u12E8\u12AB\u1272\u1275', '\u1218\u130B\u1262\u1275', '\u121A\u12EB\u12DD\u12EB', '\u130D\u1295\u1266\u1275', '\u1230\u1294', '\u1210\u121D\u120C', '\u1290\u1210\u1234', '\u1333\u1309\u121C\u1295'];
   const g2j = (y, m, d) => { const a = Math.floor((14 - m) / 12), yy = y + 4800 - a, mm = m + 12 * a - 3; return d + Math.floor((153 * mm + 2) / 5) + 365 * yy + Math.floor(yy / 4) - Math.floor(yy / 100) + Math.floor(yy / 400) - 32045; };
@@ -228,53 +233,80 @@
   const j2g = j => { const a = j + 32044, b = Math.floor((4 * a + 3) / 146097), c = a - Math.floor(146097 * b / 4), d = Math.floor((4 * c + 3) / 1461), e = c - Math.floor(1461 * d / 4), m = Math.floor((5 * e + 2) / 153); return { y:100 * b + d - 4800 + Math.floor(m / 10), m:m + 3 - 12 * Math.floor(m / 10), d:e - Math.floor((153 * m + 2) / 5) + 1 }; };
   window.ethCal = { g2j, e2j, j2e, j2g, EM };
   const dim = (y, m) => m < 13 ? 30 : (y % 4 === 3 ? 6 : 5), pad = n => String(n).padStart(2, '0');
-  let shown = false, lastAm = null, wired = false;
   const $ = id => document.getElementById(id);
   const opt = (v, t) => { const o = document.createElement('option'); o.value = v; o.textContent = t; return o; };
-  function ensureYear(y) { const sy = $('ethY'); if (![...sy.options].some(o => +o.value === y)) { sy.append(opt(y, y)); [...sy.options].slice(1).sort((a, b) => a.value - b.value).forEach(o => sy.append(o)); } }
-  function fillDays() {
-    const sd = $('ethD'), y = +$('ethY').value || 2018, m = +$('ethM').value, keep = sd.value, n = m ? dim(y, m) : 30;
-    sd.textContent = ''; sd.append(opt('', '\u1240\u1295'));
-    for (let i = 1; i <= n; i++) sd.append(opt(i, i));
-    sd.value = keep && +keep <= n ? keep : '';
-  }
-  function info(g) { $('ethInfo').textContent = g ? '= ' + new Date(g.y, g.m - 1, g.d).toLocaleDateString('en-GB', { day:'numeric', month:'long', year:'numeric' }) : ''; }
-  function fromNative() {
-    const v = $('evDate').value.slice(0, 10);
-    if (!/^\d{4}-\d\d-\d\d$/.test(v)) { $('ethD').value = ''; $('ethM').value = ''; $('ethY').value = ''; fillDays(); info(null); return; }
-    const [Y, M, D] = v.split('-').map(Number), e = j2e(g2j(Y, M, D));
-    ensureYear(e.y); $('ethY').value = e.y; $('ethM').value = e.m; fillDays(); $('ethD').value = e.d; info({ y:Y, m:M, d:D });
-  }
-  function toNative() {
-    const y = +$('ethY').value, m = +$('ethM').value, d = +$('ethD').value, ev = $('evDate');
-    if (y && m && d) { const g = j2g(e2j(y, m, d)); ev.value = g.y + '-' + pad(g.m) + '-' + pad(g.d); info(g); }
-    else { ev.value = ''; info(null); }
-    ev.dispatchEvent(new Event('change', { bubbles:true }));
-  }
-  const isAm = () => { try { if (typeof FT === 'function' && FT('Event type') !== 'Event type') return true; } catch (x) {} return document.documentElement.lang === 'am'; };
-  function wire() {
-    if (wired) return; wired = true;
-    const sy = $('ethY'), sm = $('ethM'), cy = j2e(g2j(new Date().getFullYear(), new Date().getMonth() + 1, new Date().getDate())).y;
+  const st0 = document.createElement('style');
+  st0.textContent = '.ethrow{display:grid;grid-template-columns:1fr 1.8fr 1.1fr;gap:8px}.ethrow[hidden]{display:none}.ethrow small,.ethrow input[type=time]{grid-column:1/-1}';
+  document.head.append(st0);
+  const now = new Date(), cy = j2e(g2j(now.getFullYear(), now.getMonth() + 1, now.getDate())).y;
+
+  function widget(native, box, sd, sm, sy, infoEl, st) {
+    const w = { native, box, st, last:null, shown:false };
     sy.append(opt('', '\u12D3\u121D\u1275')); for (let y = cy - 1; y <= cy + 8; y++) sy.append(opt(y, y));
     sm.append(opt('', '\u12C8\u122D')); EM.forEach((n, i) => sm.append(opt(i + 1, n)));
+    const ensureYear = y => { if (![...sy.options].some(o => +o.value === y)) { sy.append(opt(y, y)); [...sy.options].slice(1).sort((a, b) => a.value - b.value).forEach(o => sy.append(o)); } };
+    function fillDays() {
+      const y = +sy.value || cy, m = +sm.value, keep = sd.value, n = m ? dim(y, m) : 30;
+      sd.textContent = ''; sd.append(opt('', '\u1240\u1295'));
+      for (let i = 1; i <= n; i++) sd.append(opt(i, i));
+      sd.value = keep && +keep <= n ? keep : '';
+    }
+    const info = g => { infoEl.textContent = g ? '= ' + new Date(g.y, g.m - 1, g.d).toLocaleDateString('en-GB', { day:'numeric', month:'long', year:'numeric' }) : ''; };
     fillDays();
-    sy.onchange = sm.onchange = () => { fillDays(); toNative(); }; $('ethD').onchange = toNative;
-    $('ethCal').addEventListener('change', () => window.ethApply());
-    document.addEventListener('click', () => setTimeout(() => window.ethApply(), 150));
+    w.fromNative = () => {
+      const v = native.value, d = v.slice(0, 10); w.last = v;
+      if (!/^\d{4}-\d\d-\d\d$/.test(d)) { sd.value = ''; sm.value = ''; sy.value = ''; fillDays(); info(null); if (st) st.value = ''; return; }
+      const [Y, M, D] = d.split('-').map(Number), e = j2e(g2j(Y, M, D));
+      ensureYear(e.y); sy.value = e.y; sm.value = e.m; fillDays(); sd.value = e.d; info({ y:Y, m:M, d:D });
+      if (st) st.value = v.length > 10 ? v.slice(11, 16) : '';
+    };
+    w.toNative = () => {
+      const y = +sy.value, m = +sm.value, d = +sd.value; let v = '';
+      if (y && m && d) { const g = j2g(e2j(y, m, d)); v = g.y + '-' + pad(g.m) + '-' + pad(g.d); info(g); if (native.type === 'datetime-local') v += 'T' + ((st && st.value) || '00:00'); }
+      else info(null);
+      native.value = v; w.last = native.value;
+      native.dispatchEvent(new Event('change', { bubbles:true }));
+    };
+    sy.onchange = sm.onchange = () => { fillDays(); w.toNative(); };
+    sd.onchange = w.toNative; if (st) st.onchange = w.toNative;
+    return w;
   }
+  function mainWidget() {
+    const box = $('ethBox'), st = document.createElement('input');
+    st.type = 'time'; st.id = 'ethT'; st.setAttribute('aria-label', '\u1230\u12D3\u1275'); st.hidden = true;
+    box.insertBefore(st, $('ethInfo'));
+    return widget($('evDate'), box, $('ethD'), $('ethM'), $('ethY'), $('ethInfo'), st);
+  }
+  function rowWidget(inp) {
+    const box = document.createElement('span'); box.className = 'ethrow'; box.hidden = true; box.setAttribute('role', 'group'); box.setAttribute('aria-label', '\u12E8\u12A2\u1275\u12EE\u1335\u12EB \u1240\u1295');
+    const sd = document.createElement('select'), sm = document.createElement('select'), sy = document.createElement('select'), inf = document.createElement('small');
+    sd.setAttribute('aria-label', '\u1240\u1295'); sm.setAttribute('aria-label', '\u12C8\u122D'); sy.setAttribute('aria-label', '\u12D3\u121D\u1275');
+    box.append(sd, sm, sy, inf); inp.parentElement.append(box);
+    return widget(inp, box, sd, sm, sy, inf, null);
+  }
+  function show(w, want) {
+    if (want) { if (w.st) w.st.hidden = w.native.type !== 'datetime-local'; if (!w.shown || w.native.value !== w.last) w.fromNative(); }
+    w.shown = want; w.box.hidden = !want; w.native.style.display = want ? 'none' : '';
+  }
+  const isAm = () => { try { if (typeof FT === 'function' && FT('Event type') !== 'Event type') return true; } catch (x) {} return document.documentElement.lang === 'am'; };
+  let lastAm = null, main = null, wired = false;
   window.ethApply = function () {
     const cb = $('ethCal'), ev = $('evDate'); if (!cb || !ev) return;
-    wire();
+    if (!wired) { wired = true; cb.addEventListener('change', () => window.ethApply()); document.addEventListener('click', () => setTimeout(() => window.ethApply(), 150)); }
     const am = isAm(); if (am !== lastAm) { cb.checked = am; lastAm = am; }
-    const want = cb.checked && ev.type === 'date';
-    if (want && !shown) fromNative();
-    if (want && shown && document.activeElement !== ev) fromNative();
-    shown = want;
-    $('ethBox').hidden = !want; ev.style.display = want ? 'none' : '';
+    const on = cb.checked;
+    if (!main) main = mainWidget();
+    const want = on && (ev.type === 'date' || ev.type === 'datetime-local');
+    show(main, want);
     ev.parentElement.style.gridColumn = want ? '1 / -1' : '';
     ev.required = !want && ev.type === 'date' && !!$('code');
+    document.querySelectorAll('#days .d-date').forEach(inp => { if (!inp._eth) inp._eth = rowWidget(inp); show(inp._eth, on); });
   };
-  document.addEventListener('DOMContentLoaded', () => { window.ethApply(); setTimeout(window.ethApply, 400); setTimeout(window.ethApply, 1500); });
+  document.addEventListener('DOMContentLoaded', () => {
+    window.ethApply(); setTimeout(window.ethApply, 400); setTimeout(window.ethApply, 1500);
+    const days = $('days'); if (days) new MutationObserver(() => setTimeout(window.ethApply, 0)).observe(days, { childList:true });
+    setInterval(window.ethApply, 1000);
+  });
 })();
 </script>
 <script>
@@ -291,9 +323,10 @@ function addDay(v = {}) {
   const r = document.createElement('div'); r.className = 'dayrow';
   r.innerHTML = '<label class="full">Date <input type="date" class="d-date"></label><label>Start time <input type="time" class="d-time"></label>' +
     '<label>End time <small>(optional)</small><input type="time" class="d-end"></label>' +
-    '<label class="full">Title for this day <input class="d-title" maxlength="120"></label><button class="btn alt" type="button">Remove day</button>';
+    '<label class="full">Title for this day <input class="d-title" maxlength="120"></label>' +
+    '<label class="full">Title in Amharic <small>(Amharic · በአማርኛ, optional)</small><input class="d-title-am" maxlength="120" lang="am"></label><button class="btn alt" type="button">Remove day</button>';
   const prev = $('days').lastElementChild; r.querySelector('.d-date').value = v.date || (prev ? prev.querySelector('.d-date').value : ''); r.querySelector('.d-time').value = v.time || '';
-  r.querySelector('.d-title').value = v.title || ''; r.querySelector('.d-title').placeholder = isWed() ? 'e.g. Church ceremony' : 'Day ' + n + ': e.g. Opening and Vision';
+  r.querySelector('.d-title').value = v.title || ''; r.querySelector('.d-title-am').value = v.title_am || ''; r.querySelector('.d-title').placeholder = isWed() ? 'e.g. Church ceremony' : 'Day ' + n + ': e.g. Opening and Vision';
   r.querySelector('button').onclick = () => { if ($('days').children.length > 1) r.remove(); };
   $('days').append(r); labelRows(); applyFormLang();
 }
@@ -308,7 +341,7 @@ function labelRows() {
   $('addDay').textContent = w ? '+ Add to schedule' : '+ Add day';
 }
 function readDays() {
-  return [...$('days').children].map(r => ({ date:r.querySelector('.d-date').value, time:r.querySelector('.d-time').value, title:r.querySelector('.d-title').value.trim(), end:r.querySelector('.d-end').value || undefined }));
+  return [...$('days').children].map(r => ({ date:r.querySelector('.d-date').value, time:r.querySelector('.d-time').value, title:r.querySelector('.d-title').value.trim(), title_am:r.querySelector('.d-title-am').value.trim() || undefined, end:r.querySelector('.d-end').value || undefined }));
 }
 const typeVal = () => document.querySelector('[name=type]').value;
 const isWed = () => typeVal() === 'wedding';
@@ -398,7 +431,7 @@ function syncType() {
   $('themeBox').hidden = !(wed || bday) || (wed && tplVal() === 'basket'); renderThemes();
   refreshThumbs(); requestAnimationFrame(fitThumbs); if (window.ethApply) ethApply();
   $('galLbl').hidden = !(wed || bday);
-  $('aboutLbl').hidden = !(wed || bday);
+  $('aboutLbl').hidden = !(wed || bday); $('aboutAmLbl').hidden = $('aboutLbl').hidden;
   $('aboutTxt').textContent = bday ? 'About me' : 'About us';
   $('aboutHint').textContent = '(your story, shown in the "' + (bday ? 'About me' : 'About us') + '" section)';
   $('galTxt').textContent = bday ? 'Gallery photos' : 'Additional photos';
