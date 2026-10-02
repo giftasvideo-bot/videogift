@@ -104,7 +104,7 @@
       <div class="tplgrid" id="tplOpts"></div>
     </fieldset>
     <label>Title <input name="title" required maxlength="120" placeholder="Selam & Dawit's Wedding"></label>
-    <label id="aboutLbl" hidden><span id="aboutTxt">About us</span> <small id="aboutHint">(your story, shown in the "About us" section)</small><textarea name="about" maxlength="2000"></textarea></label>
+    <label id="aboutLbl" hidden><span id="aboutTxt">About us</span> <small id="aboutHint">(your story, shown in the "About us" section)</small><textarea name="about" maxlength="1980"></textarea></label>
     <label><span id="dateTxt">Date and time</span> <small id="dateHint">(optional if you add a schedule below)</small><input type="datetime-local" name="event_date" id="evDate"></label>
     <fieldset id="daysBox" hidden>
       <legend id="daysLegend">Seminar days</legend>
@@ -271,6 +271,9 @@ const TEMPLATES = [
   ['classic', 'Classic envelope', 'Opens with a wax-sealed envelope, then a paper-style page. You choose the background colour.'],
   ['basket', 'Basket & flowers', 'Warm maroon and gold with a hand-drawn basket border, countdown and a 3D photo gallery.']
 ];
+const TPL_MARK = /\s*\[\[tpl:(\w+)\]\]\s*$/;
+const splitTpl = t => { const m = TPL_MARK.exec(t || ''); return { text:String(t || '').replace(TPL_MARK, ''), tpl:m ? m[1] : '' }; };
+const joinTpl = (t, tpl) => String(t || '').replace(TPL_MARK, '') + (tpl === 'basket' ? '\n[[tpl:basket]]' : '');
 const tplVal = () => { const r = document.querySelector('#f [name=template]:checked'); return r ? r.value : 'classic'; };
 function previewURL(id, thumb) {
   const f = $('f'), u = new URL('event.html', location.href);
@@ -397,6 +400,7 @@ $('f').onsubmit = async e => {
   if (fd.getAll('gallery').filter(f => f.size).length > 20) { $('err').textContent = FT('Please choose up to 20 additional photos.'); $('go').disabled = false; $('go').textContent = FT('Create invitation'); return; }
   if (!['wedding', 'birthday'].includes(fd.get('type'))) fd.delete('theme');
   if (fd.get('type') !== 'wedding') fd.delete('template');
+  else fd.set('about', joinTpl(fd.get('about'), tplVal()));
   { const gal = [...$('f').gallery.files].filter(f => f.size); fd.delete('gallery');
     if (['wedding', 'birthday'].includes(fd.get('type'))) gal.forEach(f => fd.append('gallery', f)); }
   fd.set('rsvp_enabled', $('rsvpOn').checked ? 'true' : 'false');

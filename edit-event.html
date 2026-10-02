@@ -97,7 +97,7 @@
       </fieldset>
       <label>Title <input name="title" required maxlength="120"></label>
       <label id="hostLbl"><span id="hostTxt">Hosts</span> <small id="hostHint">(optional)</small><input name="host_names" maxlength="120"></label>
-      <label id="aboutLbl" hidden><span id="aboutTxt">About us</span> <small id="aboutHint">(your story, shown in the "About us" section)</small><textarea name="about" maxlength="2000"></textarea></label>
+      <label id="aboutLbl" hidden><span id="aboutTxt">About us</span> <small id="aboutHint">(your story, shown in the "About us" section)</small><textarea name="about" maxlength="1980"></textarea></label>
       <label id="themeLbl" hidden>Background color
         <select name="theme"></select></label>
       <div class="two">
@@ -258,6 +258,9 @@ const TEMPLATES = [
   ['classic', 'Classic envelope', 'Opens with a wax-sealed envelope, then a paper-style page. You choose the background colour.'],
   ['basket', 'Basket & flowers', 'Warm maroon and gold with a hand-drawn basket border, countdown and a 3D photo gallery.']
 ];
+const TPL_MARK = /\s*\[\[tpl:(\w+)\]\]\s*$/;
+const splitTpl = t => { const m = TPL_MARK.exec(t || ''); return { text:String(t || '').replace(TPL_MARK, ''), tpl:m ? m[1] : '' }; };
+const joinTpl = (t, tpl) => String(t || '').replace(TPL_MARK, '') + (tpl === 'basket' ? '\n[[tpl:basket]]' : '');
 const tplVal = () => { const r = document.querySelector('#f [name=template]:checked'); return r ? r.value : 'classic'; };
 function previewURL(id, thumb) {
   const f = $('f'), u = new URL('event.html', location.href);
@@ -332,12 +335,12 @@ const localDT = d => { if (!d) return ''; const t = new Date(d); t.setMinutes(t.
 function fill(e) {
   ev = e;
   const f = $('f');
-  f.type.value = e.type; f.about.value = e.about || ''; f.title.value = e.title || ''; f.host_names.value = e.host_names || '';
+  const ab = splitTpl(e.about); f.type.value = e.type; f.about.value = ab.text; f.title.value = e.title || ''; f.host_names.value = e.host_names || '';
   const dl0 = (Array.isArray(e.days) ? e.days : []).filter(d => d && d.date);
   f.event_date.type = e.type === 'wedding' ? 'date' : 'datetime-local';
   f.event_date.value = e.type === 'wedding' ? (dl0.length ? dl0[0].date : localDT(e.event_date).slice(0, 10)) : localDT(e.event_date); f.venue.value = e.venue || ''; f.map_url.value = e.map_url || '';
   f.message.value = e.message || ''; f.rsvp_enabled.checked = !!e.rsvp_enabled;
-  { const tr = f.querySelector('[name=template][value="' + (e.template === 'basket' ? 'basket' : 'classic') + '"]'); if (tr) tr.checked = true; }
+  { const tr = f.querySelector('[name=template][value="' + ((e.template || ab.tpl) === 'basket' ? 'basket' : 'classic') + '"]'); if (tr) tr.checked = true; }
   $('days').textContent = '';
   (Array.isArray(e.days) ? e.days : []).filter(d => d && d.date).forEach(addDay);
   syncType();
@@ -394,7 +397,7 @@ $('f').onsubmit = async e => {
   ['type', 'title', 'host_names', 'venue', 'map_url', 'message'].forEach(k => fd.set(k, f[k].value));
   fd.set('rsvp_enabled', f.rsvp_enabled.checked ? 'true' : 'false');
   let evDate = f.event_date.value;
-  if (isWed() || isBday()) { fd.set('theme', f.theme.value); fd.set('about', f.about.value); }
+  if (isWed() || isBday()) { fd.set('theme', f.theme.value); fd.set('about', isWed() ? joinTpl(f.about.value, tplVal()) : f.about.value); }
   if (isWed()) fd.set('template', tplVal());
   if (isWed()) {
     if (!evDate) return say(FT('Please choose the wedding date.'), 'err');
