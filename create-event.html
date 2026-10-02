@@ -86,6 +86,10 @@
   </div>
 
   <form id="f">
+    <div style="display:grid;gap:4px;border:1px dashed var(--line);border-radius:8px;padding:10px 12px;background:#fff">
+      <label style="display:flex;gap:8px;align-items:center;font-weight:500"><input type="checkbox" id="amType" style="width:auto"> <span>ኢትዮጵያ ፊደል ይተይቡ · Type in Amharic with English letters</span></label>
+      <small>Example: <b>selam</b> → ሰላም · <b>abeba</b> → አበባ · Capital <b>T C P S</b> give ጠ ጨ ጰ ጸ · Type <b>'</b> to separate two letters</small>
+    </div>
     <label id="codeLbl">Card code <small>(printed on your event card)</small>
       <input name="code" id="code" required autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="e.g. RYVXP1"></label>
     <label>Event type
@@ -145,6 +149,70 @@
   <div class="pv-bar"><b id="pvName"></b><span style="display:flex;gap:8px"><button class="btn" id="pvUse" type="button">Use this design</button><button class="btn alt" id="pvX" type="button">Close</button></span></div>
   <iframe id="pvFrame" title="Design preview"></iframe>
 </div>
+<script>
+/* Amharic phonetic typing: type English letters, get Ethiopic (selam -> ሰላም). Turns on by itself when the page language is Amharic. */
+(function () {
+  const BASE = { h:0x1200, l:0x1208, m:0x1218, r:0x1228, s:0x1230, sh:0x1238, q:0x1240, b:0x1260, v:0x1268, t:0x1270, ch:0x1278, n:0x1290, ny:0x1298, k:0x12A8, w:0x12C8, z:0x12D8, zh:0x12E0, y:0x12E8, d:0x12F0, j:0x1300, g:0x1308, T:0x1320, C:0x1328, P:0x1330, S:0x1338, ts:0x1338, f:0x1348, p:0x1350 };
+  const DI = ['sh', 'ch', 'ny', 'zh', 'ts'], VOW = { e:0, u:1, i:2, a:3, E:4, o:6 }, STAND = { a:0, u:1, i:2, E:4, e:5, o:6 };
+  const key = c => 'TCPS'.includes(c) ? c : c.toLowerCase();
+  const vkey = c => c === 'E' ? 'E' : c.toLowerCase();
+  function conv(s) {
+    let out = '', i = 0;
+    while (i < s.length) {
+      const two = s.substr(i, 2).toLowerCase(), c = s[i];
+      let base = null, len = 0;
+      if (DI.includes(two)) { base = BASE[two]; len = 2; }
+      else if (BASE[key(c)] != null && key(c).length === 1) { base = BASE[key(c)]; len = 1; }
+      if (base != null) {
+        i += len; let ord = 5;
+        if (s.substr(i, 2).toLowerCase() === 'ie') { ord = 4; i += 2; }
+        else if (i < s.length && VOW[vkey(s[i])] != null) { ord = VOW[vkey(s[i])]; i++; }
+        out += String.fromCodePoint(base + ord); continue;
+      }
+      if (s.substr(i, 2).toLowerCase() === 'aa') { out += '\u12A3'; i += 2; continue; }
+      if (s.substr(i, 2).toLowerCase() === 'ie') { out += '\u12A4'; i += 2; continue; }
+      if (STAND[vkey(c)] != null) { out += String.fromCodePoint(0x12A0 + STAND[vkey(c)]); i++; continue; }
+      out += c; i++;
+    }
+    return out;
+  }
+  window.amConv = conv;
+  let pending = '', on = false, lastAm = null;
+  const textual = t => t && ((t.tagName === 'TEXTAREA') || (t.tagName === 'INPUT' && (!t.type || t.type === 'text' || t.type === 'search')) && t.name !== 'code' && t.id !== 'code' && t.id !== 'pasteLink');
+  document.addEventListener('beforeinput', e => {
+    const t = e.target;
+    if (!on || !textual(t) || e.isComposing) return;
+    if (e.inputType === 'insertText' && e.data && e.data.length === 1) {
+      const ch = e.data, s0 = t.selectionStart, s1 = t.selectionEnd;
+      if (s0 !== s1) pending = '';
+      if (ch === "'" && pending) { pending = ''; e.preventDefault(); return; }
+      if (!/[A-Za-z]/.test(ch)) { pending = ''; return; }
+      const prev = conv(pending);
+      if (pending && t.value.slice(s0 - prev.length, s0) !== prev) pending = '';
+      const prevOut = conv(pending); pending += ch; const next = conv(pending);
+      e.preventDefault();
+      const a = s0 - prevOut.length;
+      t.value = t.value.slice(0, a) + next + t.value.slice(s1);
+      const pos = a + next.length; t.setSelectionRange(pos, pos);
+      t.dispatchEvent(new Event('input', { bubbles:true }));
+    } else pending = '';
+  }, true);
+  ['keydown', 'mousedown', 'focusin', 'blur'].forEach(n => document.addEventListener(n, e => { if (n !== 'keydown' || /^(Arrow|Home|End|Backspace|Delete|Enter|Tab|Escape)/.test(e.key)) pending = ''; }, true));
+  const isAm = () => { try { if (typeof FT === 'function' && FT('Event type') !== 'Event type') return true; } catch (x) {} return document.documentElement.lang === 'am'; };
+  function sync(force) {
+    const cb = document.getElementById('amType'); if (!cb) return;
+    const am = isAm();
+    if (force || am !== lastAm) { cb.checked = am; lastAm = am; }
+    on = cb.checked;
+  }
+  document.addEventListener('DOMContentLoaded', () => {
+    const cb = document.getElementById('amType'); if (!cb) return;
+    cb.addEventListener('change', () => { on = cb.checked; pending = ''; });
+    sync(true); setTimeout(sync, 300); setTimeout(sync, 1200);
+    document.addEventListener('click', () => setTimeout(sync, 120));
+  });
+})();
+</script>
 <script>
 const API = 'https://videogift-backend-3.onrender.com';
 const $ = id => document.getElementById(id);
