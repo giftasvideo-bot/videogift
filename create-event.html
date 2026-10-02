@@ -11,7 +11,7 @@
   :root { --bg:#f2f5f4; --ink:#123c40; --accent:#0f5257; --line:#b9cfcc; }
   * { box-sizing:border-box; }
   body { margin:0; background:var(--bg); color:var(--ink); font:400 1rem/1.5 'DM Sans','Noto Sans Ethiopic',sans-serif; }
-  main { max-width:560px; margin:0 auto; padding:32px 20px 60px; }
+  main { max-width:820px; margin:0 auto; padding:32px 20px 60px; }
   h1 { font:700 2.2rem/1.1 'Fraunces',serif; margin:0 0 6px; }
   p.lead { margin:0 0 24px; }
   form { display:grid; gap:14px; }
@@ -19,6 +19,10 @@
   input, select, textarea { padding:11px; border:1px solid var(--line); border-radius:6px; font:inherit; background:#fff; width:100%; }
   textarea { min-height:90px; resize:vertical; }
   small { font-weight:400; opacity:.75; }
+  .pair { display:grid; grid-template-columns:1fr 1fr; gap:12px; align-items:end; }
+  .pair[hidden] { display:none; }
+  @media (max-width:640px) { .pair { grid-template-columns:1fr; } }
+  @media (max-width:640px) { .dayrow .tt { grid-column:1/-1; } }
   .two { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
   .btn { border:0; background:var(--accent); color:#fff; padding:13px 20px; border-radius:6px; font:500 1rem 'DM Sans',sans-serif; cursor:pointer; text-decoration:none; display:inline-block; }
   .btn.alt { background:transparent; color:var(--accent); border:2px solid var(--accent); }
@@ -106,10 +110,14 @@
       <small>Tap a design to choose it. Press Preview to see a full sample before you decide.</small>
       <div class="tplgrid" id="tplOpts"></div>
     </fieldset>
-    <label>Title <input name="title" required maxlength="120" placeholder="Selam & Dawit's Wedding"></label>
-    <label>Title in Amharic <small>(Amharic · በአማርኛ, optional)</small><input name="title_am" maxlength="120" lang="am"></label>
-    <label id="aboutLbl" hidden><span id="aboutTxt">About us</span> <small id="aboutHint">(your story, shown in the "About us" section)</small><textarea name="about" maxlength="1980"></textarea></label>
-    <label id="aboutAmLbl" hidden>About in Amharic <small>(Amharic · በአማርኛ, optional)</small><textarea name="about_am" maxlength="1980" lang="am"></textarea></label>
+    <div class="pair">
+      <label>Title <input name="title" required maxlength="120" placeholder="Selam & Dawit's Wedding"></label>
+      <label>Title in Amharic <small>(Amharic · በአማርኛ, optional)</small><input name="title_am" maxlength="120" lang="am"></label>
+    </div>
+    <div class="pair" id="aboutPair" hidden>
+      <label id="aboutLbl" hidden><span id="aboutTxt">About us</span> <small id="aboutHint">(your story, shown in the "About us" section)</small><textarea name="about" maxlength="1980"></textarea></label>
+      <label id="aboutAmLbl">About in Amharic <small>(Amharic · በአማርኛ, optional)</small><textarea name="about_am" maxlength="1980" lang="am"></textarea></label>
+    </div>
     <label><span id="dateTxt">Date and time</span> <small id="dateHint">(optional if you add a schedule below)</small><input type="datetime-local" name="event_date" id="evDate"><span id="ethBox" hidden role="group" aria-label="የኢትዮጵያ ቀን">
           <select id="ethD" aria-label="ቀን"></select><select id="ethM" aria-label="ወር"></select><select id="ethY" aria-label="ዓመት"></select>
           <small id="ethInfo" style="grid-column:1/-1"></small></span></label>
@@ -123,13 +131,19 @@
       <legend>Background color</legend>
       <div id="themeOpts" style="display:flex;gap:14px;flex-wrap:wrap"></div>
     </fieldset>
-    <label id="hostLbl"><span id="hostTxt">Hosts</span> <small id="hostHint">(optional)</small><input name="host_names" maxlength="120" placeholder="Together with their families"></label>
-    <label id="hostAmLbl">Hosts in Amharic <small>(Amharic · በአማርኛ, optional)</small><input name="host_names_am" maxlength="120" lang="am"></label>
-    <label>Venue <input name="venue" maxlength="200"></label>
-    <label>Venue in Amharic <small>(Amharic · በአማርኛ, optional)</small><input name="venue_am" maxlength="200" lang="am"></label>
+    <div class="pair">
+      <label id="hostLbl"><span id="hostTxt">Hosts</span> <small id="hostHint">(optional)</small><input name="host_names" maxlength="120" placeholder="Together with their families"></label>
+      <label id="hostAmLbl">Hosts in Amharic <small>(Amharic · በአማርኛ, optional)</small><input name="host_names_am" maxlength="120" lang="am"></label>
+    </div>
+    <div class="pair">
+      <label>Venue <input name="venue" maxlength="200"></label>
+      <label>Venue in Amharic <small>(Amharic · በአማርኛ, optional)</small><input name="venue_am" maxlength="200" lang="am"></label>
+    </div>
     <label>Map link <small>(Google Maps share link)</small><input type="url" name="map_url" placeholder="https://maps.app.goo.gl/…"></label>
-    <label>Message <small>(optional)</small><textarea name="message" maxlength="1000"></textarea></label>
-    <label>Message in Amharic <small>(Amharic · በአማርኛ, optional)</small><textarea name="message_am" maxlength="1000" lang="am"></textarea></label>
+    <div class="pair">
+      <label>Message <small>(optional)</small><textarea name="message" maxlength="1000"></textarea></label>
+      <label>Message in Amharic <small>(Amharic · በአማርኛ, optional)</small><textarea name="message_am" maxlength="1000" lang="am"></textarea></label>
+    </div>
     <label><span id="photoLbl">Photos</span> <small>(up to 3, shown as a slideshow. JPG, PNG or WebP, up to 50 MB each)</small><input type="file" name="photo" multiple accept="image/jpeg,image/png,image/webp"></label>
     <label id="galLbl" hidden><span id="galTxt">Additional photos</span> <small id="galHint">(up to 20, shown in the "Photos" section. JPG, PNG or WebP, up to 50 MB each)</small><input type="file" name="gallery" multiple accept="image/jpeg,image/png,image/webp"></label>
     <label>Video <small>(MP4, MOV or WebM, up to 50 MB. Shorter videos load faster for guests.)</small><input type="file" name="video" accept="video/mp4,video/quicktime,video/webm"></label>
@@ -323,8 +337,8 @@ function addDay(v = {}) {
   const r = document.createElement('div'); r.className = 'dayrow';
   r.innerHTML = '<label class="full">Date <input type="date" class="d-date"></label><label>Start time <input type="time" class="d-time"></label>' +
     '<label>End time <small>(optional)</small><input type="time" class="d-end"></label>' +
-    '<label class="full">Title for this day <input class="d-title" maxlength="120"></label>' +
-    '<label class="full">Title in Amharic <small>(Amharic · በአማርኛ, optional)</small><input class="d-title-am" maxlength="120" lang="am"></label><button class="btn alt" type="button">Remove day</button>';
+    '<label class="tt">Title for this day <input class="d-title" maxlength="120"></label>' +
+    '<label class="tt">Title in Amharic <small>(Amharic · በአማርኛ, optional)</small><input class="d-title-am" maxlength="120" lang="am"></label><button class="btn alt" type="button">Remove day</button>';
   const prev = $('days').lastElementChild; r.querySelector('.d-date').value = v.date || (prev ? prev.querySelector('.d-date').value : ''); r.querySelector('.d-time').value = v.time || '';
   r.querySelector('.d-title').value = v.title || ''; r.querySelector('.d-title-am').value = v.title_am || ''; r.querySelector('.d-title').placeholder = isWed() ? 'e.g. Church ceremony' : 'Day ' + n + ': e.g. Opening and Vision';
   r.querySelector('button').onclick = () => { if ($('days').children.length > 1) r.remove(); };
@@ -431,7 +445,7 @@ function syncType() {
   $('themeBox').hidden = !(wed || bday) || (wed && tplVal() === 'basket'); renderThemes();
   refreshThumbs(); requestAnimationFrame(fitThumbs); if (window.ethApply) ethApply();
   $('galLbl').hidden = !(wed || bday);
-  $('aboutLbl').hidden = !(wed || bday); $('aboutAmLbl').hidden = $('aboutLbl').hidden;
+  $('aboutLbl').hidden = !(wed || bday); $('aboutPair').hidden = $('aboutLbl').hidden;
   $('aboutTxt').textContent = bday ? 'About me' : 'About us';
   $('aboutHint').textContent = '(your story, shown in the "' + (bday ? 'About me' : 'About us') + '" section)';
   $('galTxt').textContent = bday ? 'Gallery photos' : 'Additional photos';
