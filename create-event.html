@@ -52,7 +52,7 @@
   .swatches input:focus-visible + span { outline:3px solid var(--ink); outline-offset:3px; }
   .tpls { border:1px solid var(--line); border-radius:8px; padding:10px 14px 14px; display:grid; gap:10px; }
   .tpls legend { font-weight:500; padding:0 6px; }
-  .tplgrid { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+  .tplgrid { display:grid; grid-template-columns:repeat(auto-fit,minmax(200px,1fr)); gap:12px; }
   .tpl { display:grid; gap:6px; align-content:start; position:relative; cursor:pointer; border:2px solid var(--line); border-radius:10px; padding:8px; background:#fff; }
   .tpl input { position:absolute; opacity:0; width:1px; height:1px; pointer-events:none; }
   .tpl:has(input:checked) { border-color:var(--accent); box-shadow:0 0 0 2px var(--accent); }
@@ -380,15 +380,16 @@ function renderThemes() {
 // ---------- Invitation design (wedding templates) with live previews ----------
 const TEMPLATES = [
   ['classic', 'Classic envelope', 'Opens with a wax-sealed envelope, then a paper-style page. You choose the background colour.'],
-  ['basket', 'Basket & flowers', 'Warm maroon and gold with a hand-drawn basket border, countdown and a 3D photo gallery.']
+  ['basket', 'Basket & flowers', 'Warm maroon and gold with a hand-drawn basket border, countdown and a 3D photo gallery.'],
+  ['scroll', 'Royal scroll', 'A wax-sealed parchment scroll. Guests tap it and it unrolls to reveal the invitation.']
 ];
 const TPL_MARK = /\s*\[\[tpl:(\w+)\]\]\s*$/;
 const splitTpl = t => { const m = TPL_MARK.exec(t || ''); return { text:String(t || '').replace(TPL_MARK, ''), tpl:m ? m[1] : '' }; };
-const joinTpl = (t, tpl) => String(t || '').replace(TPL_MARK, '') + (tpl === 'basket' ? '\n[[tpl:basket]]' : '');
+const joinTpl = (t, tpl) => String(t || '').replace(TPL_MARK, '') + (tpl === 'basket' || tpl === 'scroll' ? '\n[[tpl:' + tpl + ']]' : '');
 const tplVal = () => { const r = document.querySelector('#f [name=template]:checked'); return r ? r.value : 'classic'; };
 function previewURL(id, thumb) {
-  const f = $('f'), u = new URL('event.html', location.href);
-  u.searchParams.set('demo', id);
+  const f = $('f'), u = new URL(id === 'scroll' ? 'event-scroll.html' : 'event.html', location.href);
+  if (id !== 'scroll') u.searchParams.set('demo', id);
   const t = (f.elements['title'].value || '').trim(); if (t) u.searchParams.set('title', t);
   const th = f.elements['theme'] ? f.elements['theme'].value : ''; if (th && id === 'classic') u.searchParams.set('theme', th);
   if (thumb) u.searchParams.set('thumb', '1');
@@ -442,7 +443,7 @@ function syncType() {
   $('dateHint').hidden = wed; ed.required = wed;
   const bday = isBday();
   $('photoLbl').textContent = (wed || bday) ? 'Main photos' : 'Photos';
-  $('themeBox').hidden = !(wed || bday) || (wed && tplVal() === 'basket'); renderThemes();
+  $('themeBox').hidden = !(wed || bday) || (wed && tplVal() !== 'classic'); renderThemes();
   refreshThumbs(); requestAnimationFrame(fitThumbs); if (window.ethApply) ethApply();
   $('galLbl').hidden = !(wed || bday);
   $('aboutLbl').hidden = !(wed || bday); $('aboutPair').hidden = $('aboutLbl').hidden;
@@ -541,7 +542,7 @@ $('f').onsubmit = async e => {
     try { d = await r.json(); } catch { throw new Error('The server did not accept the request (status ' + r.status + '). The events API may not be deployed yet.'); }
     if (!r.ok) throw new Error(d.error || 'Upload failed.');
     cur = d;
-    const url = new URL('event.html', location.href); url.search = '?e=' + d.slug;
+    const url = new URL(fd.get('template') === 'scroll' ? 'event-scroll.html' : 'event.html', location.href); url.search = '?e=' + d.slug;
     const qr = qrcode(0, 'H'); qr.addData(url.href); qr.make();
     const svg = qr.createSvgTag({ cellSize:8, margin:4, scalable:true });
     $('qr').innerHTML = svg;
