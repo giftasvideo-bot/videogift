@@ -68,6 +68,8 @@
   .pv-bar .btn.alt { color:#fff; border-color:#fff; }
   .pv-bar .btn:not(.alt) { background:#fff; color:var(--accent); }
   #pvFrame { flex:1; width:min(100%,430px); border:0; background:#fff; border-radius:12px 12px 0 0; }
+  .typeLock { display:none; padding:10px 12px; border:1px solid var(--line); border-radius:8px; background:#fff; font-weight:500; }
+  .typeLock.on { display:block; }
   #ethBox { display:grid; grid-template-columns:1fr 1.8fr 1.1fr; gap:8px; }
   #ethBox[hidden] { display:none; }
 </style>
@@ -85,7 +87,8 @@
       <label style="display:flex;gap:8px;align-items:center;font-weight:500"><input type="checkbox" id="ethCal" style="width:auto"> <span>የኢትዮጵያ አቆጣጠር ተጠቀም · Use the Ethiopian calendar for the date</span></label>
       <small>Example: <b>selam</b> → ሰላም · <b>abeba</b> → አበባ · Capital <b>T C P S</b> give ጠ ጨ ጰ ጸ · Type <b>'</b> to separate two letters</small>
     </div>
-      <label>Event type
+      <div class="typeLock" id="typeLock"></div>
+      <label id="typeLbl">Event type
         <select name="type">
           <option value="wedding">Wedding</option><option value="birthday">Birthday</option>
           <option value="seminar">Seminar / multi-day</option><option value="church">Church / religious</option><option value="memorial">Memorial</option>
@@ -516,6 +519,18 @@ async function load() {
 }
 
 $('f').type.onchange = syncType;
+
+// Customers cannot change the event type; only an admin session can
+(function () {
+  let adm = false;
+  try { const a = JSON.parse(sessionStorage.getItem('f27_admin_auth') || 'null'); adm = !!(a && a.token && a.expires > Date.now()); } catch {}
+  if (adm) return;
+  const sel = $('f').type, lbl = $('typeLbl'), box = $('typeLock');
+  const show = () => { lbl.hidden = true; box.classList.add('on'); box.textContent = FT('Event type') + ': ' + (sel.selectedOptions[0] ? FT(sel.selectedOptions[0].textContent) : ''); };
+  show(); sel.addEventListener('change', show);
+  new MutationObserver(show).observe(sel, { attributes:true, childList:true });
+  setInterval(show, 800);
+})();
 $('addDay').onclick = () => { if ($('days').children.length < MAX_DAYS) addDay(); };
 
 $('f').onsubmit = async e => {
