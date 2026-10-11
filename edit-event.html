@@ -37,7 +37,7 @@
   #daysBox[hidden] { display:none; }
   .dayrow { display:grid; grid-template-columns:1fr 1fr; gap:8px; padding-bottom:10px; margin-bottom:10px; border-bottom:1px dashed var(--line); }
   .dayrow .full { grid-column:1/-1; }
-  .wedOnly[hidden], .dayrow [hidden], #hostLbl[hidden], #rsvpLbl[hidden], #themeLbl[hidden], #galleryBox[hidden], #aboutLbl[hidden], #aboutAmLbl[hidden] { display:none; }
+  .wedOnly[hidden], .dayrow [hidden], #hostLbl[hidden], #rsvpLbl[hidden], #themeLbl[hidden], #galleryBox[hidden], #giftBox[hidden], #aboutLbl[hidden], #aboutAmLbl[hidden] { display:none; }
   .dayrow button { justify-self:start; }
   #msg { min-height:1.4em; font-weight:500; }
   #msg.err { color:#a12a2a; }
@@ -50,7 +50,7 @@
   .gal label.inline { font-size:.85rem; }
   .tpls { border:1px solid var(--line); border-radius:8px; padding:10px 14px 14px; display:grid; gap:10px; }
   .tpls legend { font-weight:500; padding:0 6px; }
-  .tplgrid { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+  .tplgrid { display:grid; grid-template-columns:repeat(auto-fit,minmax(200px,1fr)); gap:12px; }
   .tpl { display:grid; gap:6px; align-content:start; position:relative; cursor:pointer; border:2px solid var(--line); border-radius:10px; padding:8px; background:#fff; }
   .tpl input { position:absolute; opacity:0; width:1px; height:1px; pointer-events:none; }
   .tpl:has(input:checked) { border-color:var(--accent); box-shadow:0 0 0 2px var(--accent); }
@@ -139,6 +139,11 @@
         <b id="galName">Additional photos</b> <small id="galHint">(up to 20, shown in the "Photos" section. JPG, PNG or WebP, up to 50 MB each)</small>
         <div id="gallery" class="gal"></div>
         <input type="file" name="gallery" multiple accept="image/jpeg,image/png,image/webp">
+      </div>
+      <div class="box" id="giftBox" hidden>
+        <b>Gift QR codes</b> <small>(up to 2: bride first, then groom. Choosing new images replaces the current ones. Guests see them under "Gift")</small>
+        <div id="giftCur" class="gal"></div><div id="giftRm"></div>
+        <input type="file" name="giftqr" multiple accept="image/jpeg,image/png,image/webp">
       </div>
       <div class="box">
         <b>Video</b> <small>(MP4, MOV or WebM, up to 50 MB)</small>
@@ -365,15 +370,18 @@ const readDays = () => [...$('days').children].map(r => ({ date: r.querySelector
 // ---------- Invitation design (wedding templates) with live previews ----------
 const TEMPLATES = [
   ['classic', 'Classic envelope', 'Opens with a wax-sealed envelope, then a paper-style page. You choose the background colour.'],
-  ['basket', 'Basket & flowers', 'Warm maroon and gold with a hand-drawn basket border, countdown and a 3D photo gallery.']
+  ['basket', 'Basket & flowers', 'Warm maroon and gold with a hand-drawn basket border, countdown and a 3D photo gallery.'],
+  ['scroll', 'Royal scroll', 'A wax-sealed parchment scroll. Guests tap it and it unrolls to reveal the invitation.']
 ];
 const TPL_MARK = /\s*\[\[tpl:(\w+)\]\]\s*$/;
-const splitTpl = t => { const m = TPL_MARK.exec(t || ''); return { text:String(t || '').replace(TPL_MARK, ''), tpl:m ? m[1] : '' }; };
-const joinTpl = (t, tpl) => String(t || '').replace(TPL_MARK, '') + (tpl === 'basket' ? '\n[[tpl:basket]]' : '');
+const GIFT_MARK = /\s*\[\[giftqr:(\d+)\]\]/g;
+const splitTpl = t => { const m = TPL_MARK.exec(t || ''), x = String(t || '').replace(TPL_MARK, ''), g = /\[\[giftqr:(\d+)\]\]/.exec(x); return { text:x.replace(GIFT_MARK, ''), tpl:m ? m[1] : '', gift:g ? Math.min(+g[1], 2) : 0 }; };
+const joinTpl = (t, tpl, nGift) => String(t || '').replace(TPL_MARK, '').replace(GIFT_MARK, '') + (tpl === 'scroll' && nGift ? '\n[[giftqr:' + nGift + ']]' : '') + (tpl === 'basket' || tpl === 'scroll' ? '\n[[tpl:' + tpl + ']]' : '');
+let giftUrls = [];
 const tplVal = () => { const r = document.querySelector('#f [name=template]:checked'); return r ? r.value : 'classic'; };
 function previewURL(id, thumb) {
-  const f = $('f'), u = new URL('event.html', location.href);
-  u.searchParams.set('demo', id);
+  const f = $('f'), u = new URL(id === 'scroll' ? 'event-scroll.html' : 'event.html', location.href);
+  if (id !== 'scroll') u.searchParams.set('demo', id);
   const t = (f.elements['title'].value || '').trim(); if (t) u.searchParams.set('title', t);
   const th = f.elements['theme'] ? f.elements['theme'].value : ''; if (th && id === 'classic') u.searchParams.set('theme', th);
   if (thumb) u.searchParams.set('thumb', '1');
@@ -429,9 +437,10 @@ const syncType = () => {
   labelRows();
   $('rsvpLbl').hidden = $('f').type.value === 'memorial';
   const bday = isBday();
-  fillThemes(); $('themeLbl').hidden = !(wed || bday) || (wed && tplVal() === 'basket');
+  fillThemes(); $('themeLbl').hidden = !(wed || bday) || (wed && tplVal() !== 'classic');
   refreshThumbs(); requestAnimationFrame(fitThumbs); if (window.ethApply) ethApply();
   $('galleryBox').hidden = !(wed || bday);
+  $('giftBox').hidden = !(wed && tplVal() === 'scroll');
   $('aboutLbl').hidden = !(wed || bday); $('aboutPair').hidden = $('aboutLbl').hidden;
   $('aboutTxt').textContent = bday ? 'About me' : 'About us';
   $('aboutHint').textContent = '(your story, shown in the "' + (bday ? 'About me' : 'About us') + '" section)';
@@ -449,7 +458,7 @@ function fill(e) {
   f.event_date.type = e.type === 'wedding' ? 'date' : 'datetime-local';
   f.event_date.value = e.type === 'wedding' ? (dl0.length ? dl0[0].date : localDT(e.event_date).slice(0, 10)) : localDT(e.event_date); f.venue.value = e.venue || ''; f.map_url.value = e.map_url || '';
   f.message.value = e.message || ''; f.rsvp_enabled.checked = !!e.rsvp_enabled;
-  { const tr = f.querySelector('[name=template][value="' + ((e.template || ab.tpl) === 'basket' ? 'basket' : 'classic') + '"]'); if (tr) tr.checked = true; }
+  { const tr = f.querySelector('[name=template][value="' + (['basket', 'scroll'].includes(e.template || ab.tpl) ? (e.template || ab.tpl) : 'classic') + '"]'); if (tr) tr.checked = true; }
   $('days').textContent = '';
   (Array.isArray(e.days) ? e.days : []).filter(d => d && d.date).forEach(addDay);
   syncType();
@@ -465,7 +474,16 @@ function fill(e) {
     const c = document.createElement('input'); c.type = 'checkbox'; c.className = 'rm-photo'; c.value = u;
     l.append(c, ' Remove this photo'); d.append(i, l); $('photos').append(d);
   });
-  const gal = Array.isArray(e.gallery_urls) ? e.gallery_urls : [];
+  const galAll = Array.isArray(e.gallery_urls) ? e.gallery_urls : [];
+  const nG = (e.template || ab.tpl) === 'scroll' ? Math.min(ab.gift, galAll.length) : 0;
+  giftUrls = nG ? galAll.slice(galAll.length - nG) : [];
+  const gal = galAll.slice(0, galAll.length - nG);
+  $('giftCur').textContent = ''; $('giftRm').textContent = '';
+  if (!giftUrls.length) { const s = document.createElement('small'); s.textContent = 'No gift QR codes yet.'; $('giftCur').append(s); }
+  else {
+    giftUrls.forEach(u => { const d = document.createElement('div'), i = document.createElement('img'); i.className = 'thumb'; i.src = u; i.alt = ''; d.append(i); $('giftCur').append(d); });
+    const l = document.createElement('label'); l.className = 'inline'; const c = document.createElement('input'); c.type = 'checkbox'; c.id = 'rmGift'; l.append(c, ' Remove current gift QR codes'); $('giftRm').append(l);
+  }
   $('gallery').textContent = '';
   if (!gal.length) { const s = document.createElement('small'); s.textContent = 'No additional photos yet.'; $('gallery').append(s); }
   gal.forEach(u => {
@@ -531,11 +549,23 @@ $('f').onsubmit = async e => {
   if (keep.length + added.length > 3) return say(FT('Maximum 3 photos. Remove one first or choose fewer files.'), 'err');
   fd.set('keep_photos', JSON.stringify(keep)); added.forEach(x => fd.append('photo', x));
   if (isWed() || isBday()) {
-    const gal = Array.isArray(ev.gallery_urls) ? ev.gallery_urls : [];
+    const gal = Array.isArray(ev.gallery_urls) ? ev.gallery_urls : [], nCur = giftUrls.length;
+    const reg = gal.slice(0, gal.length - nCur), cur = gal.slice(gal.length - nCur), scroll = isWed() && tplVal() === 'scroll';
     const rmG = [...document.querySelectorAll('.rm-gallery')].filter(c => c.checked).map(c => c.value);
-    const keepG = gal.filter(u => !rmG.includes(u)), addG = [...f.gallery.files];
-    if (keepG.length + addG.length > 20) return say(FT('Maximum 20 additional photos. Remove some or choose fewer files.'), 'err');
-    fd.set('keep_gallery', JSON.stringify(keepG)); addG.forEach(x => fd.append('gallery', x));
+    const keepG = reg.filter(u => !rmG.includes(u)), addG = [...f.gallery.files];
+    const newGift = scroll ? [...f.giftqr.files].filter(x => x.size).slice(0, 2) : [];
+    let keepGift = (scroll && !newGift.length && !($('rmGift') && $('rmGift').checked)) ? cur : [], giftOut = newGift;
+    if (!scroll && cur.length && !confirm(FT('The gift QR codes will be removed because this design does not use them. Continue?'))) return;
+    if (keepGift.length && addG.length) {
+      /* new photos are stored after the old ones, so re-send the current QR codes to keep them last in the gallery */
+      try {
+        giftOut = await Promise.all(keepGift.map(async (u, i) => { const r = await fetch(u); if (!r.ok) throw 0; const b = await r.blob(); return new File([b], 'gift-qr-' + (i + 1) + '.' + ((b.type.split('/')[1] || 'png').replace('jpeg', 'jpg')), { type:b.type || 'image/png' }); }));
+        keepGift = [];
+      } catch { return say(FT('Could not keep the current gift QR codes while adding photos. Please choose the QR code images again.'), 'err'); }
+    }
+    if (keepG.length + addG.length + keepGift.length + giftOut.length > 20) return say(FT('Maximum 20 additional photos. Remove some or choose fewer files.'), 'err');
+    fd.set('keep_gallery', JSON.stringify([...keepG, ...keepGift])); addG.forEach(x => fd.append('gallery', x)); giftOut.forEach(x => fd.append('gallery', x));
+    if (isWed()) fd.set('about', joinTpl(f.about.value, tplVal(), keepGift.length + giftOut.length));
   }
   if (f.video.files[0]) fd.set('video', f.video.files[0]);
   else if ($('rmVideo') && $('rmVideo').checked) fd.set('remove_video', '1');
@@ -546,7 +576,7 @@ $('f').onsubmit = async e => {
     const d = await r.json().catch(() => ({}));
     if (!r.ok) throw new Error(d.error || 'Save failed (' + r.status + ').');
     say(FT('Saved. Your invitation is updated.'), 'ok');
-    f.photo.value = ''; f.video.value = ''; f.gallery.value = '';
+    f.photo.value = ''; f.video.value = ''; f.gallery.value = ''; f.giftqr.value = '';
     await load();
     say(FT('Saved. Your invitation is updated.'), 'ok');
   } catch (x) { say(FT(x.message), 'err'); }
