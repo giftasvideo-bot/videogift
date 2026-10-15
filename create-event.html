@@ -355,7 +355,7 @@ const MAX_DAYS = 14;
 let admToken = null;
 try { const a = JSON.parse(sessionStorage.getItem('f27_admin_auth') || 'null'); if (a && a.token && a.expires > Date.now()) admToken = a.token; } catch {}
 { const pre = new URLSearchParams(location.search).get('code'); if (pre) $('code').value = pre; }
-if (admToken) { $('code').required = false; $('codeLbl'].firstChild.textContent = FT('Card code (optional for admin) '); }
+if (admToken) { $('code').required = false; $('codeLbl').firstChild.textContent = FT('Card code (optional for admin) '); }
 function addDay(v = {}) {
   const n = $('days').children.length + 1;
   const r = document.createElement('div'); r.className = 'dayrow';
@@ -404,18 +404,16 @@ function renderThemes() {
 // ---------- Invitation design (wedding templates) with live previews ----------
 const TEMPLATES = [
   ['classic', 'Classic envelope', 'Opens with a wax-sealed envelope, then a paper-style page. You choose the background colour.'],
-  ['red-envelope', 'Red envelope animation', 'Opens with a festive red envelope animation before revealing the invitation details.'],
   ['basket', 'Basket & flowers', 'Warm maroon and gold with a hand-drawn basket border, countdown and a 3D photo gallery.'],
   ['scroll', 'Royal scroll', 'A wax-sealed parchment scroll. Guests tap it and it unrolls to reveal the invitation.']
 ];
-const TPL_MARK = /\s*\[\[tpl:(\w+(?:-\w+)*)\]\]\s*$/;
+const TPL_MARK = /\s*\[\[tpl:(\w+)\]\]\s*$/;
 const splitTpl = t => { const m = TPL_MARK.exec(t || ''); return { text:String(t || '').replace(TPL_MARK, ''), tpl:m ? m[1] : '' }; };
-const joinTpl = (t, tpl) => String(t || '').replace(TPL_MARK, '') + (['basket', 'scroll', 'red-envelope'].includes(tpl) ? '\n[[tpl:' + tpl + ']]' : '');
+const joinTpl = (t, tpl) => String(t || '').replace(TPL_MARK, '') + (tpl === 'basket' || tpl === 'scroll' ? '\n[[tpl:' + tpl + ']]' : '');
 const tplVal = () => { const r = document.querySelector('#f [name=template]:checked'); return r ? r.value : 'classic'; };
 function previewURL(id, thumb) {
-  const f = $('f'), pageName = id === 'scroll' ? 'event-scroll.html' : (id === 'red-envelope' ? 'event-red-envelope.html' : 'event.html');
-  const u = new URL(pageName, location.href);
-  if (id !== 'scroll' && id !== 'red-envelope') u.searchParams.set('demo', id);
+  const f = $('f'), u = new URL(id === 'scroll' ? 'event-scroll.html' : 'event.html', location.href);
+  if (id !== 'scroll') u.searchParams.set('demo', id);
   const t = (f.elements['title'].value || '').trim(); if (t) u.searchParams.set('title', t);
   const th = f.elements['theme'] ? f.elements['theme'].value : ''; if (th && id === 'classic') u.searchParams.set('theme', th);
   if (thumb) u.searchParams.set('thumb', '1');
@@ -505,7 +503,6 @@ const TYPE_NAMES = { wedding:'Wedding', birthday:'Birthday', seminar:'Seminar / 
     $('sendMake').onclick = () => {
       const u = new URL('create-event.html', location.href);
       const c = $('sendCode').value.trim();
-
       if (c) u.searchParams.set('code', c);
       u.searchParams.set('type', $('sendType').value); u.searchParams.set('lock', '1');
       $('sendLink').textContent = u.href; $('sendOut').hidden = false;
@@ -533,7 +530,8 @@ async function openEditFor(slug) {
     window.open(editPage(slug, d.edit_token), '_blank');
   } catch (x) { $('err').textContent = FT(x.message); }
 }
-$('editBtn').onclick = async () => {$('err').textContent = FT('');
+$('editBtn').onclick = async () => {
+  $('err').textContent = FT('');
   const code = $('code').value.trim();
   if (!code) return showPaste();
   const s = await cardStatus(code);
@@ -555,7 +553,8 @@ $('pasteGo').onclick = () => {
   if (!code) return;
   const s = await cardStatus(code);
   if (s.state !== 'created') return;
-  $('f').style.display = 'none';$('existingMsg').textContent = FT('This card already has an invitation.');
+  $('f').style.display = 'none';
+  $('existingMsg').textContent = FT('This card already has an invitation.');
   const u = new URL('event.html', location.href); u.search = '?e=' + s.slug; $('exView').href = u.href;
   $('existing').hidden = false;
 })();
@@ -597,9 +596,7 @@ $('f').onsubmit = async e => {
     try { d = await r.json(); } catch { throw new Error('The server did not accept the request (status ' + r.status + '). The events API may not be deployed yet.'); }
     if (!r.ok) throw new Error(d.error || 'Upload failed.');
     cur = d;
-    const tplName = fd.get('template');
-    const pageName = tplName === 'scroll' ? 'event-scroll.html' : (tplName === 'red-envelope' ? 'event-red-envelope.html' : 'event.html');
-    const url = new URL(pageName, location.href); url.search = '?e=' + d.slug;
+    const url = new URL(fd.get('template') === 'scroll' ? 'event-scroll.html' : 'event.html', location.href); url.search = '?e=' + d.slug;
     const qr = qrcode(0, 'H'); qr.addData(url.href); qr.make();
     const svg = qr.createSvgTag({ cellSize:8, margin:4, scalable:true });
     $('qr').innerHTML = svg;
@@ -607,8 +604,8 @@ $('f').onsubmit = async e => {
     $('link').textContent = url.href; $('view').href = url.href;
     const eu = new URL('edit-event.html', location.href); eu.search = '?e=' + d.slug; eu.hash = 'k=' + d.edit_token;
     $('editLink').textContent = eu.href; $('editGo').href = eu.href;
-    $('copyEdit').onclick = () => navigator.clipboard.writeText(eu.href).then(() => {$('copyEdit').textContent = FT('Copied'); });
-    $('f').style.display = 'none';$('result').style.display = 'block'; $('cardNote').hidden = !$('code').value.trim();
+    $('copyEdit').onclick = () => navigator.clipboard.writeText(eu.href).then(() => { $('copyEdit').textContent = FT('Copied'); });
+    $('f').style.display = 'none'; $('result').style.display = 'block'; $('cardNote').hidden = !$('code').value.trim();
   } catch (x) { $('err').textContent = FT(x.message); }
   $('go').disabled = false; $('go').textContent = FT('Create invitation');
 };
