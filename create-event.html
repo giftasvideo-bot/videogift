@@ -37,8 +37,9 @@
   #err { color:#a12a2a; min-height:1.4em; font-weight:500; }
   #rsvps li { margin:4px 0; }
   #daysBox { border:1px solid var(--line); border-radius:8px; padding:14px; display:grid; gap:10px; }
-  #daysBox[hidden] { display:none; }
-  #daysBox legend { font-weight:500; padding:0 6px; }
+  #daysBox[hidden], #daysAmBox[hidden] { display:none; }
+  #daysAmBox { border:1px solid var(--line); border-radius:8px; padding:14px; display:grid; gap:10px; }
+  #daysBox legend, #daysAmBox legend { font-weight:500; padding:0 6px; }
   .dayrow { display:grid; grid-template-columns:1fr 1fr; gap:8px; padding-bottom:10px; margin-bottom:10px; border-bottom:1px dashed var(--line); }
   .dayrow .full { grid-column:1/-1; }
   .dayrow button { justify-self:start; }
@@ -76,8 +77,16 @@
   .sendBox { display:grid; gap:8px; border:2px dashed var(--accent); border-radius:10px; padding:12px; margin:0 0 16px; background:#fff; }
   .sendBox[hidden] { display:none; }
   .sendBox code { word-break:break-all; font-size:.8rem; }
+  .grp { border:1px solid var(--line); border-radius:10px; padding:8px 14px 16px; display:grid; gap:14px; background:#fbfdfc; min-width:0; margin:0; }
+  .grp > legend { font-weight:700; padding:0 8px; color:var(--accent); font-size:1.05rem; }
+  .langs { display:grid; grid-template-columns:1fr 1fr; gap:14px; align-items:start; }
+  #grpAm { border-color:var(--accent); }
+  @media (max-width:760px) { .langs { grid-template-columns:1fr; } }
   #ethBox { display:grid; grid-template-columns:1fr 1.8fr 1.1fr; gap:8px; }
   #ethBox[hidden] { display:none; }
+  .grp[hidden] { display:none; }
+  .fld { display:grid; gap:5px; font-weight:500; }
+  .ro { display:block; padding:11px; border:1px dashed var(--line); border-radius:6px; background:#f6f9f8; font-weight:500; min-height:2.8em; }
 </style>
 </head>
 <body>
@@ -117,7 +126,6 @@
   <form id="f">
     <div style="display:grid;gap:4px;border:1px dashed var(--line);border-radius:8px;padding:10px 12px;background:#fff">
       <label style="display:flex;gap:8px;align-items:center;font-weight:500"><input type="checkbox" id="amType" style="width:auto"> <span>ኢትዮጵያ ፊደል ይተይቡ · Type in Amharic with English letters</span></label>
-      <label style="display:flex;gap:8px;align-items:center;font-weight:500"><input type="checkbox" id="ethCal" style="width:auto"> <span>የኢትዮጵያ አቆጣጠር ተጠቀም · Use the Ethiopian calendar for the date</span></label>
       <small>Example: <b>selam</b> → ሰላም · <b>abeba</b> → አበባ · Capital <b>T C P S</b> give ጠ ጨ ጰ ጸ · Type <b>'</b> to separate two letters</small>
     </div>
     <label id="codeLbl">Card code <small>(printed on your event card)</small>
@@ -134,43 +142,66 @@
       <small>Tap a design to choose it. Press Preview to see a full sample before you decide.</small>
       <div class="tplgrid" id="tplOpts"></div>
     </fieldset>
-    <div class="pair">
+    <fieldset class="swatches" id="themeBox" hidden>
+      <legend>Background color</legend>
+      <div id="themeOpts" style="display:flex;gap:14px;flex-wrap:wrap"></div>
+    </fieldset>
+    
+    <div class="langs">
+      <fieldset class="grp" id="grpEn">
+        <legend>English · እንግሊዝኛ</legend>
       <label>Title <input name="title" required maxlength="120" placeholder="Selam & Dawit's Wedding"></label>
-      <label>Title in Amharic <small>(Amharic · በአማርኛ, optional)</small><input name="title_am" maxlength="120" lang="am"></label>
-    </div>
-    <div class="pair" id="aboutPair" hidden>
-      <label id="aboutLbl" hidden><span id="aboutTxt">About us</span> <small id="aboutHint">(your story, shown in the "About us" section)</small><textarea name="about" maxlength="1980"></textarea></label>
-      <label id="aboutAmLbl">About in Amharic <small>(Amharic · በአማርኛ, optional)</small><textarea name="about_am" maxlength="1980" lang="am"></textarea></label>
-    </div>
-    <label><span id="dateTxt">Date and time</span> <small id="dateHint">(optional if you add a schedule below)</small><input type="datetime-local" name="event_date" id="evDate"><span id="ethBox" hidden role="group" aria-label="የኢትዮጵያ ቀን">
-          <select id="ethD" aria-label="ቀን"></select><select id="ethM" aria-label="ወር"></select><select id="ethY" aria-label="ዓመት"></select>
-          <small id="ethInfo" style="grid-column:1/-1"></small></span></label>
-    <fieldset id="daysBox" hidden>
+      <label><span id="dateTxt">Date and time</span> <small id="dateHint">(optional if you add a schedule below)</small><input type="datetime-local" name="event_date" id="evDate"></label>
+      <fieldset id="daysBox" hidden>
       <legend id="daysLegend">Seminar days</legend>
       <small id="daysHelp">Add each day with its own title. You can change titles later.</small>
       <div id="days"></div>
       <button class="btn alt" id="addDay" type="button">+ Add day</button>
     </fieldset>
-    <fieldset class="swatches" id="themeBox" hidden>
-      <legend>Background color</legend>
-      <div id="themeOpts" style="display:flex;gap:14px;flex-wrap:wrap"></div>
-    </fieldset>
-    <div class="pair">
+      <label id="aboutLbl" hidden><span id="aboutTxt">About us</span> <small id="aboutHint">(your story, shown in the "About us" section)</small><textarea name="about" maxlength="1980"></textarea></label>
       <label id="hostLbl"><span id="hostTxt">Hosts</span> <small id="hostHint">(optional)</small><input name="host_names" maxlength="120" placeholder="Together with their families"></label>
-      <label id="hostAmLbl">Hosts in Amharic <small>(Amharic · በአማርኛ, optional)</small><input name="host_names_am" maxlength="120" lang="am"></label>
-    </div>
-    <div class="pair">
       <label>Venue <input name="venue" maxlength="200"></label>
-      <label>Venue in Amharic <small>(Amharic · በአማርኛ, optional)</small><input name="venue_am" maxlength="200" lang="am"></label>
-    </div>
-    <label>Map link <small>(Google Maps share link)</small><input type="url" name="map_url" placeholder="https://maps.app.goo.gl/…"></label>
-    <div class="pair">
       <label>Message <small>(optional)</small><textarea name="message" maxlength="1000"></textarea></label>
+      </fieldset>
+      <fieldset class="grp" id="grpAm" lang="am">
+        <legend>አማርኛ · Amharic</legend>
+      <label>Title in Amharic <small>(Amharic · በአማርኛ, optional)</small><input name="title_am" maxlength="120" lang="am"></label>
+      <div class="fld" id="amDateFld"><span id="amDateTxt">ቀን እና ሰዓት (የኢትዮጵያ አቆጣጠር)</span><output id="amDateOut" class="ro" aria-live="polite">—</output></div>
+      <fieldset id="daysAmBox" class="daysAm" hidden>
+        <legend id="daysAmLegend">ፕሮግራም</legend>
+        <small>ሰዓቱ ከእንግሊዝኛው ፕሮግራም በኢትዮጵያ አቆጣጠር ራሱ ይቀየራል። እዚህ የሚጻፈው የእያንዳንዱ ክፍል ርዕስ ብቻ ነው።</small>
+        <div id="daysAm"></div>
+      </fieldset>
+      <label id="aboutAmLbl">About in Amharic <small>(Amharic · በአማርኛ, optional)</small><textarea name="about_am" maxlength="1980" lang="am"></textarea></label>
+      <label id="hostAmLbl">Hosts in Amharic <small>(Amharic · በአማርኛ, optional)</small><input name="host_names_am" maxlength="120" lang="am"></label>
+      <label>Venue in Amharic <small>(Amharic · በአማርኛ, optional)</small><input name="venue_am" maxlength="200" lang="am"></label>
       <label>Message in Amharic <small>(Amharic · በአማርኛ, optional)</small><textarea name="message_am" maxlength="1000" lang="am"></textarea></label>
+      </fieldset>
     </div>
+    <fieldset class="grp wedOnly" id="grpGift" hidden>
+      <legend>Gifts for the bride &amp; groom · ለሙሽሮች ስጦታ</legend>
+      <label>Gift account / telebirr number <small>(optional. Bank name, account or phone number)</small><input name="gift_account" maxlength="200" autocomplete="off"></label>
+      <label>Gift registry link <small>(optional)</small><input type="url" name="gift_url" placeholder="https://…"></label>
+      <div class="langs">
+        <label>Gift note <small>(optional, English)</small><textarea name="gift_note" maxlength="500"></textarea></label>
+        <label lang="am">Gift note in Amharic <small>(Amharic · በአማርኛ, optional)</small><textarea name="gift_note_am" maxlength="500" lang="am"></textarea></label>
+      </div>
+    </fieldset>
+    <fieldset class="grp" id="grpGuestMsg">
+      <legend>Message from guests · የእንግዶች መልእክት</legend>
+      <label style="display:flex;gap:10px;align-items:center"><input type="checkbox" name="guest_msg_enabled" id="gmOn" checked style="width:auto"> Let guests write a message to the hosts with their reply</label>
+      <div class="langs">
+        <label>Question shown to guests <small>(optional, English)</small><input name="guest_msg_prompt" maxlength="160" placeholder="Leave a wish for the couple"></label>
+        <label lang="am">Question in Amharic <small>(Amharic · በአማርኛ, optional)</small><input name="guest_msg_prompt_am" maxlength="160" lang="am"></label>
+      </div>
+    </fieldset>
+    <fieldset class="grp" id="grpMedia">
+      <legend>Map &amp; photos · ካርታ እና ፎቶዎች</legend>
+    <label>Map link <small>(Google Maps share link)</small><input type="url" name="map_url" placeholder="https://maps.app.goo.gl/…"></label>
     <label><span id="photoLbl">Photos</span> <small>(up to 3, shown as a slideshow. JPG, PNG or WebP, up to 50 MB each)</small><input type="file" name="photo" multiple accept="image/jpeg,image/png,image/webp"></label>
     <label id="galLbl" hidden><span id="galTxt">Additional photos</span> <small id="galHint">(up to 20, shown in the "Photos" section. JPG, PNG or WebP, up to 50 MB each)</small><input type="file" name="gallery" multiple accept="image/jpeg,image/png,image/webp"></label>
     <label>Video <small>(MP4, MOV or WebM, up to 50 MB. Shorter videos load faster for guests.)</small><input type="file" name="video" accept="video/mp4,video/quicktime,video/webm"></label>
+    </fieldset>
     <label style="display:flex;gap:10px;align-items:center"><input type="checkbox" name="rsvp_enabled" id="rsvpOn" checked style="width:auto"> Let guests reply (RSVP)</label>
     <p id="err" role="alert"></p>
     <button class="btn" id="go">Create invitation</button>
@@ -262,7 +293,7 @@
 })();
 </script>
 <script>
-/* Ethiopian (Ge'ez) calendar pickers. When the page language is Amharic (or the checkbox is ticked) every date field -- the event date and each schedule/seminar day -- is shown as an Ethiopian day / month / year picker. The saved value is still a normal date. */
+/* Ethiopian (Ge'ez) calendar: the date and time chosen in the English group are converted automatically and shown, read-only, in the Amharic group. */
 (function () {
   const EM = ['\u1218\u1235\u12A8\u1228\u121D', '\u1325\u1245\u121D\u1275', '\u12C5\u12F3\u122D', '\u1273\u12C5\u1233\u1235', '\u1325\u122D', '\u12E8\u12AB\u1272\u1275', '\u1218\u130B\u1262\u1275', '\u121A\u12EB\u12DD\u12EB', '\u130D\u1295\u1266\u1275', '\u1230\u1294', '\u1210\u121D\u120C', '\u1290\u1210\u1234', '\u1333\u1309\u121C\u1295'];
   const g2j = (y, m, d) => { const a = Math.floor((14 - m) / 12), yy = y + 4800 - a, mm = m + 12 * a - 3; return d + Math.floor((153 * mm + 2) / 5) + 365 * yy + Math.floor(yy / 4) - Math.floor(yy / 100) + Math.floor(yy / 400) - 32045; };
@@ -270,81 +301,24 @@
   const j2e = j => { const k = j - 1723856, r = ((k % 1461) + 1461) % 1461, n = (r % 365) + 365 * Math.floor(r / 1460); return { y:4 * Math.floor(k / 1461) + Math.floor(r / 365) - Math.floor(r / 1460), m:Math.floor(n / 30) + 1, d:(n % 30) + 1 }; };
   const j2g = j => { const a = j + 32044, b = Math.floor((4 * a + 3) / 146097), c = a - Math.floor(146097 * b / 4), d = Math.floor((4 * c + 3) / 1461), e = c - Math.floor(1461 * d / 4), m = Math.floor((5 * e + 2) / 153); return { y:100 * b + d - 4800 + Math.floor(m / 10), m:m + 3 - 12 * Math.floor(m / 10), d:e - Math.floor((153 * m + 2) / 5) + 1 }; };
   window.ethCal = { g2j, e2j, j2e, j2g, EM };
-  const dim = (y, m) => m < 13 ? 30 : (y % 4 === 3 ? 6 : 5), pad = n => String(n).padStart(2, '0');
   const $ = id => document.getElementById(id);
-  const opt = (v, t) => { const o = document.createElement('option'); o.value = v; o.textContent = t; return o; };
-  const st0 = document.createElement('style');
-  st0.textContent = '.ethrow{display:grid;grid-template-columns:1fr 1.8fr 1.1fr;gap:8px}.ethrow[hidden]{display:none}.ethrow small,.ethrow input[type=time]{grid-column:1/-1}';
-  document.head.append(st0);
-  const now = new Date(), cy = j2e(g2j(now.getFullYear(), now.getMonth() + 1, now.getDate())).y;
-
-  function widget(native, box, sd, sm, sy, infoEl, st) {
-    const w = { native, box, st, last:null, shown:false };
-    sy.append(opt('', '\u12D3\u121D\u1275')); for (let y = cy - 1; y <= cy + 8; y++) sy.append(opt(y, y));
-    sm.append(opt('', '\u12C8\u122D')); EM.forEach((n, i) => sm.append(opt(i + 1, n)));
-    const ensureYear = y => { if (![...sy.options].some(o => +o.value === y)) { sy.append(opt(y, y)); [...sy.options].slice(1).sort((a, b) => a.value - b.value).forEach(o => sy.append(o)); } };
-    function fillDays() {
-      const y = +sy.value || cy, m = +sm.value, keep = sd.value, n = m ? dim(y, m) : 30;
-      sd.textContent = ''; sd.append(opt('', '\u1240\u1295'));
-      for (let i = 1; i <= n; i++) sd.append(opt(i, i));
-      sd.value = keep && +keep <= n ? keep : '';
-    }
-    const info = g => { infoEl.textContent = g ? '= ' + new Date(g.y, g.m - 1, g.d).toLocaleDateString('en-GB', { day:'numeric', month:'long', year:'numeric' }) : ''; };
-    fillDays();
-    w.fromNative = () => {
-      const v = native.value, d = v.slice(0, 10); w.last = v;
-      if (!/^\d{4}-\d\d-\d\d$/.test(d)) { sd.value = ''; sm.value = ''; sy.value = ''; fillDays(); info(null); if (st) st.value = ''; return; }
-      const [Y, M, D] = d.split('-').map(Number), e = j2e(g2j(Y, M, D));
-      ensureYear(e.y); sy.value = e.y; sm.value = e.m; fillDays(); sd.value = e.d; info({ y:Y, m:M, d:D });
-      if (st) st.value = v.length > 10 ? v.slice(11, 16) : '';
-    };
-    w.toNative = () => {
-      const y = +sy.value, m = +sm.value, d = +sd.value; let v = '';
-      if (y && m && d) { const g = j2g(e2j(y, m, d)); v = g.y + '-' + pad(g.m) + '-' + pad(g.d); info(g); if (native.type === 'datetime-local') v += 'T' + ((st && st.value) || '00:00'); }
-      else info(null);
-      native.value = v; w.last = native.value;
-      native.dispatchEvent(new Event('change', { bubbles:true }));
-    };
-    sy.onchange = sm.onchange = () => { fillDays(); w.toNative(); };
-    sd.onchange = w.toNative; if (st) st.onchange = w.toNative;
-    return w;
+  const ethDate = d => { if (!/^\d{4}-\d\d-\d\d$/.test(d || '')) return ''; const [Y, M, D] = d.split('-').map(Number), e = j2e(g2j(Y, M, D)); return EM[e.m - 1] + ' ' + e.d + ', ' + e.y + ' \u12D3.\u121D'; };
+  const ethTime = t => { if (!/^\d{1,2}:\d\d/.test(t || '')) return ''; const h = +t.slice(0, 2); let eh = (h + 6) % 12; if (!eh) eh = 12; return eh + ':' + t.slice(3, 5) + ' ' + (h < 6 ? '\u121C\u120B\u1275' : h < 12 ? '\u1320\u12CB\u1275' : h < 18 ? '\u1240\u1295' : '\u121B\u1273'); };
+  const range = (a, b) => { const x = ethTime(a), y = ethTime(b); return x && y ? x + ' \u2013 ' + y : x; };
+  function refresh() {
+    const ev = $('evDate'); if (!ev) return;
+    const wed = typeof isSem === 'function' && !isSem(), v = ev.value || '', d = v.slice(0, 10);
+    const o = $('amDateOut');
+    if (o) o.textContent = [ethDate(d), ev.type === 'datetime-local' ? ethTime(v.slice(11, 16)) : ''].filter(Boolean).join(' \u00B7 ') || '\u2014';
+    document.querySelectorAll('#days .dayrow').forEach(r => {
+      const a = r._am && r._am.querySelector('.a-when'); if (!a) return;
+      const date = wed ? d : r.querySelector('.d-date').value;
+      a.textContent = [wed ? '' : ethDate(date), range(r.querySelector('.d-time').value, r.querySelector('.d-end').value)].filter(Boolean).join(' \u00B7 ') || '\u2014';
+    });
   }
-  function mainWidget() {
-    const box = $('ethBox'), st = document.createElement('input');
-    st.type = 'time'; st.id = 'ethT'; st.setAttribute('aria-label', '\u1230\u12D3\u1275'); st.hidden = true;
-    box.insertBefore(st, $('ethInfo'));
-    return widget($('evDate'), box, $('ethD'), $('ethM'), $('ethY'), $('ethInfo'), st);
-  }
-  function rowWidget(inp) {
-    const box = document.createElement('span'); box.className = 'ethrow'; box.hidden = true; box.setAttribute('role', 'group'); box.setAttribute('aria-label', '\u12E8\u12A2\u1275\u12EE\u1335\u12EB \u1240\u1295');
-    const sd = document.createElement('select'), sm = document.createElement('select'), sy = document.createElement('select'), inf = document.createElement('small');
-    sd.setAttribute('aria-label', '\u1240\u1295'); sm.setAttribute('aria-label', '\u12C8\u122D'); sy.setAttribute('aria-label', '\u12D3\u121D\u1275');
-    box.append(sd, sm, sy, inf); inp.parentElement.append(box);
-    return widget(inp, box, sd, sm, sy, inf, null);
-  }
-  function show(w, want) {
-    if (want) { if (w.st) w.st.hidden = w.native.type !== 'datetime-local'; if (!w.shown || w.native.value !== w.last) w.fromNative(); }
-    w.shown = want; w.box.hidden = !want; w.native.style.display = want ? 'none' : '';
-  }
-  const isAm = () => { try { if (typeof FT === 'function' && FT('Event type') !== 'Event type') return true; } catch (x) {} return document.documentElement.lang === 'am'; };
-  let lastAm = null, main = null, wired = false;
-  window.ethApply = function () {
-    const cb = $('ethCal'), ev = $('evDate'); if (!cb || !ev) return;
-    if (!wired) { wired = true; cb.addEventListener('change', () => window.ethApply()); document.addEventListener('click', () => setTimeout(() => window.ethApply(), 150)); }
-    const am = isAm(); if (am !== lastAm) { cb.checked = am; lastAm = am; }
-    const on = cb.checked;
-    if (!main) main = mainWidget();
-    const want = on && (ev.type === 'date' || ev.type === 'datetime-local');
-    show(main, want);
-    ev.parentElement.style.gridColumn = want ? '1 / -1' : '';
-    ev.required = !want && ev.type === 'date' && !!$('code');
-    document.querySelectorAll('#days .d-date').forEach(inp => { if (!inp._eth) inp._eth = rowWidget(inp); show(inp._eth, on); });
-  };
-  document.addEventListener('DOMContentLoaded', () => {
-    window.ethApply(); setTimeout(window.ethApply, 400); setTimeout(window.ethApply, 1500);
-    const days = $('days'); if (days) new MutationObserver(() => setTimeout(window.ethApply, 0)).observe(days, { childList:true });
-    setInterval(window.ethApply, 1000);
-  });
+  window.ethApply = refresh;
+  document.addEventListener('input', refresh); document.addEventListener('change', refresh);
+  document.addEventListener('DOMContentLoaded', () => { refresh(); setInterval(refresh, 700); });
 })();
 </script>
 <script>
@@ -359,17 +333,19 @@ if (admToken) { $('code').required = false; $('codeLbl').firstChild.textContent 
 function addDay(v = {}) {
   const n = $('days').children.length + 1;
   const r = document.createElement('div'); r.className = 'dayrow';
+  const ra = document.createElement('div'); ra.className = 'dayrow';
+  ra.innerHTML = '<span class="full ro a-when">—</span><label class="full">Title in Amharic <small>(Amharic · በአማርኛ, optional)</small><input class="d-title-am" maxlength="120" lang="am"></label>';
   r.innerHTML = '<label class="full">Date <input type="date" class="d-date"></label><label>Start time <input type="time" class="d-time"></label>' +
     '<label>End time <small>(optional)</small><input type="time" class="d-end"></label>' +
     '<label class="tt">Title for this day <input class="d-title" maxlength="120"></label>' +
-    '<label class="tt">Title in Amharic <small>(Amharic · በአማርኛ, optional)</small><input class="d-title-am" maxlength="120" lang="am"></label><button class="btn alt" type="button">Remove day</button>';
+    '<button class="btn alt" type="button">Remove day</button>';
   const prev = $('days').lastElementChild; r.querySelector('.d-date').value = v.date || (prev ? prev.querySelector('.d-date').value : ''); r.querySelector('.d-time').value = v.time || '';
-  r.querySelector('.d-title').value = v.title || ''; r.querySelector('.d-title-am').value = v.title_am || ''; r.querySelector('.d-title').placeholder = isWed() ? 'e.g. Church ceremony' : 'Day ' + n + ': e.g. Opening and Vision';
-  r.querySelector('button').onclick = () => { if ($('days').children.length > 1) r.remove(); };
-  $('days').append(r); labelRows(); applyFormLang();
+  r.querySelector('.d-title').value = v.title || ''; ra.querySelector('.d-title-am').value = v.title_am || ''; r.querySelector('.d-title').placeholder = !isSem() ? 'e.g. Church ceremony' : 'Day ' + n + ': e.g. Opening and Vision';
+  r.querySelector('button').onclick = () => { if ($('days').children.length > 1) { r.remove(); ra.remove(); } };
+  $('days').append(r); $('daysAm').append(ra); r._am = ra; labelRows(); applyFormLang();
 }
 function labelRows() {
-  const w = isWed();
+  const w = !isSem();
   [...$('days').children].forEach((r, i) => {
     r.querySelector('.d-title').parentElement.firstChild.textContent = w ? 'What happens at this time ' : 'Title for this day ';
     r.querySelector('button').textContent = w ? 'Remove' : 'Remove day';
@@ -379,10 +355,11 @@ function labelRows() {
   $('addDay').textContent = w ? '+ Add to schedule' : '+ Add day';
 }
 function readDays() {
-  return [...$('days').children].map(r => ({ date:r.querySelector('.d-date').value, time:r.querySelector('.d-time').value, title:r.querySelector('.d-title').value.trim(), title_am:r.querySelector('.d-title-am').value.trim() || undefined, end:r.querySelector('.d-end').value || undefined }));
+  return [...$('days').children].map(r => ({ date:r.querySelector('.d-date').value, time:r.querySelector('.d-time').value, title:r.querySelector('.d-title').value.trim(), title_am:r._am.querySelector('.d-title-am').value.trim() || undefined, end:r.querySelector('.d-end').value || undefined }));
 }
 const typeVal = () => document.querySelector('[name=type]').value;
 const isWed = () => typeVal() === 'wedding';
+const isSem = () => typeVal() === 'seminar';
 const isBday = () => typeVal() === 'birthday';
 const THEMES = {
   wedding:[['white','White','#fff'],['black','Black','#1c1c1c'],['grey','Grey','#e9e9e9'],['cream','Cream','#f3ecdc'],['navy','Navy','#22384f'],['burgundy','Burgundy','#6b2233']],
@@ -454,9 +431,10 @@ window.addEventListener('resize', fitThumbs);
 renderTemplates();
 function syncType() {
   const sem = typeVal() === 'seminar', wed = isWed();
-  $('daysBox').hidden = !(sem || wed);
-  $('daysLegend').textContent = wed ? 'Time schedule' : 'Seminar days';
-  $('daysHelp').textContent = wed ? 'Add each moment of the wedding day with its time, for example 9:00 church ceremony, 12:00 photos, 6:00 reception. All items use the wedding date above.' : 'Add each day with its own title. You can change titles later.';
+  $('daysBox').hidden = false; $('daysAmBox').hidden = $('daysBox').hidden;
+  $('daysAmLegend').textContent = sem ? 'የሴሚናር ቀናት' : wed ? 'የሠርግ ቀን ፕሮግራም' : 'የፕሮግራም ሰዓት';
+  $('daysLegend').textContent = sem ? 'Seminar days' : wed ? 'Time schedule' : 'Program schedule';
+  $('daysHelp').textContent = sem ? 'Add each day with its own title. You can change titles later.' : wed ? 'Add each moment of the wedding day with its time, for example 9:00 church ceremony, 12:00 photos, 6:00 reception. All items use the wedding date above.' : 'Add each part of the program with its time, for example 3:00 welcome, 4:00 lunch. All items use the date above.';
   document.querySelectorAll('.wedOnly').forEach(x => x.hidden = !wed);
   $('hostTxt').textContent = wed ? 'Parents / families' : 'Hosts';
   $('hostHint').textContent = wed ? '(optional. Groom\u2019s side | bride\u2019s side. Use / for a new line)' : '(optional)';
@@ -465,17 +443,18 @@ function syncType() {
   if (ed.type !== want) { ed.type = want; ed.value = ''; }
   $('dateTxt').textContent = wed ? 'Wedding date' : 'Date and time';
   $('dateHint').hidden = wed; ed.required = wed;
+  $('amDateTxt').textContent = wed ? 'የሠርግ ቀን (የኢትዮጵያ አቆጣጠር)' : 'ቀን እና ሰዓት (የኢትዮጵያ አቆጣጠር)';
   const bday = isBday();
   $('photoLbl').textContent = (wed || bday) ? 'Main photos' : 'Photos';
   $('themeBox').hidden = !(wed || bday) || (wed && tplVal() !== 'classic'); renderThemes();
   refreshThumbs(); requestAnimationFrame(fitThumbs); if (window.ethApply) ethApply();
   $('galLbl').hidden = !(wed || bday);
-  $('aboutLbl').hidden = !(wed || bday); $('aboutPair').hidden = $('aboutLbl').hidden;
+  $('aboutLbl').hidden = !(wed || bday); $('aboutAmLbl').hidden = $('aboutLbl').hidden;
   $('aboutTxt').textContent = bday ? 'About me' : 'About us';
   $('aboutHint').textContent = '(your story, shown in the "' + (bday ? 'About me' : 'About us') + '" section)';
   $('galTxt').textContent = bday ? 'Gallery photos' : 'Additional photos';
   $('galHint').textContent = '(up to 20, shown in the "' + (bday ? 'Gallery' : 'Photos') + '" section. JPG, PNG or WebP, up to 50 MB each)';
-  if ((sem || wed) && !$('days').children.length) addDay();
+  if (!$('days').children.length) addDay();
   labelRows();
   applyFormLang();
 }
@@ -570,6 +549,8 @@ $('f').onsubmit = async e => {
   { const gal = [...$('f').gallery.files].filter(f => f.size); fd.delete('gallery');
     if (['wedding', 'birthday'].includes(fd.get('type'))) gal.forEach(f => fd.append('gallery', f)); }
   fd.set('rsvp_enabled', $('rsvpOn').checked ? 'true' : 'false');
+  fd.set('guest_msg_enabled', $('gmOn').checked ? 'true' : 'false');
+  if (fd.get('type') !== 'wedding') ['gift_account', 'gift_url', 'gift_note', 'gift_note_am'].forEach(k => fd.delete(k));
   for (const k of ['photo', 'video']) { const f = fd.get(k); if (f && !f.size) fd.delete(k); }
   if (fd.get('type') === 'wedding') {
     const wd = fd.get('event_date');
@@ -581,6 +562,18 @@ $('f').onsubmit = async e => {
     days.sort((a, b) => a.time.localeCompare(b.time));
     if (days.length) fd.set('days', JSON.stringify(days));
     fd.set('event_date', wd + 'T' + (days.length ? days[0].time : '00:00'));
+  }
+  if (!['wedding', 'seminar'].includes(fd.get('type'))) {
+    const days = readDays().filter(d => d.time || d.title || d.end || d.title_am);
+    if (days.length) {
+      const od = fd.get('event_date');
+      if (!od) { $('err').textContent = FT('Please choose the date.'); $('go').disabled = false; $('go').textContent = FT('Create invitation'); return; }
+      days.forEach(d => { d.date = od.slice(0, 10); });
+      if (days.some(d => !d.time)) { $('err').textContent = FT('Each schedule item needs a time.'); $('go').disabled = false; $('go').textContent = FT('Create invitation'); return; }
+      if (days.some(d => d.end && d.end === d.time)) { $('err').textContent = FT('End time must be different from the start time.'); $('go').disabled = false; $('go').textContent = FT('Create invitation'); return; }
+      days.sort((a, b) => a.time.localeCompare(b.time));
+      fd.set('days', JSON.stringify(days));
+    }
   }
   if (fd.get('type') === 'seminar') {
     const days = readDays();
