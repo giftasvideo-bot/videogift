@@ -70,12 +70,6 @@
   .pv-bar .btn.alt { color:#fff; border-color:#fff; }
   .pv-bar .btn:not(.alt) { background:#fff; color:var(--accent); }
   #pvFrame { flex:1; width:min(100%,430px); border:0; background:#fff; border-radius:12px 12px 0 0; }
-  #typeLbl[hidden] { display:none; }
-  .typeLock { display:none; padding:10px 12px; border:1px solid var(--line); border-radius:8px; background:#fff; font-weight:500; }
-  .typeLock.on { display:block; }
-  .sendBox { display:grid; gap:8px; border:2px dashed var(--accent); border-radius:10px; padding:12px; margin:0 0 16px; background:#fff; }
-  .sendBox[hidden] { display:none; }
-  .sendBox code { word-break:break-all; font-size:.8rem; }
   #ethBox { display:grid; grid-template-columns:1fr 1.8fr 1.1fr; gap:8px; }
   #ethBox[hidden] { display:none; }
 </style>
@@ -97,23 +91,6 @@
     <small>You received this link when you created your invitation. Lost it? The shop can send it again.</small>
   </div>
 
-  <div id="sendBox" class="sendBox" hidden>
-    <b>Send to customer (admin)</b>
-    <small>Choose the event type and card code. The customer opens the link, fills in his own data, and cannot change the event type.</small>
-    <label>Event type
-      <select id="sendType">
-        <option value="wedding">Wedding</option><option value="birthday">Birthday</option>
-        <option value="seminar">Seminar / multi-day</option><option value="church">Church / religious</option><option value="memorial">Memorial</option>
-        <option value="general">Other</option>
-      </select></label>
-    <label>Card code <small>(optional)</small><input id="sendCode" autocomplete="off" autocapitalize="characters" spellcheck="false"></label>
-    <div class="row"><button class="btn" id="sendMake" type="button">Create customer link</button></div>
-    <div id="sendOut" hidden>
-      <code id="sendLink"></code>
-      <div class="row"><button class="btn alt" id="sendCopy" type="button">Copy link</button><a class="btn alt" id="sendWa" target="_blank" rel="noopener">WhatsApp</a><a class="btn alt" id="sendTg" target="_blank" rel="noopener">Telegram</a></div>
-    </div>
-    <small>Or fill in the form below yourself as admin.</small>
-  </div>
   <form id="f">
     <div style="display:grid;gap:4px;border:1px dashed var(--line);border-radius:8px;padding:10px 12px;background:#fff">
       <label style="display:flex;gap:8px;align-items:center;font-weight:500"><input type="checkbox" id="amType" style="width:auto"> <span>ኢትዮጵያ ፊደል ይተይቡ · Type in Amharic with English letters</span></label>
@@ -122,8 +99,7 @@
     </div>
     <label id="codeLbl">Card code <small>(printed on your event card)</small>
       <input name="code" id="code" required autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="e.g. RYVXP1"></label>
-    <div class="typeLock" id="typeLock"></div>
-    <label id="typeLbl">Event type
+    <label>Event type
       <select name="type">
         <option value="wedding">Wedding</option><option value="birthday">Birthday</option>
         <option value="seminar">Seminar / multi-day</option><option value="church">Church / religious</option><option value="memorial">Memorial</option>
@@ -482,36 +458,6 @@ function syncType() {
 document.querySelector('[name=type]').onchange = syncType;
 $('addDay').onclick = () => { if ($('days').children.length < MAX_DAYS) addDay(); };
 syncType();
-
-// ---------- Event type chosen by the admin (customer link) ----------
-const TYPE_NAMES = { wedding:'Wedding', birthday:'Birthday', seminar:'Seminar / multi-day', church:'Church / religious', memorial:'Memorial', general:'Other' };
-{
-  const q = new URLSearchParams(location.search), t = q.get('type');
-  const sel = document.querySelector('[name=type]');
-  if (t && TYPE_NAMES[t]) {
-    sel.value = t;
-    if (q.get('lock') === '1' && !admToken) {            // customer: type is fixed
-      $('typeLbl').hidden = true;
-      $('typeLock').classList.add('on');
-      $('typeLock').textContent = FT('Event type') + ': ' + FT(TYPE_NAMES[t]);
-    }
-  }
-  if (admToken) {                                          // admin: link generator
-    $('sendBox').hidden = false;
-    $('sendCode').value = $('code').value;
-    if (t && TYPE_NAMES[t]) $('sendType').value = t;
-    $('sendMake').onclick = () => {
-      const u = new URL('create-event.html', location.href);
-      const c = $('sendCode').value.trim();
-      if (c) u.searchParams.set('code', c);
-      u.searchParams.set('type', $('sendType').value); u.searchParams.set('lock', '1');
-      $('sendLink').textContent = u.href; $('sendOut').hidden = false;
-      const msg = encodeURIComponent(u.href);
-      $('sendWa').href = 'https://wa.me/?text=' + msg; $('sendTg').href = 'https://t.me/share/url?url=' + msg;
-      $('sendCopy').onclick = () => navigator.clipboard.writeText(u.href).then(() => { $('sendCopy').textContent = FT('Copied'); });
-    };
-  }
-}
 
 // ---------- Edit an existing invitation ----------
 const editPage = (slug, token) => { const u = new URL('edit-event.html', location.href); u.search = '?e=' + slug; u.hash = 'k=' + token; return u.href; };
