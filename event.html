@@ -995,7 +995,7 @@ function renderBasket(ev) {
     mount();
   };
   mount(); app.append(root);
-  if (DEMO) addGuestbook([{ name:'Hanna', message:'Congratulations! Wishing you a lifetime of love.', created_at:new Date().toISOString() }]);
+  if (DEMO) addGuestbook([{ name: LANG === 'am' ? 'ሃና' : 'Hanna', message: LANG === 'am' ? 'እንኳን ደስ አላችሁ! የፍቅር ሕይወት እንመኝላችኋለን።' : 'Congratulations! Wishing you a lifetime of love.', created_at:new Date().toISOString() }]);
   else if (slug) fetch(`${API}/api/e/${encodeURIComponent(slug)}/wishes`).then(r => r.ok ? r.json() : Promise.reject()).then(d => addGuestbook(Array.isArray(d) ? d : (Array.isArray(d.wishes) ? d.wishes : []))).catch(() => {});
 }
 
@@ -1005,12 +1005,15 @@ function demoEvent() {
   const d = new Date(); d.setDate(d.getDate() + 75);
   const ymd = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
   const ph = [['#d9a77a','#8a5a44'], ['#c98a8f','#6b2233'], ['#9fb7a8','#3f6a5e'], ['#e0c27a','#a2742a'], ['#b8a0c8','#5d4577'], ['#8fb3d1','#2f5b83']].map(([c1, c2]) =>
-    'data:image/svg+xml,' + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="600" height="800" viewBox="0 0 600 800"><defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="' + c1 + '"/><stop offset="1" stop-color="' + c2 + '"/></linearGradient></defs><rect width="600" height="800" fill="url(#g)"/><g fill="none" stroke="#fff" stroke-opacity=".75" stroke-width="10"><circle cx="255" cy="360" r="70"/><circle cx="345" cy="360" r="70"/></g><text x="300" y="560" text-anchor="middle" font-family="Georgia,serif" font-size="34" fill="#fff" fill-opacity=".9">Your photo here</text></svg>'));
+    'data:image/svg+xml,' + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="600" height="800" viewBox="0 0 600 800"><defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="' + c1 + '"/><stop offset="1" stop-color="' + c2 + '"/></linearGradient></defs><rect width="600" height="800" fill="url(#g)"/><g fill="none" stroke="#fff" stroke-opacity=".75" stroke-width="10"><circle cx="255" cy="360" r="70"/><circle cx="345" cy="360" r="70"/></g><text x="300" y="560" text-anchor="middle" font-family="Georgia,serif" font-size="34" fill="#fff" fill-opacity=".9">' + (LANG === 'am' ? 'ፎቶዎ እዚህ' : 'Your photo here') + '</text></svg>'));
   const row = (time, title) => ({ date:ymd, time, title });
-  return { type:'wedding', template:DEMO, theme:qs.get('theme') || 'cream', title:qs.get('title') || 'Selam & Dawit',
-    host_names:'Ato Bekele / Wzt Almaz | Ato Tadesse / Wzt Hirut', about:'Together with our families, we joyfully invite you to celebrate our wedding with coffee, music, and a table full of love.',
-    event_date:ymd + 'T09:00:00', days:[row('09:00','Church ceremony'), row('12:00','Photos & blessings'), row('16:00','Reception & lunch'), row('19:00','Music & dancing')],
-    venue:'Reception Hall, Bole, Addis Ababa', map_url:'', rsvp_enabled:true, photo_urls:ph.slice(0, 3), gallery_urls:ph.slice(3), video_url:'' };
+  const am = LANG === 'am';
+  return { type:'wedding', template:DEMO, theme:qs.get('theme') || 'cream', title:qs.get('title') || (am ? 'ሰላም & ዳዊት' : 'Selam & Dawit'),
+    host_names: am ? 'አቶ በቀለ / ወይዘሮ አልማዝ | አቶ ታደሰ / ወይዘሮ ሂሩት' : 'Ato Bekele / Wzt Almaz | Ato Tadesse / Wzt Hirut',
+    about: am ? 'ከቤተሰቦቻችን ጋር በመሆን ሠርጋችንን በቡና፣ በሙዚቃና በፍቅር በተሞላ ገበታ እንድታከብሩልን በደስታ እንጋብዛችኋለን።' : 'Together with our families, we joyfully invite you to celebrate our wedding with coffee, music, and a table full of love.',
+    event_date:ymd + 'T09:00:00',
+    days: am ? [row('09:00','የቤተ ክርስቲያን ሥርዓት'), row('12:00','ፎቶና ቡራኬ'), row('16:00','የእንግዳ መቀበያና ምሳ'), row('19:00','ሙዚቃና ጭፈራ')] : [row('09:00','Church ceremony'), row('12:00','Photos & blessings'), row('16:00','Reception & lunch'), row('19:00','Music & dancing')],
+    venue: am ? 'ሪሴፕሽን አዳራሽ፣ ቦሌ፣ አዲስ አበባ' : 'Reception Hall, Bole, Addis Ababa', map_url:'', rsvp_enabled:true, photo_urls:ph.slice(0, 3), gallery_urls:ph.slice(3), video_url:'' };
 }
 
 function render(ev) {
