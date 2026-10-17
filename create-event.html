@@ -6,6 +6,7 @@
 <title>Create your invitation</title>
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,700&family=DM+Sans:wght@400;500&family=Noto+Sans+Ethiopic:wght@400;600&display=swap" rel="stylesheet">
 <script src="form-i18n.js"></script>
+<script>window.FT = window.FT || function (x) { return x; }; window.applyFormLang = window.applyFormLang || function () {};</script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcode-generator/1.4.4/qrcode.min.js"></script>
 <style>
   :root { --bg:#f2f5f4; --ink:#123c40; --accent:#0f5257; --line:#b9cfcc; }
@@ -85,6 +86,12 @@
   #ethBox { display:grid; grid-template-columns:1fr 1.8fr 1.1fr; gap:8px; }
   #ethBox[hidden] { display:none; }
   .grp[hidden] { display:none; }
+  /* Amharic fields use an Ethiopic font first */
+  #grpAm, #grpAm input, #grpAm textarea, #daysAmBox, #daysAmBox input, .ro, [lang="am"], input[lang="am"], textarea[lang="am"] { font-family:'Noto Sans Ethiopic','Abyssinica SIL',Nyala,Kefa,'DM Sans',sans-serif; }
+  #grpAm input, #grpAm textarea, #daysAmBox input, input[lang="am"], textarea[lang="am"] { font-size:1.05rem; line-height:1.6; }
+  .ethIn { display:grid; grid-template-columns:1fr 1fr 1.6fr; gap:8px; }
+  #amT[hidden] { display:none; }
+  #amDateOut { min-height:0; padding:8px 11px; font-size:.95rem; }
   .fld { display:grid; gap:5px; font-weight:500; }
   .ro { display:block; padding:11px; border:1px dashed var(--line); border-radius:6px; background:#f6f9f8; font-weight:500; min-height:2.8em; }
 </style>
@@ -165,17 +172,17 @@
       </fieldset>
       <fieldset class="grp" id="grpAm" lang="am">
         <legend>አማርኛ · Amharic</legend>
-      <label>Title in Amharic <small>(Amharic · በአማርኛ, optional)</small><input name="title_am" maxlength="120" lang="am"></label>
-      <div class="fld" id="amDateFld"><span id="amDateTxt">ቀን እና ሰዓት (የኢትዮጵያ አቆጣጠር)</span><output id="amDateOut" class="ro" aria-live="polite">—</output></div>
+      <label>ርዕስ <small>(በአማርኛ፣ አማራጭ)</small><input name="title_am" maxlength="120" lang="am"></label>
+      <div class="fld" id="amDateFld"><span id="amDateTxt">ቀን እና ሰዓት (የኢትዮጵያ አቆጣጠር)</span><div class="ethIn" role="group" aria-label="የኢትዮጵያ ቀን"><select id="amD" aria-label="ቀን"><option value="">ቀን</option></select><select id="amM" aria-label="ወር"><option value="">ወር</option></select><select id="amY" aria-label="ዓመት"><option value="">ዓመት</option></select></div><input type="time" id="amT" hidden aria-label="ሰዓት"><output id="amDateOut" class="ro" aria-live="polite">—</output></div>
       <fieldset id="daysAmBox" class="daysAm" hidden>
         <legend id="daysAmLegend">ፕሮግራም</legend>
-        <small>ሰዓቱ ከእንግሊዝኛው ፕሮግራም በኢትዮጵያ አቆጣጠር ራሱ ይቀየራል። እዚህ የሚጻፈው የእያንዳንዱ ክፍል ርዕስ ብቻ ነው።</small>
+        <small>ሰዓቱ ከእንግሊዝኛው ፕሮግራም ይወሰዳል። እዚህ የሚጻፈው የእያንዳንዱ ክፍል ርዕስ ብቻ ነው።</small>
         <div id="daysAm"></div>
       </fieldset>
-      <label id="aboutAmLbl">About in Amharic <small>(Amharic · በአማርኛ, optional)</small><textarea name="about_am" maxlength="1980" lang="am"></textarea></label>
-      <label id="hostAmLbl">Hosts in Amharic <small>(Amharic · በአማርኛ, optional)</small><input name="host_names_am" maxlength="120" lang="am"></label>
-      <label>Venue in Amharic <small>(Amharic · በአማርኛ, optional)</small><input name="venue_am" maxlength="200" lang="am"></label>
-      <label>Message in Amharic <small>(Amharic · በአማርኛ, optional)</small><textarea name="message_am" maxlength="1000" lang="am"></textarea></label>
+      <label id="aboutAmLbl">ስለ እኛ <small>(በአማርኛ፣ አማራጭ)</small><textarea name="about_am" maxlength="1980" lang="am"></textarea></label>
+      <label id="hostAmLbl">አስተናጋጆች <small>(በአማርኛ፣ አማራጭ)</small><input name="host_names_am" maxlength="120" lang="am"></label>
+      <label>ቦታ <small>(በአማርኛ፣ አማራጭ)</small><input name="venue_am" maxlength="200" lang="am"></label>
+      <label>መልእክት <small>(በአማርኛ፣ አማራጭ)</small><textarea name="message_am" maxlength="1000" lang="am"></textarea></label>
       </fieldset>
     </div>
     <fieldset class="grp wedOnly" id="grpGift" hidden>
@@ -184,7 +191,7 @@
       <label>Gift registry link <small>(optional)</small><input type="url" name="gift_url" placeholder="https://…"></label>
       <div class="langs">
         <label>Gift note <small>(optional, English)</small><textarea name="gift_note" maxlength="500"></textarea></label>
-        <label lang="am">Gift note in Amharic <small>(Amharic · በአማርኛ, optional)</small><textarea name="gift_note_am" maxlength="500" lang="am"></textarea></label>
+        <label lang="am">የስጦታ ማስታወሻ <small>(በአማርኛ፣ አማራጭ)</small><textarea name="gift_note_am" maxlength="500" lang="am"></textarea></label>
       </div>
     </fieldset>
     <fieldset class="grp" id="grpGuestMsg">
@@ -192,7 +199,7 @@
       <label style="display:flex;gap:10px;align-items:center"><input type="checkbox" name="guest_msg_enabled" id="gmOn" checked style="width:auto"> Let guests write a message to the hosts with their reply</label>
       <div class="langs">
         <label>Question shown to guests <small>(optional, English)</small><input name="guest_msg_prompt" maxlength="160" placeholder="Leave a wish for the couple"></label>
-        <label lang="am">Question in Amharic <small>(Amharic · በአማርኛ, optional)</small><input name="guest_msg_prompt_am" maxlength="160" lang="am"></label>
+        <label lang="am">ለእንግዶች የሚቀርብ ጥያቄ <small>(በአማርኛ፣ አማራጭ)</small><input name="guest_msg_prompt_am" maxlength="160" lang="am"></label>
       </div>
     </fieldset>
     <fieldset class="grp" id="grpMedia">
@@ -260,7 +267,7 @@
   const textual = t => t && ((t.tagName === 'TEXTAREA') || (t.tagName === 'INPUT' && (!t.type || t.type === 'text' || t.type === 'search')) && t.name !== 'code' && t.id !== 'code' && t.id !== 'pasteLink');
   document.addEventListener('beforeinput', e => {
     const t = e.target;
-    if (!on || !textual(t) || e.isComposing) return;
+    if (!(on || (t.closest && t.closest('[lang="am"]'))) || !textual(t) || e.isComposing) return;
     if (e.inputType === 'insertText' && e.data && e.data.length === 1) {
       const ch = e.data, s0 = t.selectionStart, s1 = t.selectionEnd;
       if (s0 !== s1) pending = '';
@@ -305,7 +312,7 @@
   const ethDate = d => { if (!/^\d{4}-\d\d-\d\d$/.test(d || '')) return ''; const [Y, M, D] = d.split('-').map(Number), e = j2e(g2j(Y, M, D)); return EM[e.m - 1] + ' ' + e.d + ', ' + e.y + ' \u12D3.\u121D'; };
   const ethTime = t => { if (!/^\d{1,2}:\d\d/.test(t || '')) return ''; const h = +t.slice(0, 2); let eh = (h + 6) % 12; if (!eh) eh = 12; return eh + ':' + t.slice(3, 5) + ' ' + (h < 6 ? '\u121C\u120B\u1275' : h < 12 ? '\u1320\u12CB\u1275' : h < 18 ? '\u1240\u1295' : '\u121B\u1273'); };
   const range = (a, b) => { const x = ethTime(a), y = ethTime(b); return x && y ? x + ' \u2013 ' + y : x; };
-  function refresh() {
+  let refresh = function () {
     const ev = $('evDate'); if (!ev) return;
     const wed = typeof isSem === 'function' && !isSem(), v = ev.value || '', d = v.slice(0, 10);
     const o = $('amDateOut');
@@ -315,7 +322,53 @@
       const date = wed ? d : r.querySelector('.d-date').value;
       a.textContent = [wed ? '' : ethDate(date), range(r.querySelector('.d-time').value, r.querySelector('.d-end').value)].filter(Boolean).join(' \u00B7 ') || '\u2014';
     });
+  };
+  const pad = n => String(n).padStart(2, '0');
+  const ids = ['amD', 'amM', 'amY'];
+  const opts = (sel, items, ph) => { sel.innerHTML = '<option value="">' + ph + '</option>' + items.map(([v, t]) => '<option value="' + v + '">' + t + '</option>').join(''); };
+  function years(extra) {
+    const now = new Date(), base = j2e(g2j(now.getFullYear(), now.getMonth() + 1, now.getDate())).y, cur = $('amY').value;
+    let lo = base, hi = base + 10; if (extra) { lo = Math.min(lo, extra); hi = Math.max(hi, extra); }
+    const list = []; for (let y = lo; y <= hi; y++) list.push([y, y]);
+    opts($('amY'), list, '\u12D3\u121D\u1275'); if (cur) $('amY').value = cur;
   }
+  function days() {
+    const M = +$('amM').value, Y = +$('amY').value, cur = $('amD').value, max = M === 13 ? ((Y + 1) % 4 === 0 ? 6 : 5) : 30;
+    opts($('amD'), Array.from({ length: max }, (_, i) => [i + 1, i + 1]), '\u1240\u1295'); if (cur && +cur <= max) $('amD').value = cur;
+  }
+  function fill() {
+    const ev = $('evDate'); if (!ev || !$('amD')) return;
+    const act = document.activeElement && document.activeElement.id, d = (ev.value || '').slice(0, 10);
+    if (!ids.includes(act)) {
+      if (/^\d{4}-\d\d-\d\d$/.test(d)) { const [Y, M, D] = d.split('-').map(Number), e = j2e(g2j(Y, M, D)); years(e.y); $('amM').value = e.m; $('amY').value = e.y; days(); $('amD').value = e.d; }
+      else { ids.forEach(i => { $(i).value = ''; }); days(); }
+    }
+    const dt = ev.type === 'datetime-local'; $('amT').hidden = !dt;
+    if (dt && act !== 'amT') $('amT').value = (ev.value || '').slice(11, 16);
+  }
+  const push = ev => { ev.dispatchEvent(new Event('input', { bubbles:true })); ev.dispatchEvent(new Event('change', { bubbles:true })); };
+  function fromEth() {
+    const D = +$('amD').value, M = +$('amM').value, Y = +$('amY').value, ev = $('evDate');
+    if (!(D >= 1 && D <= 30 && M >= 1 && M <= 13 && Y >= 1900 && Y <= 2200)) return;
+    const g = j2g(e2j(Y, M, D)), b = j2e(g2j(g.y, g.m, g.d));
+    if (b.y !== Y || b.m !== M || b.d !== D) return;
+    let v = g.y + '-' + pad(g.m) + '-' + pad(g.d);
+    if (ev.type === 'datetime-local') v += 'T' + ($('amT').value || (ev.value || '').slice(11, 16) || '00:00');
+    if (ev.value !== v) { ev.value = v; push(ev); }
+  }
+  function fromTime() {
+    const ev = $('evDate'), d = (ev.value || '').slice(0, 10);
+    if (!d || !$('amT').value || ev.type !== 'datetime-local') return;
+    const v = d + 'T' + $('amT').value; if (ev.value !== v) { ev.value = v; push(ev); }
+  }
+  document.addEventListener('DOMContentLoaded', () => {
+    opts($('amM'), EM.map((t, i) => [i + 1, t]), '\u12C8\u122D'); years(); days();
+    ids.forEach(i => $(i).addEventListener('change', () => { if (i !== 'amD') days(); fromEth(); }));
+    $('amT').addEventListener('input', fromTime); $('amT').addEventListener('change', fromTime);
+    ids.forEach(i => $(i).addEventListener('blur', () => setTimeout(fill, 0)));
+  });
+  const baseRefresh = refresh;
+  refresh = function () { baseRefresh(); fill(); };
   window.ethApply = refresh;
   document.addEventListener('input', refresh); document.addEventListener('change', refresh);
   document.addEventListener('DOMContentLoaded', () => { refresh(); setInterval(refresh, 700); });
@@ -334,7 +387,7 @@ function addDay(v = {}) {
   const n = $('days').children.length + 1;
   const r = document.createElement('div'); r.className = 'dayrow';
   const ra = document.createElement('div'); ra.className = 'dayrow';
-  ra.innerHTML = '<span class="full ro a-when">—</span><label class="full">Title in Amharic <small>(Amharic · በአማርኛ, optional)</small><input class="d-title-am" maxlength="120" lang="am"></label>';
+  ra.innerHTML = '<label class="full">ርዕስ <small>(በአማርኛ፣ አማራጭ)</small><input class="d-title-am" maxlength="120" lang="am"></label>';
   r.innerHTML = '<label class="full">Date <input type="date" class="d-date"></label><label>Start time <input type="time" class="d-time"></label>' +
     '<label>End time <small>(optional)</small><input type="time" class="d-end"></label>' +
     '<label class="tt">Title for this day <input class="d-title" maxlength="120"></label>' +
@@ -467,13 +520,11 @@ const TYPE_NAMES = { wedding:'Wedding', birthday:'Birthday', seminar:'Seminar / 
 {
   const q = new URLSearchParams(location.search), t = q.get('type');
   const sel = document.querySelector('[name=type]');
-  if (t && TYPE_NAMES[t]) {
-    sel.value = t;
-    if (q.get('lock') === '1' && !admToken) {            // customer: type is fixed
-      $('typeLbl').hidden = true;
-      $('typeLock').classList.add('on');
-      $('typeLock').textContent = FT('Event type') + ': ' + FT(TYPE_NAMES[t]);
-    }
+  if (t && TYPE_NAMES[t]) sel.value = t;
+  if (!admToken) {            // customer: type already chosen (from the link, or Wedding by default), so no dropdown
+    $('typeLbl').hidden = true;
+    $('typeLock').classList.add('on');
+    $('typeLock').textContent = FT('Event type') + ': ' + FT(TYPE_NAMES[sel.value] || sel.value);
   }
   if (admToken) {                                          // admin: link generator
     $('sendBox').hidden = false;
