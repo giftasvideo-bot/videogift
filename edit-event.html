@@ -50,6 +50,7 @@
   .gal label.inline { font-size:.85rem; }
   .tpls { border:1px solid var(--line); border-radius:8px; padding:10px 14px 14px; display:grid; gap:10px; }
   .tpls legend { font-weight:500; padding:0 6px; }
+  .tpls[hidden] { display:none; }
   .tplgrid { display:grid; grid-template-columns:repeat(auto-fit,minmax(200px,1fr)); gap:12px; }
   .tpl { display:grid; gap:6px; align-content:start; position:relative; cursor:pointer; border:2px solid var(--line); border-radius:10px; padding:8px; background:#fff; }
   .tpl input { position:absolute; opacity:0; width:1px; height:1px; pointer-events:none; }
@@ -95,7 +96,7 @@
           <option value="seminar">Seminar / multi-day</option><option value="church">Church / religious</option><option value="memorial">Memorial</option>
           <option value="general">Other</option>
         </select></label>
-    <fieldset class="tpls wedOnly" id="tplBox" hidden>
+    <fieldset class="tpls" id="tplBox" hidden>
       <legend>Invitation design</legend>
       <small>Tap a design to choose it. Press Preview to see a full sample before you decide.</small>
       <div class="tplgrid" id="tplOpts"></div>
@@ -372,6 +373,12 @@ function labelRows() {
 }
 const readDays = () => [...$('days').children].map(r => ({ date: r.querySelector('.d-date').value, time: r.querySelector('.d-time').value, title: r.querySelector('.d-title').value.trim(), title_am: r.querySelector('.d-title-am').value.trim() || undefined, end: r.querySelector('.d-end').value || undefined }));
 // ---------- Invitation design (wedding templates) with live previews ----------
+const TEMPLATES_BDAY = [
+  ['classic', 'Classic page', 'The simple birthday page with your photos and gallery. You choose the background colour.'],
+  ['birthday', 'Party bunting', 'A bright party page: swaying bunting, a round photo, polaroid gallery and a confetti burst when guests arrive.']
+];
+const curType = () => { const s = document.querySelector('#f [name=type]'); return s ? s.value : ''; };
+let tplFor = '';
 const TEMPLATES = [
   ['classic', 'Classic envelope', 'Opens with a wax-sealed envelope, then a paper-style page. You choose the background colour.'],
   ['basket', 'Basket & flowers', 'Warm maroon and gold with a hand-drawn basket border, countdown and a 3D photo gallery.'],
@@ -380,14 +387,14 @@ const TEMPLATES = [
 const TPL_MARK = /\s*\[\[tpl:(\w+)\]\]\s*$/;
 const GIFT_MARK = /\s*\[\[giftqr:(\d+)\]\]/g;
 const splitTpl = t => { const m = TPL_MARK.exec(t || ''), x = String(t || '').replace(TPL_MARK, ''), g = /\[\[giftqr:(\d+)\]\]/.exec(x); return { text:x.replace(GIFT_MARK, ''), tpl:m ? m[1] : '', gift:g ? Math.min(+g[1], 2) : 0 }; };
-const joinTpl = (t, tpl, nGift) => String(t || '').replace(TPL_MARK, '').replace(GIFT_MARK, '') + (tpl === 'scroll' && nGift ? '\n[[giftqr:' + nGift + ']]' : '') + (tpl === 'basket' || tpl === 'scroll' ? '\n[[tpl:' + tpl + ']]' : '');
+const joinTpl = (t, tpl, nGift) => String(t || '').replace(TPL_MARK, '').replace(GIFT_MARK, '') + (tpl === 'scroll' && nGift ? '\n[[giftqr:' + nGift + ']]' : '') + (['basket', 'scroll', 'birthday'].includes(tpl) ? '\n[[tpl:' + tpl + ']]' : '');
 let giftUrls = [];
 const tplVal = () => { const r = document.querySelector('#f [name=template]:checked'); return r ? r.value : 'classic'; };
 function previewURL(id, thumb) {
-  const f = $('f'), u = new URL(id === 'scroll' ? 'event-scroll.html' : 'event.html', location.href);
-  if (id !== 'scroll') u.searchParams.set('demo', id);
+  const f = $('f'), u = new URL(id === 'scroll' ? 'event-scroll.html' : id === 'birthday' ? 'event-birthday.html' : 'event.html', location.href);
+  if (id !== 'scroll' && id !== 'birthday') u.searchParams.set('demo', id);
   const t = (f.elements['title'].value || '').trim(); if (t) u.searchParams.set('title', t);
-  const th = f.elements['theme'] ? f.elements['theme'].value : ''; if (th && id === 'classic') u.searchParams.set('theme', th);
+  const th = f.elements['theme'] ? f.elements['theme'].value : ''; if (th && (id === 'classic' || id === 'birthday')) u.searchParams.set('theme', th);
   if (thumb) u.searchParams.set('thumb', '1');
   return u.href;
 }
@@ -406,10 +413,12 @@ function closePreview() { $('pv').hidden = true; $('pvFrame').src = 'about:blank
 $('pvX').onclick = closePreview;
 document.addEventListener('keydown', e => { if (e.key === 'Escape' && !$('pv').hidden) closePreview(); });
 function renderTemplates() {
-  const box = $('tplOpts'); box.textContent = '';
-  TEMPLATES.forEach(([id, name, desc], i) => {
+  const bd = curType() === 'birthday', key = bd ? 'b' : 'w', box = $('tplOpts');
+  if (tplFor === key && box.children.length) return;
+  const list = bd ? TEMPLATES_BDAY : TEMPLATES, keep = tplVal(), has = list.some(x => x[0] === keep); tplFor = key; box.textContent = '';
+  list.forEach(([id, name, desc], i) => {
     const l = document.createElement('label'); l.className = 'tpl';
-    const r = document.createElement('input'); r.type = 'radio'; r.name = 'template'; r.value = id; r.checked = i === 0;
+    const r = document.createElement('input'); r.type = 'radio'; r.name = 'template'; r.value = id; r.checked = has ? id === keep : i === 0;
     const th = document.createElement('div'); th.className = 'tpl-thumb';
     const fr = document.createElement('iframe'); fr.title = FT(name); fr.loading = 'lazy'; fr.tabIndex = -1; fr.setAttribute('aria-hidden', 'true'); fr.dataset.id = id; th.append(fr);
     const b = document.createElement('b'); b.textContent = FT(name);
@@ -430,6 +439,7 @@ const syncType = () => {
   $('daysLegend').textContent = wed ? 'Time schedule' : 'Seminar days';
   $('daysHelp').textContent = wed ? 'Add each moment of the wedding day with its time, for example 9:00 church ceremony, 12:00 photos, 6:00 reception. All items use the wedding date above.' : 'Each day needs a date and a title.';
   document.querySelectorAll('.wedOnly').forEach(x => x.hidden = !wed);
+  renderTemplates(); $('tplBox').hidden = !(wed || isBday());
   $('hostTxt').textContent = wed ? 'Parents / families' : 'Hosts';
   $('hostHint').textContent = wed ? '(optional. Groom\u2019s side | bride\u2019s side. Use / for a new line)' : '(optional)';
   $('f').host_names.placeholder = wed ? 'Mr. & Mrs. Tadesse / Alemu | Mr. & Mrs. Bekele / Almaz' : '';
@@ -462,7 +472,7 @@ function fill(e) {
   f.event_date.type = e.type === 'wedding' ? 'date' : 'datetime-local';
   f.event_date.value = e.type === 'wedding' ? (dl0.length ? dl0[0].date : localDT(e.event_date).slice(0, 10)) : localDT(e.event_date); f.venue.value = e.venue || ''; f.map_url.value = e.map_url || '';
   f.message.value = e.message || ''; f.rsvp_enabled.checked = !!e.rsvp_enabled;
-  { const tr = f.querySelector('[name=template][value="' + (['basket', 'scroll'].includes(e.template || ab.tpl) ? (e.template || ab.tpl) : 'classic') + '"]'); if (tr) tr.checked = true; }
+  { renderTemplates(); const tr = f.querySelector('[name=template][value="' + (['basket', 'scroll', 'birthday'].includes(e.template || ab.tpl) ? (e.template || ab.tpl) : 'classic') + '"]'); if (tr) tr.checked = true; }
   $('days').textContent = '';
   (Array.isArray(e.days) ? e.days : []).filter(d => d && d.date).forEach(addDay);
   syncType();
@@ -505,7 +515,7 @@ function fill(e) {
     l.append(c, ' Remove current video'); $('video').append(v, l);
   } else { const s = document.createElement('small'); s.textContent = 'No video yet.'; $('video').append(s); }
 
-  const u = new URL('event.html', location.href); u.search = '?e=' + e.slug; $('view').href = u.href;
+  const vt = e.template || splitTpl(e.about).tpl, u = new URL(vt === 'scroll' ? 'event-scroll.html' : (e.type === 'birthday' && vt === 'birthday') ? 'event-birthday.html' : 'event.html', location.href); u.search = '?e=' + e.slug; $('view').href = u.href;
   $('loading').hidden = true; $('app').hidden = false; applyFormLang();
 }
 
@@ -540,7 +550,7 @@ $('f').onsubmit = async e => {
   ['type', 'title', 'host_names', 'venue', 'map_url', 'message', 'title_am', 'host_names_am', 'venue_am', 'message_am'].forEach(k => fd.set(k, f[k].value));
   fd.set('rsvp_enabled', f.rsvp_enabled.checked ? 'true' : 'false');
   let evDate = f.event_date.value;
-  if (isWed() || isBday()) { fd.set('theme', f.theme.value); fd.set('about', isWed() ? joinTpl(f.about.value, tplVal()) : f.about.value); fd.set('about_am', f.about_am.value); }
+  if (isWed() || isBday()) { fd.set('theme', f.theme.value); fd.set('about', (isWed() || isBday()) ? joinTpl(f.about.value, tplVal()) : f.about.value); fd.set('about_am', f.about_am.value); }
   if (isWed()) fd.set('template', tplVal());
   if (isWed()) {
     if (!evDate) return say(FT('Please choose the wedding date.'), 'err');
