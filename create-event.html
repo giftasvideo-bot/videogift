@@ -485,8 +485,6 @@ function renderThemes() {
 }
 // ---------- Invitation design (wedding templates) with live previews ----------
 const TEMPLATES_BDAY = [
-  ['classic', 'Classic page', 'The simple birthday page with your photos and gallery. You choose the background colour.'],
-  ['birthday', 'Party bunting', 'A bright party page: swaying bunting, a round photo, polaroid gallery and a confetti burst when guests arrive.'],
   ['balloons', 'Balloons & dolls', 'Floating balloons, a balloon-shaped photo and little dancing dolls. Playful and bright for kids.'],
   ['space', 'Space adventure', 'A twinkling night sky with a rocket, planets, a porthole photo and a friendly astronaut and alien.'],
   ['cake', 'Cake & candles', 'A cake with flickering candles. Guests tap the candles to blow them out and make a wish.']
@@ -586,7 +584,7 @@ const TYPE_NAMES = { wedding:'Wedding', birthday:'Birthday', seminar:'Seminar / 
 {
   const q = new URLSearchParams(location.search), t = q.get('type');
   const sel = document.querySelector('[name=type]');
-  if (t && TYPE_NAMES[t]) sel.value = t;
+  if (t && TYPE_NAMES[t]) { sel.value = t; syncType(); }   // rebuild designs/colours for the type from the link
   if (!admToken) {            // customer: type already chosen (from the link, or Wedding by default), so no dropdown
     $('typeLbl').hidden = true;
     $('typeLock').classList.add('on');
