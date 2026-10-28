@@ -1,0 +1,173 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>You are invited</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Pacifico&family=Nunito:wght@400;700&family=Noto+Sans+Ethiopic:wght@400;700;800&display=swap" rel="stylesheet">
+<style>
+  :root { --bg:#fff1e3; --ink:#4b2a1e; --a:#ff8fb1; --b:#f6c56f; --c:#7fd8c3; --choc:#6b3a28; --card:#fffdf9; }
+  body[data-theme=blue] { --bg:#eaf4ff; --ink:#1f3350; --a:#7db8ff; --b:#ffd68a; --c:#ff9fb4; --choc:#3e4f7a; }
+  body[data-theme=white] { --bg:#fffdf8; --ink:#33264a; --a:#b79cf0; --b:#ffc978; --c:#f58ea8; --choc:#5a3d7a; }
+  * { box-sizing:border-box; }
+  html, body { margin:0; }
+  body { min-height:100svh; background:var(--bg); color:var(--ink); font-family:'Nunito','Noto Sans Ethiopic',system-ui,sans-serif; line-height:1.55; overflow-x:hidden; }
+  body.am { font-family:'Noto Sans Ethiopic','Nunito',sans-serif; }
+  .scallop { height:18px; margin-top:env(safe-area-inset-top,0px); background:radial-gradient(circle at 14px 0, var(--a) 13px, transparent 14px) 0 0/28px 18px repeat-x; }
+  main { max-width:560px; margin:0 auto; padding:0 20px max(28px, env(safe-area-inset-bottom)); text-align:center; }
+  .lang { display:flex; justify-content:flex-end; gap:6px; padding-top:8px; }
+  .lang button { font:inherit; font-size:.85rem; border:2px solid var(--ink); background:transparent; color:var(--ink); border-radius:999px; padding:3px 12px; cursor:pointer; }
+  .lang button[aria-pressed=true] { background:var(--ink); color:var(--bg); }
+  .lang button:focus-visible, .btn:focus-visible, .cakebtn:focus-visible { outline:3px solid var(--choc); outline-offset:4px; }
+  .hero { position:relative; width:min(300px,82vw); margin:6px auto 0; }
+  .cakebtn { display:block; width:100%; padding:0; border:0; background:none; cursor:pointer; -webkit-tap-highlight-color:transparent; }
+  .cakebtn svg { display:block; width:100%; height:auto; overflow:visible; }
+  .flame { transform-box:fill-box; transform-origin:50% 100%; animation:flick .35s ease-in-out infinite alternate; transition:opacity .4s, transform .4s; }
+  .flame:nth-of-type(2n) { animation-delay:-.15s; } .flame:nth-of-type(3n) { animation-delay:-.27s; }
+  @keyframes flick { from { transform:scale(.9,1.08) rotate(-4deg); } to { transform:scale(1.08,.94) rotate(4deg); } }
+  .smoke { opacity:0; }
+  .out .flame { opacity:0; animation:none; transform:scale(.3); }
+  .out .smoke { animation:puff 1.6s ease-out; }
+  @keyframes puff { 0% { opacity:.8; transform:translateY(0); } 100% { opacity:0; transform:translateY(-26px); } }
+  .glow { position:absolute; left:50%; top:4%; width:70%; aspect-ratio:1; margin-left:-35%; border-radius:50%; background:radial-gradient(circle,rgba(255,200,90,.5),transparent 65%); pointer-events:none; transition:opacity .5s; }
+  .out ~ .glow, .hero.out .glow { opacity:0; }
+  .spark { position:absolute; left:50%; top:30%; width:9px; height:9px; border-radius:50%; pointer-events:none; animation:pop 1.1s ease-out forwards; }
+  @keyframes pop { to { transform:translate(var(--tx),var(--ty)) scale(.2); opacity:0; } }
+  .wish { margin:2px 0 0; font-size:.95rem; opacity:.8; }
+  .say { margin:14px 0 0; font-size:1.05rem; }
+  h1 { font-family:'Pacifico','Noto Sans Ethiopic',cursive; font-weight:400; font-size:clamp(2.1rem,9.5vw,3.3rem); line-height:1.25; margin:4px 0 8px; color:var(--choc); text-wrap:balance; }
+  body.am h1 { font-family:'Noto Sans Ethiopic',sans-serif; font-weight:800; line-height:1.3; }
+  .host { margin:0 0 26px; opacity:.88; }
+  .plate { width:min(250px,68vw); aspect-ratio:1; margin:0 auto 28px; border-radius:50%; padding:16px; background:#fff; outline:3px dotted var(--a); outline-offset:-7px; box-shadow:0 12px 26px rgba(75,42,30,.2); }
+  .plate .pic { width:100%; height:100%; border-radius:50%; background:var(--card) center/cover no-repeat; border:5px solid var(--b); }
+  .when, .where { background:var(--card); border-radius:22px; padding:20px 18px; margin:0 0 16px; border:3px solid var(--a); box-shadow:0 6px 0 var(--b); }
+  .where { border-color:var(--c); }
+  .when .big { font-family:'Pacifico','Noto Sans Ethiopic',cursive; font-size:1.35rem; line-height:1.4; margin:0; color:var(--choc); }
+  body.am .when .big { font-family:'Noto Sans Ethiopic',sans-serif; font-weight:800; }
+  .when .sm { margin:2px 0 0; font-size:1.1rem; font-weight:700; }
+  .where p { margin:0 0 12px; font-weight:700; }
+  .btn { display:inline-block; font:inherit; font-weight:700; text-decoration:none; background:var(--choc); color:#fff; border-radius:999px; padding:10px 22px; }
+  .prog { list-style:none; padding:0; margin:0 0 16px; display:grid; gap:8px; text-align:left; }
+  .prog li { background:var(--card); border-radius:18px; padding:10px 16px; display:flex; align-items:center; gap:12px; }
+  .prog li::before { content:""; flex:0 0 22px; height:22px; background:var(--a); clip-path:polygon(50% 100%,0 0,100% 0); border-radius:2px; }
+  .prog li:nth-child(3n+2)::before { background:var(--b); } .prog li:nth-child(3n)::before { background:var(--c); }
+  .prog b { margin-right:auto; }
+  .msg { font-size:1.1rem; margin:22px 4px; white-space:pre-line; text-wrap:pretty; }
+  .gal { display:flex; gap:16px; overflow-x:auto; scroll-snap-type:x mandatory; padding:14px 20px 26px; margin:0 -20px; }
+  .gal img { flex:0 0 auto; width:min(210px,62vw); aspect-ratio:3/4; object-fit:cover; scroll-snap-align:center; background:#fff; padding:8px 8px 30px; border-radius:6px; box-shadow:0 8px 18px rgba(75,42,30,.22); }
+  .gal img:nth-child(odd) { transform:rotate(-2.5deg); } .gal img:nth-child(even) { transform:rotate(2deg); }
+  .cups { display:flex; justify-content:center; align-items:flex-end; gap:10px; margin-top:26px; }
+  .err { padding:40px 0; font-weight:700; }
+  @media (prefers-reduced-motion:reduce) { .flame, .out .smoke, .spark { animation:none; } }
+</style>
+</head>
+<body data-theme="pink">
+<div class="scallop" aria-hidden="true"></div>
+<main>
+  <div class="lang"><button id="bEn" type="button">English</button><button id="bAm" type="button" lang="am">አማርኛ</button></div>
+  <div id="content"></div>
+</main>
+<script>
+const API = 'https://videogift-backend-3.onrender.com';
+const $ = id => document.getElementById(id);
+const qs = new URLSearchParams(location.search);
+
+/* Ethiopian calendar */
+const EM = ['መስከረም','ጥቅምት','ኅዳር','ታኅሣሥ','ጥር','የካቲት','መጋቢት','ሚያዝያ','ግንቦት','ሰኔ','ሐምሌ','ነሐሴ','ጳጉሜን'];
+const g2j = (y, m, d) => { const a = Math.floor((14 - m) / 12), yy = y + 4800 - a, mm = m + 12 * a - 3; return d + Math.floor((153 * mm + 2) / 5) + 365 * yy + Math.floor(yy / 4) - Math.floor(yy / 100) + Math.floor(yy / 400) - 32045; };
+const j2e = j => { const k = j - 1723856, r = ((k % 1461) + 1461) % 1461, n = (r % 365) + 365 * Math.floor(r / 1460); return { y:4 * Math.floor(k / 1461) + Math.floor(r / 365) - Math.floor(r / 1460), m:Math.floor(n / 30) + 1, d:(n % 30) + 1 }; };
+
+const T = {
+  en: { say:'Come celebrate with us!', wish:'Tap the candles and make a wish', wish2:'Your wish is on its way! Tap to relight', host:'Hosted by', map:'Open map', prog:'Party plan', err:'We could not load this invitation.' },
+  am: { say:'መጥታችሁ አብራችሁን አክብሩ!', wish:'ሻማዎቹን ነክተው ምኞት ይመኙ', wish2:'ምኞትዎ ተሰምቷል! እንደገና ለማብራት ይንኩ', host:'ጋባዦች', map:'ካርታ ክፈት', prog:'የበዓሉ ፕሮግራም', err:'ይህን ግብዣ መጫን አልተቻለም።' }
+};
+const WD_AM = ['እሑድ','ሰኞ','ማክሰኞ','ረቡዕ','ሐሙስ','ዓርብ','ቅዳሜ'];
+const WD_EN = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+const MO_EN = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+let lang = qs.get('lang') || localStorage.getItem('f27_lang') || 'en'; if (lang !== 'am') lang = 'en';
+let ev = null, out = false;
+
+const DEMO = {
+  title:'Liya turns 7!', title_am:'ሊያ 7 ዓመት ሞላት!', host_names:'Mum, Dad & Nahom', host_names_am:'እማማ፣ አባባ እና ናሆም',
+  event_date:'2026-12-12T15:00', venue:'Our home, Bole, Addis Ababa', venue_am:'ቤታችን፣ ቦሌ፣ አዲስ አበባ', map_url:'https://maps.google.com/?q=Bole+Addis+Ababa',
+  message:'Cake, games and a piñata! Bring your biggest smile.', message_am:'ኬክ፣ ጨዋታ እና ብዙ ደስታ! ፈገግታችሁን ይዛችሁ ኑ።',
+  days:[{ title:'Games', title_am:'ጨዋታ', date:'2026-12-12', start:'15:00' }, { title:'Cake time', title_am:'የኬክ ሰዓት', date:'2026-12-12', start:'17:00' }]
+};
+const pick = (o, k) => (lang === 'am' && o[k + '_am']) ? o[k + '_am'] : (o[k] || '');
+const pad = n => String(n).padStart(2, '0');
+function parseDate(s) { const m = /^(\d{4})-(\d\d)-(\d\d)(?:[T ](\d\d):(\d\d))?/.exec(s || ''); return m ? { y:+m[1], m:+m[2], d:+m[3], hh:m[4] != null ? +m[4] : null, mm:m[5] != null ? +m[5] : null } : null; }
+function dateText(p) {
+  const wd = new Date(p.y, p.m - 1, p.d).getDay();
+  if (lang === 'am') { const e = j2e(g2j(p.y, p.m, p.d)); return WD_AM[wd] + '፣ ' + EM[e.m - 1] + ' ' + e.d + ' ቀን ' + e.y + ' ዓ.ም'; }
+  return WD_EN[wd] + ', ' + p.d + ' ' + MO_EN[p.m - 1] + ' ' + p.y;
+}
+function timeText(p) {
+  if (p.hh == null) return '';
+  const h12 = p.hh % 12 || 12;
+  return lang === 'am' ? h12 + ':' + pad(p.mm) + (p.hh < 12 ? ' ጠዋት' : ' ከሰዓት') : h12 + ':' + pad(p.mm) + (p.hh < 12 ? ' AM' : ' PM');
+}
+const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;' }[c]));
+const src = u => /^(https?:|data:|blob:)/i.test(u) ? u : API + (u.startsWith('/') ? '' : '/') + u;
+const cols = () => { const cs = getComputedStyle(document.body); return ['--a', '--b', '--c', '--choc'].map(v => cs.getPropertyValue(v).trim()); };
+
+/* two-tier cake with five candles */
+function cake(C) {
+  const drips = (x0, x1, y, step, h) => { let s = ''; for (let x = x0 + 12, i = 0; x < x1 - 8; x += step, i++) s += '<rect x="' + (x - 6) + '" y="' + y + '" width="12" height="' + (h + (i % 3) * 7) + '" rx="6" fill="' + C[0] + '"/>'; return s; };
+  const cand = [80, 100, 120, 140, 160], cc = ['#fff', C[2], '#fff', C[1], '#fff'];
+  let s = '<svg viewBox="0 0 240 236" aria-hidden="true"><ellipse cx="120" cy="222" rx="112" ry="10" fill="#e9dccf"/><ellipse cx="120" cy="218" rx="112" ry="10" fill="#fff"/>';
+  s += '<rect x="20" y="146" width="200" height="72" rx="14" fill="' + C[1] + '"/><rect x="20" y="146" width="200" height="16" rx="8" fill="' + C[0] + '"/>' + drips(20, 220, 156, 30, 8);
+  s += '<rect x="20" y="196" width="200" height="22" rx="10" fill="' + C[3] + '" opacity=".9"/><g fill="#fff"><circle cx="46" cy="207" r="4"/><circle cx="84" cy="207" r="4"/><circle cx="120" cy="207" r="4"/><circle cx="156" cy="207" r="4"/><circle cx="194" cy="207" r="4"/></g>';
+  s += '<rect x="52" y="98" width="136" height="54" rx="12" fill="' + C[1] + '"/><rect x="52" y="98" width="136" height="14" rx="7" fill="' + C[0] + '"/>' + drips(52, 188, 106, 28, 8);
+  s += '<g><rect x="68" y="130" width="5" height="5" rx="2" fill="' + C[2] + '" transform="rotate(20 70 132)"/><rect x="104" y="136" width="5" height="5" rx="2" fill="' + C[0] + '" transform="rotate(-30 106 138)"/><rect x="140" y="128" width="5" height="5" rx="2" fill="' + C[3] + '" transform="rotate(50 142 130)"/><rect x="168" y="138" width="5" height="5" rx="2" fill="' + C[2] + '"/></g>';
+  cand.forEach((x, i) => { const top = 62 + (i % 2) * 6;
+    s += '<rect x="' + (x - 3.5) + '" y="' + top + '" width="7" height="' + (98 - top) + '" rx="2" fill="' + cc[i] + '" stroke="' + C[0] + '" stroke-width="1.5"/>';
+    s += '<g class="flame"><path d="M' + x + ' ' + (top - 22) + 'C' + (x + 9) + ' ' + (top - 10) + ' ' + (x + 6) + ' ' + (top - 2) + ' ' + x + ' ' + (top - 2) + 'C' + (x - 6) + ' ' + (top - 2) + ' ' + (x - 9) + ' ' + (top - 10) + ' ' + x + ' ' + (top - 22) + 'Z" fill="#ffb703"/><ellipse cx="' + x + '" cy="' + (top - 8) + '" rx="2.6" ry="4.5" fill="#fff3b0"/></g>';
+    s += '<path class="smoke" d="M' + x + ' ' + (top - 4) + 'q-5 -8 0 -14t0 -14" stroke="#9a8f88" stroke-width="2" fill="none" stroke-linecap="round"/>'; });
+  return s + '</svg>';
+}
+function cupcake(C, a, h) {
+  return '<svg viewBox="0 0 60 70" width="' + h * .86 + '" height="' + h + '" aria-hidden="true"><path d="M10 34h40l-6 32H16z" fill="' + C[1] + '"/><path d="M20 34l3 32M30 34v32M40 34l-3 32" stroke="#fff" stroke-opacity=".45" stroke-width="2"/><path d="M8 36c-4-10 4-16 10-14 0-10 10-16 18-12 8-2 16 4 14 12 8 0 10 10 6 14z" fill="' + a + '"/><circle cx="30" cy="12" r="5" fill="#e63946"/><path d="M30 8q2-5 6-6" stroke="#2d6a4f" stroke-width="2" fill="none"/></svg>';
+}
+function blow() {
+  out = !out; const h = $('hero'); if (!h) return; h.classList.toggle('out', out); $('wish').textContent = T[lang][out ? 'wish2' : 'wish'];
+  if (out && !matchMedia('(prefers-reduced-motion:reduce)').matches) { const C = cols().slice(0, 3).concat(['#ffb703']);
+    for (let i = 0; i < 26; i++) { const e = document.createElement('i'), an = Math.random() * 6.283, r = 80 + Math.random() * 110;
+      e.className = 'spark'; e.style.cssText = 'background:' + C[i % 4] + ';--tx:' + Math.cos(an) * r + 'px;--ty:' + (Math.sin(an) * r - 30) + 'px'; h.appendChild(e); setTimeout(() => e.remove(), 1200); } }
+}
+function render() {
+  const t = T[lang], c = $('content'); document.body.classList.toggle('am', lang === 'am'); document.documentElement.lang = lang;
+  $('bEn').setAttribute('aria-pressed', lang === 'en'); $('bAm').setAttribute('aria-pressed', lang === 'am');
+  if (!ev) { c.innerHTML = '<div class="err">' + esc(t.err) + '</div>'; return; }
+  const th = qs.get('theme') || ev.theme; document.body.dataset.theme = ['pink', 'blue', 'white'].includes(th) ? th : 'pink';
+  const C = cols(), p = [], photos = (ev.photo_urls && ev.photo_urls.length) ? ev.photo_urls : (ev.photo_url ? [ev.photo_url] : []);
+  p.push('<div class="hero' + (out ? ' out' : '') + '" id="hero"><div class="glow"></div><button class="cakebtn" id="cakebtn" type="button" aria-label="' + esc(t.wish) + '">' + cake(C) + '</button></div><p class="wish" id="wish">' + esc(t[out ? 'wish2' : 'wish']) + '</p>');
+  p.push('<p class="say">' + esc(t.say) + '</p><h1>' + esc(pick(ev, 'title')) + '</h1>');
+  const host = pick(ev, 'host_names'); if (host) p.push('<p class="host">' + esc(t.host) + ' ' + esc(host) + '</p>');
+  if (photos[0]) p.push('<div class="plate"><div class="pic" role="img" aria-label="" style="background-image:url(\'' + esc(src(photos[0])).replace(/'/g, '%27') + '\')"></div></div>');
+  const d = parseDate(ev.event_date);
+  if (d) p.push('<div class="when"><p class="big">' + esc(dateText(d)) + '</p>' + (timeText(d) ? '<p class="sm">' + esc(timeText(d)) + '</p>' : '') + '</div>');
+  const venue = pick(ev, 'venue');
+  if (venue) p.push('<div class="where"><p>' + esc(venue) + '</p>' + (/^https?:\/\//i.test(ev.map_url || '') ? '<a class="btn" target="_blank" rel="noopener" href="' + esc(ev.map_url) + '">' + esc(t.map) + '</a>' : '') + '</div>');
+  const days = Array.isArray(ev.days) ? ev.days : [];
+  if (days.length > 1 || (days.length === 1 && days[0].title)) p.push('<ul class="prog" aria-label="' + esc(t.prog) + '">' + days.map(x => {
+    const tm = x.start ? timeText(parseDate('2000-01-01T' + x.start)) : ''; return '<li><b>' + esc(pick(x, 'title')) + '</b>' + (tm ? '<span>' + esc(tm) + '</span>' : '') + '</li>'; }).join('') + '</ul>');
+  const msg = pick(ev, 'message') || pick(ev, 'about').replace(/\s*\[\[tpl:\w+\]\]\s*$/, ''); if (msg) p.push('<p class="msg">' + esc(msg) + '</p>');
+  const gal = [...photos.slice(1), ...(Array.isArray(ev.gallery_urls) ? ev.gallery_urls : [])];
+  if (gal.length) p.push('<div class="gal">' + gal.map(u => '<img alt="" loading="lazy" src="' + esc(src(u)) + '">').join('') + '</div>');
+  p.push('<div class="cups">' + cupcake(C, C[0], 62) + cupcake(C, C[2], 74) + cupcake(C, C[1], 62) + '</div>');
+  c.innerHTML = p.join(''); $('cakebtn').onclick = blow;
+}
+$('bEn').onclick = () => { lang = 'en'; localStorage.setItem('f27_lang', lang); render(); };
+$('bAm').onclick = () => { lang = 'am'; localStorage.setItem('f27_lang', lang); render(); };
+
+(async function () {
+  const slug = qs.get('e');
+  if (!slug) { ev = Object.assign({}, DEMO); if (qs.get('title')) ev.title = qs.get('title'); }
+  else { try { const r = await fetch(API + '/api/events/' + encodeURIComponent(slug)); if (!r.ok) throw new Error(r.status); ev = await r.json(); } catch (e) { ev = null; } }
+  render();
+})();
+</script>
+</body>
+</html>

@@ -486,7 +486,10 @@ function renderThemes() {
 // ---------- Invitation design (wedding templates) with live previews ----------
 const TEMPLATES_BDAY = [
   ['classic', 'Classic page', 'The simple birthday page with your photos and gallery. You choose the background colour.'],
-  ['birthday', 'Party bunting', 'A bright party page: swaying bunting, a round photo, polaroid gallery and a confetti burst when guests arrive.']
+  ['birthday', 'Party bunting', 'A bright party page: swaying bunting, a round photo, polaroid gallery and a confetti burst when guests arrive.'],
+  ['balloons', 'Balloons & dolls', 'Floating balloons, a balloon-shaped photo and little dancing dolls. Playful and bright for kids.'],
+  ['space', 'Space adventure', 'A twinkling night sky with a rocket, planets, a porthole photo and a friendly astronaut and alien.'],
+  ['cake', 'Cake & candles', 'A cake with flickering candles. Guests tap the candles to blow them out and make a wish.']
 ];
 const curType = () => { const s = document.querySelector('#f [name=type]'); return s ? s.value : ''; };
 let tplFor = '';
@@ -497,13 +500,15 @@ const TEMPLATES = [
 ];
 const TPL_MARK = /\s*\[\[tpl:(\w+)\]\]\s*$/;
 const splitTpl = t => { const m = TPL_MARK.exec(t || ''); return { text:String(t || '').replace(TPL_MARK, ''), tpl:m ? m[1] : '' }; };
-const joinTpl = (t, tpl) => String(t || '').replace(TPL_MARK, '') + (['basket', 'scroll', 'birthday'].includes(tpl) ? '\n[[tpl:' + tpl + ']]' : '');
+const TPL_FILE = { scroll:'event-scroll.html', birthday:'event-birthday.html', balloons:'event-birthday-balloons.html', space:'event-birthday-space.html', cake:'event-birthday-cake.html' };
+const BDAY_PAGES = ['birthday', 'balloons', 'space', 'cake'];
+const joinTpl = (t, tpl) => String(t || '').replace(TPL_MARK, '') + (['basket', 'scroll', ...BDAY_PAGES].includes(tpl) ? '\n[[tpl:' + tpl + ']]' : '');
 const tplVal = () => { const r = document.querySelector('#f [name=template]:checked'); return r ? r.value : 'classic'; };
 function previewURL(id, thumb) {
-  const f = $('f'), u = new URL(id === 'scroll' ? 'event-scroll.html' : id === 'birthday' ? 'event-birthday.html' : 'event.html', location.href);
-  if (id !== 'scroll' && id !== 'birthday') u.searchParams.set('demo', id);
+  const f = $('f'), u = new URL(TPL_FILE[id] || 'event.html', location.href);
+  if (!TPL_FILE[id]) u.searchParams.set('demo', id);
   const t = (f.elements['title'].value || '').trim(); if (t) u.searchParams.set('title', t);
-  const th = f.elements['theme'] ? f.elements['theme'].value : ''; if (th && (id === 'classic' || id === 'birthday')) u.searchParams.set('theme', th);
+  const th = f.elements['theme'] ? f.elements['theme'].value : ''; if (th && (id === 'classic' || BDAY_PAGES.includes(id))) u.searchParams.set('theme', th);
   if (thumb) u.searchParams.set('thumb', '1');
   return u.href;
 }
@@ -702,7 +707,7 @@ $('f').onsubmit = async e => {
     try { d = await r.json(); } catch { throw new Error('The server did not accept the request (status ' + r.status + '). The events API may not be deployed yet.'); }
     if (!r.ok) throw new Error(d.error || 'Upload failed.');
     cur = d;
-    const url = new URL(fd.get('template') === 'scroll' ? 'event-scroll.html' : (isBday() && tplVal() === 'birthday') ? 'event-birthday.html' : 'event.html', location.href); url.search = '?e=' + d.slug;
+    const url = new URL(fd.get('template') === 'scroll' ? TPL_FILE.scroll : (isBday() && BDAY_PAGES.includes(tplVal())) ? TPL_FILE[tplVal()] : 'event.html', location.href); url.search = '?e=' + d.slug;
     const qr = qrcode(0, 'H'); qr.addData(url.href); qr.make();
     const svg = qr.createSvgTag({ cellSize:8, margin:4, scalable:true });
     $('qr').innerHTML = svg;
