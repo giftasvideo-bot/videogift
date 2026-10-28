@@ -92,6 +92,8 @@
   .ethIn { display:grid; grid-template-columns:1fr 1fr 1.6fr; gap:8px; }
   #amT[hidden] { display:none; }
   #amDateOut { min-height:0; padding:8px 11px; font-size:.95rem; }
+  .ethT { display:grid; gap:5px; font-weight:500; }
+  .ethIn3 { display:grid; grid-template-columns:1fr 1fr 1.2fr; gap:8px; }
   .fld { display:grid; gap:5px; font-weight:500; }
   .ro { display:block; padding:11px; border:1px dashed var(--line); border-radius:6px; background:#f6f9f8; font-weight:500; min-height:2.8em; }
 </style>
@@ -173,10 +175,10 @@
       <fieldset class="grp" id="grpAm" lang="am">
         <legend>አማርኛ · Amharic</legend>
       <label>ርዕስ (በአማርኛ፣ አማራጭ)<input name="title_am" maxlength="120" lang="am"></label>
-      <div class="fld" id="amDateFld"><span id="amDateTxt">ቀን እና ሰዓት (የኢትዮጵያ አቆጣጠር)</span><div class="ethIn" role="group" aria-label="የኢትዮጵያ ቀን"><select id="amD" aria-label="ቀን"><option value="">ቀን</option></select><select id="amM" aria-label="ወር"><option value="">ወር</option></select><select id="amY" aria-label="ዓመት"><option value="">ዓመት</option></select></div><input type="time" id="amT" hidden aria-label="ሰዓት"><output id="amDateOut" class="ro" aria-live="polite">—</output></div>
+      <div class="fld" id="amDateFld"><span id="amDateTxt">ቀን እና ሰዓት (የኢትዮጵያ አቆጣጠር)</span><div class="ethIn" role="group" aria-label="የኢትዮጵያ ቀን"><select id="amD" aria-label="ቀን"><option value="">ቀን</option></select><select id="amM" aria-label="ወር"><option value="">ወር</option></select><select id="amY" aria-label="ዓመት"><option value="">ዓመት</option></select></div>
       <fieldset id="daysAmBox" class="daysAm" hidden>
         <legend id="daysAmLegend">ፕሮግራም</legend>
-        <small>ሰዓቱ ከእንግሊዝኛው ፕሮግራም ይወሰዳል። እዚህ የሚጻፈው የእያንዳንዱ ክፍል ርዕስ ብቻ ነው።</small>
+        <small>ሰዓቱን በኢትዮጵያ ሰዓት እዚህ መምረጥ ይችላሉ፤ ከእንግሊዝኛው ሰዓት ጋር አብሮ ይቀየራል።</small>
         <div id="daysAm"></div>
       </fieldset>
       <label id="aboutAmLbl">ስለ እኛ <small>(በአማርኛ፣ አማራጭ)</small><textarea name="about_am" maxlength="1980" lang="am"></textarea></label>
@@ -383,11 +385,56 @@ let admToken = null;
 try { const a = JSON.parse(sessionStorage.getItem('f27_admin_auth') || 'null'); if (a && a.token && a.expires > Date.now()) admToken = a.token; } catch {}
 { const pre = new URLSearchParams(location.search).get('code'); if (pre) $('code').value = pre; }
 if (admToken) { $('code').required = false; $('codeLbl').firstChild.textContent = FT('Card code (optional for admin) '); }
+// ---------- Ethiopian clock for the Amharic schedule
+const PERIODS = ['\u1320\u12CB\u1275', '\u1240\u1295', '\u121B\u1273', '\u121C\u120B\u1275'];   // morning, day, evening, night
+function tblock(k, lbl) {
+  const hs = Array.from({ length: 12 }, (_, i) => '<option value="' + (i + 1) + '">' + (i + 1) + '</option>').join('');
+  const ms = Array.from({ length: 12 }, (_, i) => { const m = ('0' + i * 5).slice(-2); return '<option value="' + m + '">' + m + '</option>'; }).join('');
+  return '<div class="full ethT" data-k="' + k + '"><span>' + lbl + ' (\u12E8\u12A2\u1275\u12EE\u1335\u12EB \u1230\u12D3\u1275)</span><div class="ethIn3">' +
+    '<select class="a-h" aria-label="\u1230\u12D3\u1275"><option value="">\u1230\u12D3\u1275</option>' + hs + '</select>' +
+    '<select class="a-m" aria-label="\u12F0\u1242\u1243"></select>' +
+    '<select class="a-p" aria-label="\u1308\u12DC"></select></div></div>';
+}
+function setPeriods(sel, eh, keep) {
+  const list = !eh ? PERIODS : (eh === 12 || eh <= 5) ? [PERIODS[0], PERIODS[2]] : [PERIODS[1], PERIODS[3]], sig = list.join();
+  if (sel.dataset.sig !== sig) { sel.innerHTML = '<option value="">\u1308\u12DC</option>' + list.map(p => '<option>' + p + '</option>').join(''); sel.dataset.sig = sig; }
+  sel.value = list.includes(keep) ? keep : '';
+}
+function wireEthTime(b, r) {
+  const h = b.querySelector('.a-h'), m = b.querySelector('.a-m'), p = b.querySelector('.a-p'), en = r.querySelector(b.dataset.k === 'start' ? '.d-time' : '.d-end');
+  m.innerHTML = '<option value="">\u12F0\u1242\u1243</option>' + Array.from({ length: 12 }, (_, i) => { const v = ('0' + i * 5).slice(-2); return '<option value="' + v + '">' + v + '</option>'; }).join('');
+  setPeriods(p, 0, '');
+  b.addEventListener('change', e => {
+    if (e.target === h) setPeriods(p, +h.value || 0, p.value);
+    if (!h.value) { if (b.dataset.k === 'end' && en.value) { en.value = ''; en.dispatchEvent(new Event('input', { bubbles:true })); } return; }
+    if (!p.value) return;
+    if (!m.value) m.value = '00';
+    const eh = +h.value, H = (eh + 6) % 12 + ((p.value === PERIODS[1] || p.value === PERIODS[2]) ? 12 : 0);
+    const v = ('0' + H).slice(-2) + ':' + m.value;
+    if (en.value !== v) { en.value = v; en.dispatchEvent(new Event('input', { bubbles:true })); en.dispatchEvent(new Event('change', { bubbles:true })); }
+  });
+}
+function fillEthTimes() {
+  [...$('days').children].forEach(r => {
+    if (!r._am) return;
+    r._am.querySelectorAll('.ethT').forEach(b => {
+      if (b.contains(document.activeElement)) return;
+      const v = r.querySelector(b.dataset.k === 'start' ? '.d-time' : '.d-end').value, h = b.querySelector('.a-h'), m = b.querySelector('.a-m'), p = b.querySelector('.a-p');
+      if (/^\d{1,2}:\d\d/.test(v)) {
+        const H = +v.slice(0, 2), mm = v.slice(3, 5), eh = (H + 6) % 12 || 12, per = H < 6 ? PERIODS[3] : H < 12 ? PERIODS[0] : H < 18 ? PERIODS[1] : PERIODS[2];
+        h.value = eh; setPeriods(p, eh, per);
+        if (![...m.options].some(o => o.value === mm)) m.add(new Option(mm, mm));
+        m.value = mm;
+      } else { h.value = ''; m.value = ''; setPeriods(p, 0, ''); }
+    });
+  });
+}
+document.addEventListener('input', fillEthTimes); document.addEventListener('change', fillEthTimes); setInterval(fillEthTimes, 700);
 function addDay(v = {}) {
   const n = $('days').children.length + 1;
   const r = document.createElement('div'); r.className = 'dayrow';
   const ra = document.createElement('div'); ra.className = 'dayrow';
-  ra.innerHTML = '<label class="full">ርዕስ <small>(በአማርኛ፣ አማራጭ)</small><input class="d-title-am" maxlength="120" lang="am"></label>';
+  ra.innerHTML = tblock('start', 'መጀመሪያ ሰዓት') + tblock('end', 'መጨረሻ ሰዓት <small>(አማራጭ)</small>') + '<label class="full">ርዕስ <small>(በአማርኛ፣ አማራጭ)</small><input class="d-title-am" maxlength="120" lang="am"></label>';
   r.innerHTML = '<label class="full">Date <input type="date" class="d-date"></label><label>Start time <input type="time" class="d-time"></label>' +
     '<label>End time <small>(optional)</small><input type="time" class="d-end"></label>' +
     '<label class="tt">Title for this day <input class="d-title" maxlength="120"></label>' +
@@ -395,7 +442,7 @@ function addDay(v = {}) {
   const prev = $('days').lastElementChild; r.querySelector('.d-date').value = v.date || (prev ? prev.querySelector('.d-date').value : ''); r.querySelector('.d-time').value = v.time || '';
   r.querySelector('.d-title').value = v.title || ''; ra.querySelector('.d-title-am').value = v.title_am || ''; r.querySelector('.d-title').placeholder = !isSem() ? 'e.g. Church ceremony' : 'Day ' + n + ': e.g. Opening and Vision';
   r.querySelector('button').onclick = () => { if ($('days').children.length > 1) { r.remove(); ra.remove(); } };
-  $('days').append(r); $('daysAm').append(ra); r._am = ra; labelRows(); applyFormLang();
+  $('days').append(r); $('daysAm').append(ra); r._am = ra; ra.querySelectorAll('.ethT').forEach(b => wireEthTime(b, r)); labelRows(); fillEthTimes(); applyFormLang();
 }
 function labelRows() {
   const w = !isSem();
