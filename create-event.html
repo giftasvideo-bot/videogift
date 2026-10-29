@@ -38,6 +38,9 @@
   #err { color:#a12a2a; min-height:1.4em; font-weight:500; }
   #rsvps li { margin:4px 0; }
   #daysBox, #daysAmBox, .langs .grp > label { align-content:start; }
+  .sect { border:1px solid var(--line); border-radius:8px; padding:14px; display:grid; gap:12px; background:#fff; align-content:start; }
+  .sect > #daysBox, .sect > #daysAmBox { border:0; border-top:1px dashed var(--line); border-radius:0; padding:12px 0 0; margin:0; }
+  .sect > #daysBox legend, .sect > #daysAmBox legend { padding:0; }
   #daysBox { border:1px solid var(--line); border-radius:8px; padding:14px; display:grid; gap:10px; }
   #daysBox[hidden], #daysAmBox[hidden] { display:none; }
   #daysAmBox { border:1px solid var(--line); border-radius:8px; padding:14px; display:grid; gap:10px; }
@@ -165,6 +168,7 @@
     <div class="langs">
       <fieldset class="grp" id="grpEn">
         <legend>English · እንግሊዝኛ</legend>
+      <div class="sect">
       <label>Title <input name="title" required maxlength="120" placeholder="Selam & Dawit's Wedding"></label>
       <label><span id="dateTxt">Date</span> <small id="dateHint">(optional if you add a schedule below)</small><input type="date" name="event_date" id="evDate"></label>
       <fieldset id="daysBox" hidden>
@@ -173,6 +177,7 @@
       <div id="days"></div>
       <button class="btn alt" id="addDay" type="button">+ Add day</button>
     </fieldset>
+      </div>
       <label id="aboutLbl" hidden><span id="aboutTxt">About us</span> <small id="aboutHint">(your story, shown in the "About us" section)</small><textarea name="about" maxlength="1980"></textarea></label>
       <label id="hostLbl"><span id="hostTxt">Hosts</span> <small id="hostHint">(optional)</small><input name="host_names" maxlength="120" placeholder="Together with their families"></label>
       <label>Venue <input name="venue" maxlength="200"></label>
@@ -180,6 +185,7 @@
       </fieldset>
       <fieldset class="grp" id="grpAm" lang="am">
         <legend>አማርኛ · Amharic</legend>
+      <div class="sect">
       <label>ርዕስ (በአማርኛ፣ አማራጭ)<input name="title_am" maxlength="120" lang="am"></label>
       <div class="fld" id="amDateFld"><span id="amDateTxt">ቀን (የኢትዮጵያ አቆጣጠር)</span><div class="ethIn" role="group" aria-label="የኢትዮጵያ ቀን"><select id="amD" aria-label="ቀን"><option value="">ቀን</option></select><select id="amM" aria-label="ወር"><option value="">ወር</option></select><select id="amY" aria-label="ዓመት"><option value="">ዓመት</option></select></div><input type="time" id="amT" hidden></div>
       <fieldset id="daysAmBox" class="daysAm" hidden>
@@ -187,6 +193,7 @@
         <small>ሰዓቱን በኢትዮጵያ ሰዓት እዚህ መምረጥ ይችላሉ፤ ከእንግሊዝኛው ሰዓት ጋር አብሮ ይቀየራል።</small>
         <div id="daysAm"></div>
       </fieldset>
+      </div>
       <label id="aboutAmLbl">ስለ እኛ <small>(በአማርኛ፣ አማራጭ)</small><textarea name="about_am" maxlength="1980" lang="am"></textarea></label>
       <label id="hostAmLbl">አስተናጋጆች <small>(በአማርኛ፣ አማራጭ)</small><input name="host_names_am" maxlength="120" lang="am"></label>
       <label>ቦታ <small>(በአማርኛ፣ አማራጭ)</small><input name="venue_am" maxlength="200" lang="am"></label>
@@ -492,7 +499,8 @@ const PAIR_SEL = [
   ['#aboutLbl', '#aboutAmLbl'],
   ['#hostLbl', '#hostAmLbl'],
   ['#grpEn [name=venue]', '#grpAm [name=venue_am]', 'label'],
-  ['#grpEn [name=message]', '#grpAm [name=message_am]', 'label']
+  ['#grpEn [name=message]', '#grpAm [name=message_am]', 'label'],
+  ['#grpEn .sect', '#grpAm .sect']
 ];
 function alignPairs() {
   const pairs = PAIR_SEL.map(([a, b, up]) => { let x = document.querySelector(a), y = document.querySelector(b); if (up && x) x = x.closest(up); if (up && y && !y.matches(up)) y = y.closest(up) || y; return [x, y]; });
