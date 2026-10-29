@@ -181,7 +181,7 @@
       <fieldset class="grp" id="grpAm" lang="am">
         <legend>አማርኛ · Amharic</legend>
       <label>ርዕስ (በአማርኛ፣ አማራጭ)<input name="title_am" maxlength="120" lang="am"></label>
-      <div class="fld" id="amDateFld"><span id="amDateTxt">ቀን (የኢትዮጵያ አቆጣጠር)</span><div class="ethIn" role="group" aria-label="የኢትዮጵያ ቀን"><select id="amD" aria-label="ቀን"><option value="">ቀን</option></select><select id="amM" aria-label="ወር"><option value="">ወር</option></select><select id="amY" aria-label="ዓመት"><option value="">ዓመት</option></select></div>
+      <div class="fld" id="amDateFld"><span id="amDateTxt">ቀን (የኢትዮጵያ አቆጣጠር)</span><div class="ethIn" role="group" aria-label="የኢትዮጵያ ቀን"><select id="amD" aria-label="ቀን"><option value="">ቀን</option></select><select id="amM" aria-label="ወር"><option value="">ወር</option></select><select id="amY" aria-label="ዓመት"><option value="">ዓመት</option></select></div><input type="time" id="amT" hidden></div>
       <fieldset id="daysAmBox" class="daysAm" hidden>
         <legend id="daysAmLegend">ፕሮግራም</legend>
         <small>ሰዓቱን በኢትዮጵያ ሰዓት እዚህ መምረጥ ይችላሉ፤ ከእንግሊዝኛው ሰዓት ጋር አብሮ ይቀየራል።</small>
@@ -444,8 +444,8 @@ function enBlock(k, lbl, cls) {
   const hs = Array.from({ length: 12 }, (_, i) => '<option value="' + (i + 1) + '">' + (i + 1) + '</option>').join('');
   const ms = Array.from({ length: 12 }, (_, i) => { const m = ('0' + i * 5).slice(-2); return '<option value="' + m + '">' + m + '</option>'; }).join('');
   return '<div class="full ethT enT" data-k="' + k + '"><span>' + lbl + '</span><div class="ethIn3">' +
-    '<select class="e-h" aria-label="Hour"><option value="">Hour</option>' + hs + '</select>' +
-    '<select class="e-m" aria-label="Minute"><option value="">Minute</option>' + ms + '</select>' +
+    '<select class="e-h" aria-label="Hour"><option value="">Hr</option>' + hs + '</select>' +
+    '<select class="e-m" aria-label="Minute"><option value="">Min</option>' + ms + '</select>' +
     '<select class="e-p" aria-label="AM or PM"><option value="">AM / PM</option><option value="AM">AM (morning)</option><option value="PM">PM (afternoon / evening)</option></select></div>' +
     '<small class="e-eq"></small><input type="hidden" class="' + cls + '"></div>';
 }
