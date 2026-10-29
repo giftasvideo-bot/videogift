@@ -43,6 +43,10 @@
   #daysBox legend, #daysAmBox legend { font-weight:500; padding:0 6px; }
   .dayrow { display:grid; grid-template-columns:1fr 1fr; gap:8px; padding-bottom:10px; margin-bottom:10px; border-bottom:1px dashed var(--line); }
   .dayrow .full { grid-column:1/-1; }
+  .dayrow { box-sizing:border-box; align-content:start; }
+  #days .dayrow { grid-template-columns:1fr; gap:10px; }
+  #days .dayrow .tt { grid-column:auto; }
+  #daysBox #addDay { justify-self:start; }
   .dayrow button { justify-self:start; }
   .wedOnly[hidden], .dayrow [hidden], #hostLbl[hidden], #galLbl[hidden], #themeBox[hidden], #aboutLbl[hidden], #aboutAmLbl[hidden] { display:none; }
   .swatches { border:1px solid var(--line); border-radius:8px; padding:10px 14px 14px; display:flex; gap:14px; flex-wrap:wrap; align-items:center; }
@@ -161,7 +165,7 @@
       <fieldset class="grp" id="grpEn">
         <legend>English · እንግሊዝኛ</legend>
       <label>Title <input name="title" required maxlength="120" placeholder="Selam & Dawit's Wedding"></label>
-      <label><span id="dateTxt">Date and time</span> <small id="dateHint">(optional if you add a schedule below)</small><input type="datetime-local" name="event_date" id="evDate"></label>
+      <label><span id="dateTxt">Date</span> <small id="dateHint">(optional if you add a schedule below)</small><input type="date" name="event_date" id="evDate"></label>
       <fieldset id="daysBox" hidden>
       <legend id="daysLegend">Seminar days</legend>
       <small id="daysHelp">Add each day with its own title. You can change titles later.</small>
@@ -176,7 +180,7 @@
       <fieldset class="grp" id="grpAm" lang="am">
         <legend>አማርኛ · Amharic</legend>
       <label>ርዕስ (በአማርኛ፣ አማራጭ)<input name="title_am" maxlength="120" lang="am"></label>
-      <div class="fld" id="amDateFld"><span id="amDateTxt">ቀን እና ሰዓት (የኢትዮጵያ አቆጣጠር)</span><div class="ethIn" role="group" aria-label="የኢትዮጵያ ቀን"><select id="amD" aria-label="ቀን"><option value="">ቀን</option></select><select id="amM" aria-label="ወር"><option value="">ወር</option></select><select id="amY" aria-label="ዓመት"><option value="">ዓመት</option></select></div>
+      <div class="fld" id="amDateFld"><span id="amDateTxt">ቀን (የኢትዮጵያ አቆጣጠር)</span><div class="ethIn" role="group" aria-label="የኢትዮጵያ ቀን"><select id="amD" aria-label="ቀን"><option value="">ቀን</option></select><select id="amM" aria-label="ወር"><option value="">ወር</option></select><select id="amY" aria-label="ዓመት"><option value="">ዓመት</option></select></div>
       <fieldset id="daysAmBox" class="daysAm" hidden>
         <legend id="daysAmLegend">ፕሮግራም</legend>
         <small>ሰዓቱን በኢትዮጵያ ሰዓት እዚህ መምረጥ ይችላሉ፤ ከእንግሊዝኛው ሰዓት ጋር አብሮ ይቀየራል።</small>
@@ -435,20 +439,61 @@ function fillEthTimes() {
   });
 }
 document.addEventListener('input', fillEthTimes); document.addEventListener('change', fillEthTimes); setInterval(fillEthTimes, 700);
+function enBlock(k, lbl, cls) {
+  const hs = Array.from({ length: 12 }, (_, i) => '<option value="' + (i + 1) + '">' + (i + 1) + '</option>').join('');
+  const ms = Array.from({ length: 12 }, (_, i) => { const m = ('0' + i * 5).slice(-2); return '<option value="' + m + '">' + m + '</option>'; }).join('');
+  return '<div class="full ethT enT" data-k="' + k + '"><span>' + lbl + '</span><div class="ethIn3">' +
+    '<select class="e-h" aria-label="Hour"><option value="">Hour</option>' + hs + '</select>' +
+    '<select class="e-m" aria-label="Minute"><option value="">Minute</option>' + ms + '</select>' +
+    '<select class="e-p" aria-label="AM or PM"><option value="">AM / PM</option><option value="AM">AM (morning)</option><option value="PM">PM (afternoon / evening)</option></select></div>' +
+    '<small class="e-eq"></small><input type="hidden" class="' + cls + '"></div>';
+}
+function wireEnTime(b) {
+  const h = b.querySelector('.e-h'), m = b.querySelector('.e-m'), p = b.querySelector('.e-p'), en = b.querySelector('input[type=hidden]');
+  const set = v => { if (en.value !== v) { en.value = v; en.dispatchEvent(new Event('input', { bubbles:true })); en.dispatchEvent(new Event('change', { bubbles:true })); } };
+  b.addEventListener('change', () => {
+    if (!h.value || !p.value) { set(''); return; }
+    if (!m.value) m.value = '00';
+    set(('0' + ((+h.value % 12) + (p.value === 'PM' ? 12 : 0))).slice(-2) + ':' + m.value);
+  });
+}
+function fillEnTimes() {
+  document.querySelectorAll('#days .enT').forEach(b => {
+    if (b.contains(document.activeElement)) return;
+    const v = b.querySelector('input[type=hidden]').value, h = b.querySelector('.e-h'), m = b.querySelector('.e-m'), p = b.querySelector('.e-p');
+    if (/^\d{1,2}:\d\d/.test(v)) {
+      const H = +v.slice(0, 2), mm = v.slice(3, 5);
+      h.value = H % 12 || 12; p.value = H < 12 ? 'AM' : 'PM';
+      if (![...m.options].some(o => o.value === mm)) m.add(new Option(mm, mm));
+      m.value = mm;
+    } else { h.value = ''; m.value = ''; p.value = ''; }
+  });
+}
+document.addEventListener('input', fillEnTimes); document.addEventListener('change', fillEnTimes); setInterval(fillEnTimes, 700);
 function addDay(v = {}) {
   const n = $('days').children.length + 1;
   const r = document.createElement('div'); r.className = 'dayrow';
   const ra = document.createElement('div'); ra.className = 'dayrow';
   ra.innerHTML = tblock('start', 'መጀመሪያ ሰዓት') + tblock('end', 'መጨረሻ ሰዓት <small>(አማራጭ)</small>') + '<label class="full">ርዕስ <small>(በአማርኛ፣ አማራጭ)</small><input class="d-title-am" maxlength="120" lang="am"></label>';
-  r.innerHTML = '<label class="full">Date <input type="date" class="d-date"></label><label>Start time <input type="time" class="d-time"></label>' +
-    '<label>End time <small>(optional)</small><input type="time" class="d-end"></label>' +
+  r.innerHTML = '<label class="full">Date <input type="date" class="d-date"></label>' + enBlock('start', 'Start time', 'd-time') +
+    enBlock('end', 'End time <small>(optional)</small>', 'd-end') +
     '<label class="tt">Title for this day <input class="d-title" maxlength="120"></label>' +
     '<button class="btn alt" type="button">Remove day</button>';
-  const prev = $('days').lastElementChild; r.querySelector('.d-date').value = v.date || (prev ? prev.querySelector('.d-date').value : ''); r.querySelector('.d-time').value = v.time || '';
+  const prev = $('days').lastElementChild; r.querySelector('.d-date').value = v.date || (prev ? prev.querySelector('.d-date').value : ''); r.querySelector('.d-time').value = v.time || ''; r.querySelector('.d-end').value = v.end || '';
   r.querySelector('.d-title').value = v.title || ''; ra.querySelector('.d-title-am').value = v.title_am || ''; r.querySelector('.d-title').placeholder = !isSem() ? 'e.g. Church ceremony' : 'Day ' + n + ': e.g. Opening and Vision';
   r.querySelector('button').onclick = () => { if ($('days').children.length > 1) { r.remove(); ra.remove(); } };
-  $('days').append(r); $('daysAm').append(ra); r._am = ra; ra.querySelectorAll('.ethT').forEach(b => wireEthTime(b, r)); labelRows(); fillEthTimes(); applyFormLang();
+  $('days').append(r); $('daysAm').append(ra); r._am = ra; ra.querySelectorAll('.ethT').forEach(b => wireEthTime(b, r)); r.querySelectorAll('.enT').forEach(wireEnTime); labelRows(); fillEthTimes(); fillEnTimes(); applyFormLang(); syncRowHeights();
 }
+function syncRowHeights() {
+  [...$('days').children].forEach(r => {
+    const a = r._am; if (!a) return;
+    r.style.minHeight = a.style.minHeight = '';
+    if (window.innerWidth <= 760) return;   // columns are stacked on phones
+    const h = Math.max(r.getBoundingClientRect().height, a.getBoundingClientRect().height);
+    if (h) r.style.minHeight = a.style.minHeight = Math.ceil(h) + 'px';
+  });
+}
+window.addEventListener('resize', syncRowHeights); setInterval(syncRowHeights, 700);
 function labelRows() {
   const w = !isSem();
   [...$('days').children].forEach((r, i) => {
@@ -556,11 +601,11 @@ function syncType() {
   $('hostTxt').textContent = wed ? 'Parents / families' : 'Hosts';
   $('hostHint').textContent = wed ? '(optional. Groom\u2019s side | bride\u2019s side. Use / for a new line)' : '(optional)';
   $('f').host_names.placeholder = wed ? 'Mr. & Mrs. Tadesse / Alemu | Mr. & Mrs. Bekele / Almaz' : 'Together with their families';
-  const ed = $('evDate'), want = wed ? 'date' : 'datetime-local';
+  const ed = $('evDate'), want = 'date';
   if (ed.type !== want) { ed.type = want; ed.value = ''; }
-  $('dateTxt').textContent = wed ? 'Wedding date' : 'Date and time';
+  $('dateTxt').textContent = wed ? 'Wedding date' : 'Date';
   $('dateHint').hidden = wed; ed.required = wed;
-  $('amDateTxt').textContent = wed ? 'የሠርግ ቀን (የኢትዮጵያ አቆጣጠር)' : 'ቀን እና ሰዓት (የኢትዮጵያ አቆጣጠር)';
+  $('amDateTxt').textContent = wed ? 'የሠርግ ቀን (የኢትዮጵያ አቆጣጠር)' : 'ቀን (የኢትዮጵያ አቆጣጠር)';
   const bday = isBday();
   $('photoLbl').textContent = (wed || bday) ? 'Main photos' : 'Photos';
   $('themeBox').hidden = !(wed || bday) || (wed && tplVal() !== 'classic'); renderThemes();
@@ -691,6 +736,7 @@ $('f').onsubmit = async e => {
       fd.set('days', JSON.stringify(days));
     }
   }
+  { const ed0 = fd.get('event_date'); if (ed0 && !String(ed0).includes('T')) fd.set('event_date', ed0 + 'T00:00'); }
   if (fd.get('type') === 'seminar') {
     const days = readDays();
     if (days.some(d => !d.date || !d.title)) { $('err').textContent = FT('Each seminar day needs a date and a title.'); $('go').disabled = false; $('go').textContent = FT('Create invitation'); return; }
