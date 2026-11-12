@@ -52,7 +52,7 @@
   #days .dayrow .tt { grid-column:auto; }
   #daysBox #addDay { justify-self:start; }
   .dayrow button { justify-self:start; }
-  .wedOnly[hidden], .dayrow [hidden], #hostLbl[hidden], #galLbl[hidden], #themeBox[hidden], #aboutLbl[hidden], #aboutAmLbl[hidden] { display:none; }
+  .wedOnly[hidden], .dayrow [hidden], #hostLbl[hidden], #hostAmLbl[hidden], #galLbl[hidden], #themeBox[hidden], #aboutLbl[hidden], #aboutAmLbl[hidden] { display:none; }
   .swatches { border:1px solid var(--line); border-radius:8px; padding:10px 14px 14px; display:flex; gap:14px; flex-wrap:wrap; align-items:center; }
   .swatches legend { font-weight:500; padding:0 6px; }
   .swatches label { display:block; position:relative; cursor:pointer; }
@@ -170,7 +170,8 @@
         <legend>English · እንግሊዝኛ</legend>
       <div class="sect">
       <label>Title <input name="title" required maxlength="120" placeholder="Selam & Dawit's Wedding"></label>
-      <label><span id="dateTxt">Date</span> <small id="dateHint">(optional if you add a schedule below)</small><input type="date" name="event_date" id="evDate"></label>
+      <label id="aboutLbl"><span id="aboutTxt">About us</span> <small id="aboutHint">(your story, shown in the "About us" section)</small><textarea name="about" maxlength="1980"></textarea></label>
+      <label><span id="dateTxt">Wedding date</span> <small id="dateHint" hidden>(optional if you add a schedule below)</small><input type="date" name="event_date" id="evDate"></label>
       <fieldset id="daysBox" hidden>
       <legend id="daysLegend">Seminar days</legend>
       <small id="daysHelp">Add each day with its own title. You can change titles later.</small>
@@ -178,8 +179,7 @@
       <button class="btn alt" id="addDay" type="button">+ Add day</button>
     </fieldset>
       </div>
-      <label id="aboutLbl" hidden><span id="aboutTxt">About us</span> <small id="aboutHint">(your story, shown in the "About us" section)</small><textarea name="about" maxlength="1980"></textarea></label>
-      <label id="hostLbl"><span id="hostTxt">Hosts</span> <small id="hostHint">(optional)</small><input name="host_names" maxlength="120" placeholder="Together with their families"></label>
+      <label id="hostLbl" hidden><span id="hostTxt">Hosts</span> <small id="hostHint">(optional)</small><input name="host_names" maxlength="120" placeholder="Together with their families"></label>
       <label>Venue <input name="venue" maxlength="200"></label>
       <label>Dress code <small>(optional)</small><textarea name="message" placeholder="e.g. Traditional Ethiopian attire, or smart casual" maxlength="1000"></textarea></label>
       </fieldset>
@@ -187,15 +187,15 @@
         <legend>አማርኛ · Amharic</legend>
       <div class="sect">
       <label>ርዕስ (በአማርኛ፣ አማራጭ)<input name="title_am" maxlength="120" lang="am"></label>
+      <label id="aboutAmLbl">ስለ እኛ <small>(በአማርኛ፣ አማራጭ)</small><textarea name="about_am" maxlength="1980" lang="am"></textarea></label>
       <div class="fld" id="amDateFld"><span id="amDateTxt">ቀን (የኢትዮጵያ አቆጣጠር)</span><div class="ethIn" role="group" aria-label="የኢትዮጵያ ቀን"><select id="amD" aria-label="ቀን"><option value="">ቀን</option></select><select id="amM" aria-label="ወር"><option value="">ወር</option></select><select id="amY" aria-label="ዓመት"><option value="">ዓመት</option></select></div><input type="time" id="amT" hidden></div>
       <fieldset id="daysAmBox" class="daysAm" hidden>
-        <legend id="daysAmLegend">ፕሮግራም</legend>
+        <legend id="daysAmLegend">የፕሮግራም ዝርዝር</legend>
         <small>ሰዓቱን በኢትዮጵያ ሰዓት እዚህ መምረጥ ይችላሉ፤ ከእንግሊዝኛው ሰዓት ጋር አብሮ ይቀየራል።</small>
         <div id="daysAm"></div>
       </fieldset>
       </div>
-      <label id="aboutAmLbl">ስለ እኛ <small>(በአማርኛ፣ አማራጭ)</small><textarea name="about_am" maxlength="1980" lang="am"></textarea></label>
-      <label id="hostAmLbl">አስተናጋጆች <small>(በአማርኛ፣ አማራጭ)</small><input name="host_names_am" maxlength="120" lang="am"></label>
+      <label id="hostAmLbl" hidden>አስተናጋጆች <small>(በአማርኛ፣ አማራጭ)</small><input name="host_names_am" maxlength="120" lang="am"></label>
       <label>ቦታ <small>(በአማርኛ፣ አማራጭ)</small><input name="venue_am" maxlength="200" lang="am"></label>
       <label>አለባበስ <small>(በአማርኛ፣ አማራጭ)</small><textarea name="message_am" maxlength="1000" lang="am" placeholder="ለምሳሌ፦ ባህላዊ ልብስ"></textarea></label>
       </fieldset>
@@ -623,14 +623,14 @@ renderTemplates();
 function syncType() {
   const sem = typeVal() === 'seminar', wed = isWed();
   $('daysBox').hidden = false; $('daysAmBox').hidden = $('daysBox').hidden;
-  $('daysAmLegend').textContent = sem ? 'የሴሚናር ቀናት' : wed ? 'የሠርግ ቀን ፕሮግራም' : 'የፕሮግራም ሰዓት';
+  $('daysAmLegend').textContent = sem ? 'የሴሚናር ቀናት' : wed ? 'የፕሮግራም ዝርዝር' : 'የፕሮግራም ሰዓት';
   $('daysLegend').textContent = sem ? 'Seminar days' : wed ? 'Time schedule' : 'Program schedule';
   $('daysHelp').textContent = sem ? 'Add each day with its own title. You can change titles later.' : wed ? 'Add each moment of the wedding day with its time, for example 9:00 church ceremony, 12:00 photos, 6:00 reception. All items use the wedding date above.' : 'Add each part of the program with its time, for example 3:00 welcome, 4:00 lunch. All items use the date above.';
   document.querySelectorAll('.wedOnly').forEach(x => x.hidden = !wed);
   renderTemplates(); $('tplBox').hidden = !(wed || isBday());
-  $('hostTxt').textContent = wed ? 'Parents / families' : 'Hosts';
-  $('hostHint').textContent = wed ? '(optional. Groom\u2019s side | bride\u2019s side. Use / for a new line)' : '(optional)';
-  $('f').host_names.placeholder = wed ? 'Mr. & Mrs. Tadesse / Alemu | Mr. & Mrs. Bekele / Almaz' : 'Together with their families';
+  $('hostLbl').hidden = wed; $('hostAmLbl').hidden = wed;   // no parents / families field for weddings
+  $('hostTxt').textContent = 'Hosts'; $('hostHint').textContent = '(optional)';
+  $('f').host_names.placeholder = 'Together with their families';
   const ed = $('evDate'), want = 'date';
   if (ed.type !== want) { ed.type = want; ed.value = ''; }
   $('dateTxt').textContent = wed ? 'Wedding date' : 'Date';
@@ -741,6 +741,7 @@ $('f').onsubmit = async e => {
     if (['wedding', 'birthday'].includes(fd.get('type'))) gal.forEach(f => fd.append('gallery', f)); }
   fd.set('rsvp_enabled', $('rsvpOn').checked ? 'true' : 'false');
   fd.set('guest_msg_enabled', $('gmOn').checked ? 'true' : 'false');
+  if (fd.get('type') === 'wedding') ['host_names', 'host_names_am'].forEach(k => fd.delete(k));
   if (fd.get('type') !== 'wedding') ['gift_account', 'gift_url', 'gift_note', 'gift_note_am'].forEach(k => fd.delete(k));
   for (const k of ['photo', 'video']) { const f = fd.get(k); if (f && !f.size) fd.delete(k); }
   if (fd.get('type') === 'wedding') {
