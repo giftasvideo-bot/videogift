@@ -211,6 +211,7 @@
         <label lang="am">የስጦታ ማስታወሻ <small>(በአማርኛ፣ አማራጭ)</small><textarea name="gift_note_am" maxlength="500" lang="am"></textarea></label>
       </div>
 
+
     </fieldset>
     <fieldset class="grp" id="grpGuestMsg">
       <legend>Message from guests · የእንግዶች መልእክት</legend>
@@ -581,12 +582,14 @@ const TPL_FILE = { scroll:'event-scroll.html', birthday:'event-birthday.html', b
 const BDAY_PAGES = ['birthday', 'balloons', 'space', 'cake'];
 const joinTpl = (t, tpl) => String(t || '').replace(TPL_MARK, '') + (['basket', 'scroll', ...BDAY_PAGES].includes(tpl) ? '\n[[tpl:' + tpl + ']]' : '');
 const tplVal = () => { const r = document.querySelector('#f [name=template]:checked'); return r ? r.value : 'classic'; };
+let pvPhotoURLs = [];
 function previewURL(id, thumb) {
   const f = $('f'), u = new URL(TPL_FILE[id] || 'event.html', location.href);
   if (!TPL_FILE[id]) u.searchParams.set('demo', id);
   const t = (f.elements['title'].value || '').trim(); if (t) u.searchParams.set('title', t);
   const th = f.elements['theme'] ? f.elements['theme'].value : ''; if (th && (id === 'classic' || BDAY_PAGES.includes(id))) u.searchParams.set('theme', th);
   if (thumb) u.searchParams.set('thumb', '1');
+  else if (pvPhotoURLs.length) u.searchParams.set('photo', pvPhotoURLs.join('|'));
   return u.href;
 }
 function refreshThumbs() {
@@ -596,11 +599,13 @@ function fitThumbs() {
   document.querySelectorAll('.tpl-thumb').forEach(t => { const w = t.clientWidth; if (w) t.firstChild.style.transform = 'scale(' + (w / 390) + ')'; });
 }
 function openPreview(id, name) {
+  pvPhotoURLs.forEach(x => URL.revokeObjectURL(x));
+  pvPhotoURLs = [...$('f').photo.files].filter(f => f.size).map(f => URL.createObjectURL(f));
   $('pvName').textContent = FT(name); $('pvFrame').src = previewURL(id, false); $('pv').hidden = false; document.body.style.overflow = 'hidden';
   $('pvUse').onclick = () => { const r = document.querySelector('#f [name=template][value="' + id + '"]'); if (r) { r.checked = true; r.dispatchEvent(new Event('change', { bubbles:true })); } closePreview(); };
   $('pvX').focus();
 }
-function closePreview() { $('pv').hidden = true; $('pvFrame').src = 'about:blank'; document.body.style.overflow = ''; }
+function closePreview() { $('pv').hidden = true; $('pvFrame').src = 'about:blank'; pvPhotoURLs.forEach(x => URL.revokeObjectURL(x)); pvPhotoURLs = []; document.body.style.overflow = ''; }
 $('pvX').onclick = closePreview;
 document.addEventListener('keydown', e => { if (e.key === 'Escape' && !$('pv').hidden) closePreview(); });
 function renderTemplates() {
