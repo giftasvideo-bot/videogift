@@ -169,7 +169,8 @@
       <fieldset class="grp" id="grpEn">
         <legend>English · እንግሊዝኛ</legend>
       <div class="sect">
-      <label>Title <input name="title" required maxlength="120" placeholder="Selam & Dawit's Wedding"></label>
+      <label><span id="titleTxt">Bride's name</span> <input name="title" required maxlength="120" placeholder="Selam"></label>
+      <label id="inviteLbl" class="wedOnly"><span>Invitation words</span> <small>(the host's words on the invitation. Edit it or keep the default)</small><textarea name="invite_text" maxlength="300">Please join us as we celebrate the beginning of our life together</textarea></label>
       <label id="aboutLbl"><span id="aboutTxt">About us</span> <small id="aboutHint">(your story, shown in the "About us" section)</small><textarea name="about" maxlength="1980"></textarea></label>
       <label><span id="dateTxt">Wedding date</span> <small id="dateHint" hidden>(optional if you add a schedule below)</small><input type="date" name="event_date" id="evDate"></label>
       <fieldset id="daysBox" hidden>
@@ -186,7 +187,8 @@
       <fieldset class="grp" id="grpAm" lang="am">
         <legend>አማርኛ · Amharic</legend>
       <div class="sect">
-      <label>ርዕስ (በአማርኛ፣ አማራጭ)<input name="title_am" maxlength="120" lang="am"></label>
+      <label><span id="titleAmTxt">የሙሽራ ስም (በአማርኛ፣ አማራጭ)</span><input name="title_am" maxlength="120" lang="am"></label>
+      <label id="inviteAmLbl" class="wedOnly">የግብዣ ቃል <small>(በአማርኛ፣ አማራጭ)</small><textarea name="invite_text_am" maxlength="300" lang="am"></textarea></label>
       <label id="aboutAmLbl">ስለ እኛ <small>(በአማርኛ፣ አማራጭ)</small><textarea name="about_am" maxlength="1980" lang="am"></textarea></label>
       <div class="fld" id="amDateFld"><span id="amDateTxt">ቀን (የኢትዮጵያ አቆጣጠር)</span><div class="ethIn" role="group" aria-label="የኢትዮጵያ ቀን"><select id="amD" aria-label="ቀን"><option value="">ቀን</option></select><select id="amM" aria-label="ወር"><option value="">ወር</option></select><select id="amY" aria-label="ዓመት"><option value="">ዓመት</option></select></div><input type="time" id="amT" hidden></div>
       <fieldset id="daysAmBox" class="daysAm" hidden>
@@ -208,6 +210,7 @@
         <label>Gift note <small>(optional, English)</small><textarea name="gift_note" maxlength="500"></textarea></label>
         <label lang="am">የስጦታ ማስታወሻ <small>(በአማርኛ፣ አማራጭ)</small><textarea name="gift_note_am" maxlength="500" lang="am"></textarea></label>
       </div>
+
     </fieldset>
     <fieldset class="grp" id="grpGuestMsg">
       <legend>Message from guests · የእንግዶች መልእክት</legend>
@@ -496,6 +499,7 @@ const PAIR_SEL = [
   ['#grpEn [name=title]', '#grpAm [name=title_am]', 'label'],
   ['#evDate', '#amDateFld', 'label'],
   ['#daysBox', '#daysAmBox'],
+  ['#inviteLbl', '#inviteAmLbl'],
   ['#aboutLbl', '#aboutAmLbl'],
   ['#hostLbl', '#hostAmLbl'],
   ['#grpEn [name=venue]', '#grpAm [name=venue_am]', 'label'],
@@ -628,6 +632,9 @@ function syncType() {
   $('daysHelp').textContent = sem ? 'Add each day with its own title. You can change titles later.' : wed ? 'Add each moment of the wedding day with its time, for example 9:00 church ceremony, 12:00 photos, 6:00 reception. All items use the wedding date above.' : 'Add each part of the program with its time, for example 3:00 welcome, 4:00 lunch. All items use the date above.';
   document.querySelectorAll('.wedOnly').forEach(x => x.hidden = !wed);
   renderTemplates(); $('tplBox').hidden = !(wed || isBday());
+  $('titleTxt').textContent = wed ? "Bride's name" : 'Title';
+  $('titleAmTxt').textContent = wed ? 'የሙሽራ ስም (በአማርኛ፣ አማራጭ)' : 'ርዕስ (በአማርኛ፣ አማራጭ)';
+  $('f').title.placeholder = wed ? 'Selam' : "Selam & Dawit's Wedding";
   $('hostLbl').hidden = wed; $('hostAmLbl').hidden = wed;   // no parents / families field for weddings
   $('hostTxt').textContent = 'Hosts'; $('hostHint').textContent = '(optional)';
   $('f').host_names.placeholder = 'Together with their families';
