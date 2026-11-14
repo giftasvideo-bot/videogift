@@ -194,6 +194,26 @@
   @keyframes giftWiggle { 0%,70%,100% { transform:rotate(0); } 76% { transform:rotate(-2.5deg); } 84% { transform:rotate(2.5deg); } 92% { transform:rotate(-1.5deg); } }
   @keyframes giftFloat { 0%,100% { transform:translateY(0) rotate(0); } 50% { transform:translateY(-8px) rotate(6deg); } }
   @keyframes giftConf { 0% { opacity:1; transform:translate(-50%,0) rotate(0) scale(.6); } 100% { opacity:0; transform:translate(calc(-50% + var(--dx)), var(--dy)) rotate(var(--rot)) scale(1); } }
+  /* meadow entrance card (heart badge, names, date, Open) */
+  .mi { position:fixed; inset:0; z-index:999; display:flex; align-items:center; justify-content:center; padding:18px; overflow:hidden; background:linear-gradient(160deg,#d6b673 0%,#a9803a 55%,#7a5a24 100%); transition:opacity .7s ease, visibility .7s; }
+  .mi.out { opacity:0; visibility:hidden; pointer-events:none; }
+  .mi-card { position:relative; width:min(560px,100%); min-height:min(78vh,620px); display:flex; flex-direction:column; align-items:center; justify-content:flex-start; gap:0; padding:30px 20px 34px; border-radius:14px; overflow:hidden; text-align:center; color:#4a3820; background:#f8ecc8; box-shadow:0 30px 70px rgba(40,25,5,.4); transition:transform .7s ease; }
+  .mi.out .mi-card { transform:scale(1.06); }
+  .mi-art { position:absolute; inset:0; width:100%; height:100%; object-fit:cover; object-position:center 70%; opacity:.5; -webkit-mask-image:linear-gradient(to bottom, transparent 6%, #000 55%); mask-image:linear-gradient(to bottom, transparent 6%, #000 55%); pointer-events:none; }
+  .mi-card > *:not(.mi-art) { position:relative; z-index:1; }
+  .mi-heart { width:64px; height:64px; border-radius:50%; display:flex; align-items:center; justify-content:center; background:var(--accent,#7a5a24); color:#fff8e4; box-shadow:0 6px 16px rgba(60,35,20,.3); }
+  .mi-heart svg { width:30px; height:30px; fill:currentColor; }
+  .mi-n { margin:14px 0 0; font:400 clamp(2.3rem,11vw,3.5rem)/1.05 'Cormorant Garamond','Noto Sans Ethiopic',serif; color:var(--accent,#7a5a24); text-shadow:0 0 12px #f8ecc8; }
+  .mi-amp { margin:2px 0; font:400 clamp(1.5rem,6vw,2rem)/1 'Pinyon Script',cursive; color:var(--accent,#7a5a24); opacity:.8; }
+  .mi-orn { display:flex; align-items:center; gap:10px; margin:14px 0 8px; color:var(--accent,#7a5a24); }
+  .mi-orn::before, .mi-orn::after { content:''; width:46px; height:1px; background:currentColor; opacity:.7; }
+  .mi-date { margin:6px 0 0; font:500 clamp(1.25rem,5vw,1.6rem)/1.3 'Cormorant Garamond','Noto Sans Ethiopic',serif; text-shadow:0 0 10px #f8ecc8; }
+  .mi-inv { margin:22px 0 0; font:500 clamp(1.25rem,5vw,1.6rem)/1.3 'Cormorant Garamond','Noto Sans Ethiopic',serif; text-shadow:0 0 10px #f8ecc8; }
+  .mi-open { margin-top:14px; padding:13px 38px; border:0; border-radius:999px; background:var(--accent,#7a5a24); color:#fff8e4; font:600 1.3rem 'Cormorant Garamond','Noto Sans Ethiopic',serif; letter-spacing:.04em; cursor:pointer; box-shadow:0 8px 20px rgba(60,35,20,.35); transition:transform .2s; }
+  .mi-open:hover, .mi-open:focus-visible { transform:translateY(-2px); outline:none; }
+  .mi-fl { position:absolute; z-index:0; color:#fff8e4; opacity:.55; font-size:20px; pointer-events:none; animation:miFloat 7s ease-in-out infinite; }
+  @keyframes miFloat { 0%,100% { transform:translateY(0) rotate(0); } 50% { transform:translateY(-14px) rotate(25deg); } }
+  @media (prefers-reduced-motion: reduce) { .mi-fl { animation:none; } .mi, .mi-card { transition:none; } }
   /* meadow gift box: bride & groom account popup */
   .gift-modal { position:fixed; inset:0; z-index:200; display:flex; align-items:center; justify-content:center; padding:16px; background:rgba(40,28,12,.55); opacity:0; pointer-events:none; transition:opacity .3s ease; }
   .gift-modal.show { opacity:1; pointer-events:auto; }
@@ -360,6 +380,7 @@
   .env-l { background:var(--e1); clip-path:polygon(0 0, 50% 56%, 0 100%); }
   .env-r { background:var(--e2); clip-path:polygon(100% 0, 50% 56%, 100% 100%); }
   .env-b { background:var(--e3); clip-path:polygon(0 100%, 50% 56%, 100% 100%); }
+
   .env-flap { left:0; right:0; top:0; height:60%; z-index:4; transform-origin:50% 0; clip-path:polygon(0 0, 100% 0, 50% 100%); background:linear-gradient(180deg, var(--e3), var(--e1)); }
   .env-seal { left:50%; top:56%; width:21%; aspect-ratio:1; z-index:6; transform:translate(-50%,-50%); display:grid; place-items:center;
     animation:envPulse 1.8s ease-in-out infinite; transition:opacity .3s, transform .3s; }
@@ -962,6 +983,28 @@ function meadowHero(ev) {
   w.append(h, f); return w;
 }
 
+function meadowIntro(ev, first) {
+  if (/[?&]nointro/.test(location.search)) return;
+  const am = LANG === 'am';
+  const o = el('div', 'mi'); o.setAttribute('role', 'dialog'); o.setAttribute('aria-label', T('Open the invitation'));
+  [[8, 12], [86, 20], [14, 70], [90, 78], [50, 6]].forEach(([x, y], k) => { const f = el('span', 'mi-fl', '\u273F'); f.style.left = x + '%'; f.style.top = y + '%'; f.style.animationDelay = (-k * 1.3) + 's'; f.setAttribute('aria-hidden', 'true'); o.append(f); });
+  const card = el('div', 'mi-card');
+  const art = el('img', 'mi-art'); art.src = 'meadow-hero.jpg'; art.alt = ''; art.onerror = () => art.remove(); card.append(art);
+  const heart = el('div', 'mi-heart'); heart.innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>';
+  card.append(heart);
+  const nm = weddingNames(ev.title);
+  if (nm) card.append(el('p', 'mi-n', nm[0]), el('p', 'mi-amp', '&'), el('p', 'mi-n', nm[1])); else card.append(el('p', 'mi-n', ev.title));
+  const orn = el('div', 'mi-orn', '\u2766'); card.append(orn);
+  if (first) card.append(el('p', 'mi-date', first.toLocaleDateString(LOC, { dateStyle:'long' })));
+  card.append(el('p', 'mi-inv', am ? '\u12A5\u1295\u12F2\u1273\u12AB\u1275\u1361 \u1260\u12F0\u1235\u1273 \u12ED\u130B\u1265\u12DB\u120D' : 'Cordially Invites'));
+  const btn = el('button', 'mi-open', am ? '\u12ED\u12A8\u1348\u1271' : 'Open'); btn.type = 'button'; card.append(btn);
+  o.append(card);
+  const html = document.documentElement; let done = false;
+  const open = () => { if (done) return; done = true; music.start(); o.classList.add('out'); html.style.overflow = ''; setTimeout(() => o.remove(), 800); };
+  btn.onclick = open;
+  html.style.overflow = 'hidden'; document.body.append(o); btn.focus({ preventScroll:true });
+}
+
 function renderWedding(ev) {
   const bday = ev.type === 'birthday';
   let confirmBtn = null;
@@ -976,6 +1019,7 @@ function renderWedding(ev) {
     app.append(meadowHero(ev));
     const wdt = weddingDate(ev, days, first); if (wdt) app.append(wdt);
     if (ev.rsvp_enabled) { confirmBtn = el('button', 'wc-confirm', T('Confirm attendance')); confirmBtn.type = 'button'; app.append(confirmBtn); }
+    meadowIntro(ev, first);
   } else if (!bday) {
     const h = el('header','wed-head'), nm = weddingNames(ev.title), t = el('h1','wed-names');
     h.append(el('p','wed-eyebrow',T('The wedding of')));
