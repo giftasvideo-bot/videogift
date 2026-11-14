@@ -529,6 +529,7 @@ function weddingDate(ev, days, first) {
   const c = el('section', 'wed-date');
   c.append(el('h2', 'wd-h', T('Ceremony Info')));
   const intro = el('div', 'wd-intro');
+  intro.append(el('p', 'wd-join', T('Please join us as we celebrate')), el('p', 'wd-join', T('the beginning of our life together')));
   if (ev.host_names) {
     const sides = ev.host_names.split('|').map(x => x.trim()).filter(Boolean);
     if (sides.length === 2) {
@@ -537,11 +538,7 @@ function weddingDate(ev, days, first) {
       intro.append(g);
     } else intro.append(el('p', 'wc-host', ev.host_names));
   }
-  intro.append(el('p', 'wd-join', T('Please join us as we celebrate')), el('p', 'wd-join', T('the beginning of our life together')));
-  const nm = weddingNames(ev.title), names = el('div', 'wd-names');
-  if (nm) names.append(el('span', 'wd-n', nm[0]), el('span', 'wd-amp', '&'), el('span', 'wd-n', nm[1]));
-  else names.append(el('span', 'wd-n', ev.title || ''));
-  intro.append(names);
+  intro.style.paddingBottom = '28px';
   const flR = el('div', 'wd-fl wd-fl-r'); flR.setAttribute('aria-hidden', 'true'); flR.append(envBouquet()); intro.append(flR);
   c.append(intro);
 
