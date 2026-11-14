@@ -1000,23 +1000,51 @@ function meadowHero(ev) {
 }
 
 function qasrArt() {
-  const st = '#c9b27a', fill = '#f6f0e3', shade = '#e9e0cb', door = '#dcd2b8';
-  const leaf = (x, y, rot, len, w, c) => '<path transform="translate(' + x + ' ' + y + ') rotate(' + rot + ')" d="M0 0C' + w + ' ' + (-len * .3) + ' ' + w + ' ' + (-len * .7) + ' 0 ' + (-len) + 'C' + (-w) + ' ' + (-len * .7) + ' ' + (-w) + ' ' + (-len * .3) + ' 0 0Z" fill="' + c + '" opacity=".9"/>';
-  const sprig = (x, y, flip) => { let o = ''; const f = flip ? -1 : 1; [[-38, 70], [-12, 84], [14, 78], [38, 64], [-62, 52], [62, 46]].forEach(([r, l], i) => { o += leaf(x, y, r * f, l, 13, i % 2 ? '#8aa57a' : '#a9bf96'); }); return o; };
-  const arch = (x, y, w, h) => '<path d="M' + x + ' ' + (y + h) + 'V' + (y + w / 2) + 'A' + (w / 2) + ' ' + (w / 2) + ' 0 0 1 ' + (x + w) + ' ' + (y + w / 2) + 'V' + (y + h) + 'Z" fill="' + door + '" stroke="' + st + '" stroke-width="1.2"/>';
-  const tower = (x, w, top) => '<rect x="' + x + '" y="' + top + '" width="' + w + '" height="' + (400 - top) + '" fill="' + fill + '" stroke="' + st + '" stroke-width="1.5"/>'
-    + '<path d="M' + (x - 4) + ' ' + top + 'C' + (x - 4) + ' ' + (top - 38) + ' ' + (x + w + 4) + ' ' + (top - 38) + ' ' + (x + w + 4) + ' ' + top + 'Z" fill="' + fill + '" stroke="' + st + '" stroke-width="1.5"/>'
-    + '<path d="M' + (x + w / 2) + ' ' + (top - 29) + 'V' + (top - 46) + '" stroke="' + st + '" stroke-width="1.5"/><circle cx="' + (x + w / 2) + '" cy="' + (top - 50) + '" r="4" fill="' + st + '"/>'
-    + arch(x + w / 2 - 6, top + 22, 12, 30) + arch(x + w / 2 - 6, top + 80, 12, 30);
+  const st = '#c9b27a', fill = '#f9f4e8', shade = '#ece3cd', door = '#d9d0b4', sage = '#a9c1a0', sageD = '#8fae86', bg = '#faf6f0';
+  const leaf = (x, y, rot, len, w, c) => '<path transform="translate(' + x + ' ' + y + ') rotate(' + rot + ')" d="M0 0C' + w + ' ' + (-len * .3) + ' ' + w + ' ' + (-len * .7) + ' 0 ' + (-len) + 'C' + (-w) + ' ' + (-len * .7) + ' ' + (-w) + ' ' + (-len * .3) + ' 0 0Z" fill="' + c + '" opacity=".92"/>';
+  const sprig = (x, y, flip, s) => { let o = ''; const f = flip ? -1 : 1; [[-52, 58], [-30, 74], [-8, 86], [14, 80], [36, 68], [58, 52], [-70, 40], [74, 38]].forEach(([r, l], i) => { o += leaf(x, y, r * f, l * (s || 1), 11 * (s || 1), i % 3 === 0 ? '#7f9d74' : i % 2 ? '#9bb58a' : '#b9cca9'); }); return o; };
+  const crescent = (x, y, r) => '<circle cx="' + x + '" cy="' + y + '" r="' + r + '" fill="' + st + '"/><circle cx="' + (x + r * .5) + '" cy="' + (y - r * .25) + '" r="' + (r * .85) + '" fill="' + bg + '"/>';
+  const onion = (cx, b, w, h) => '<path d="M' + (cx - w / 2) + ' ' + b + 'C' + (cx - w / 2 - w * .1) + ' ' + (b - h * .38) + ' ' + (cx - w * .12) + ' ' + (b - h * .62) + ' ' + cx + ' ' + (b - h) + 'C' + (cx + w * .12) + ' ' + (b - h * .62) + ' ' + (cx + w / 2 + w * .1) + ' ' + (b - h * .38) + ' ' + (cx + w / 2) + ' ' + b + 'Z" fill="url(#qaDome)" stroke="' + st + '" stroke-width="1.4"/>'
+    + '<path d="M' + (cx - w * .3) + ' ' + (b - h * .1) + 'C' + (cx - w * .16) + ' ' + (b - h * .5) + ' ' + (cx - w * .05) + ' ' + (b - h * .72) + ' ' + cx + ' ' + (b - h * .96) + '" fill="none" stroke="' + st + '" stroke-width=".6" opacity=".6"/>'
+    + '<path d="M' + (cx + w * .3) + ' ' + (b - h * .1) + 'C' + (cx + w * .16) + ' ' + (b - h * .5) + ' ' + (cx + w * .05) + ' ' + (b - h * .72) + ' ' + cx + ' ' + (b - h * .96) + '" fill="none" stroke="' + st + '" stroke-width=".6" opacity=".6"/>'
+    + '<path d="M' + cx + ' ' + (b - h) + 'V' + (b - h - 14) + '" stroke="' + st + '" stroke-width="1.6"/>' + crescent(cx, b - h - 20, 5.5);
+  const arch = (x, y, w, h) => '<path d="M' + x + ' ' + (y + h) + 'V' + (y + w * .55) + 'Q' + x + ' ' + (y + w * .2) + ' ' + (x + w / 2) + ' ' + y + 'Q' + (x + w) + ' ' + (y + w * .2) + ' ' + (x + w) + ' ' + (y + w * .55) + 'V' + (y + h) + 'Z" fill="' + door + '" stroke="' + st + '" stroke-width="1.1"/>';
+  const minaret = (cx, w, top) => '<rect x="' + (cx - w / 2) + '" y="' + top + '" width="' + w + '" height="' + (404 - top) + '" fill="' + fill + '" stroke="' + st + '" stroke-width="1.4"/>'
+    + '<rect x="' + (cx - w / 2 - 5) + '" y="' + (top + 4) + '" width="' + (w + 10) + '" height="7" fill="' + shade + '" stroke="' + st + '" stroke-width="1.1"/>'
+    + '<rect x="' + (cx - w / 2 - 5) + '" y="' + (top + 70) + '" width="' + (w + 10) + '" height="6" fill="' + shade + '" stroke="' + st + '" stroke-width="1.1"/>'
+    + arch(cx - 5, top + 20, 10, 30) + arch(cx - 5, top + 90, 10, 30)
+    + onion(cx, top + 4, w + 8, 34);
+  const gold = (x1, x2, y) => { let o = '<rect x="' + x1 + '" y="' + y + '" width="' + (x2 - x1) + '" height="9" fill="' + shade + '" stroke="' + st + '" stroke-width="1"/>'; for (let x = x1 + 6; x < x2 - 3; x += 9) o += '<circle cx="' + x + '" cy="' + (y + 4.5) + '" r="1.7" fill="' + st + '"/>'; return o; };
+  // couple (original stylised figures, faces left blank)
+  const skin = '#ecd0b3';
+  const groom = '<path d="M163 332C159 352 157 382 155 408H201C199 382 197 352 193 332Z" fill="#fcfbf7" stroke="#d3cbb6" stroke-width="1"/>'
+    + '<path d="M178 336V408" stroke="#e3dcc8" stroke-width="1"/>'
+    + '<path d="M166 318C166 302 190 302 190 318L194 334L162 334Z" fill="#fcfbf7" stroke="#d3cbb6" stroke-width="1"/>'
+    + '<ellipse cx="178" cy="320" rx="6" ry="7.5" fill="' + skin + '"/>'
+    + '<path d="M172.5 322Q178 334 183.5 322Q178 328 172.5 322Z" fill="#3b2f2a"/>'
+    + '<path d="M167 309Q178 304 189 309" fill="none" stroke="#2b2b2b" stroke-width="2.6" stroke-linecap="round"/>';
+  const bride = '<path d="M213 336C207 356 208 382 196 408H258C246 382 243 356 237 336Z" fill="url(#qaGown)" stroke="' + sageD + '" stroke-width="1"/>'
+    + '<path d="M225 330C213 330 208 342 209 356C208 372 205 388 199 404C214 392 222 372 225 356C228 372 236 392 251 404C245 388 242 372 241 356C242 342 237 330 225 330Z" fill="' + sageD + '" opacity=".55"/>'
+    + '<path d="M225 303C212 303 209 318 210 330C209 346 211 360 214 368L236 368C239 360 241 346 240 330C241 318 238 303 225 303Z" fill="' + sage + '" stroke="' + sageD + '" stroke-width="1"/>'
+    + '<ellipse cx="225" cy="320" rx="6.2" ry="8" fill="' + skin + '"/>'
+    + '<g fill="#fff" stroke="#e1e6d8" stroke-width=".6"><circle cx="214" cy="364" r="3.4"/><circle cx="219" cy="360" r="3.4"/><circle cx="210" cy="359" r="3"/><circle cx="217" cy="368" r="3"/></g>'
+    + '<path d="M216 368C219 376 219 384 217 392" stroke="#7f9d74" stroke-width="1.2" fill="none"/>';
   const svg = '<svg viewBox="0 0 400 430" preserveAspectRatio="xMidYMax slice" role="img" aria-label="" xmlns="http://www.w3.org/2000/svg">'
-    + tower(52, 40, 262) + tower(308, 40, 262)
-    + '<rect x="118" y="236" width="164" height="164" fill="' + fill + '" stroke="' + st + '" stroke-width="1.5"/>'
-    + '<path d="M104 238C104 140 296 140 296 238Z" fill="' + fill + '" stroke="' + st + '" stroke-width="1.5"/>'
-      + '<path d="M200 166V120" stroke="' + st + '" stroke-width="2"/><circle cx="200" cy="112" r="8" fill="' + st + '"/><circle cx="204" cy="109" r="7" fill="#faf6f0"/>'
-    + '<rect x="104" y="236" width="192" height="8" fill="' + shade + '" stroke="' + st + '" stroke-width="1"/>'
-    + arch(176, 318, 48, 82) + arch(132, 276, 26, 56) + arch(242, 276, 26, 56)
-    + '<rect x="40" y="398" width="320" height="6" rx="3" fill="' + shade + '"/>'
-    + sprig(70, 412, false) + sprig(330, 412, true)
+    + '<defs><linearGradient id="qaDome" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#efe6cf"/><stop offset=".45" stop-color="#fdfaf1"/><stop offset="1" stop-color="#e8dec4"/></linearGradient>'
+    + '<linearGradient id="qaGown" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#bdd1b3"/><stop offset="1" stop-color="#98b58d"/></linearGradient></defs>'
+    + minaret(46, 22, 238) + minaret(354, 22, 238) + minaret(92, 24, 214) + minaret(308, 24, 214)
+    + '<rect x="112" y="268" width="176" height="136" fill="' + fill + '" stroke="' + st + '" stroke-width="1.5"/>'
+    + onion(132, 268, 40, 38) + onion(268, 268, 40, 38)
+    + '<rect x="150" y="214" width="100" height="56" fill="' + fill + '" stroke="' + st + '" stroke-width="1.5"/>'
+    + arch(160, 226, 12, 26) + arch(194, 226, 12, 26) + arch(228, 226, 12, 26)
+    + gold(150, 250, 206) + onion(200, 206, 118, 104)
+    + gold(112, 288, 268)
+    + arch(146, 292, 24, 66) + arch(230, 292, 24, 66) + arch(120, 296, 14, 40) + arch(266, 296, 14, 40)
+    + '<path d="M170 404V346Q170 308 200 296Q230 308 230 346V404Z" fill="#ede5d0" stroke="' + st + '" stroke-width="1.3"/>'
+    + '<rect x="30" y="402" width="340" height="6" rx="3" fill="' + shade + '"/>'
+    + sprig(62, 414, false, 1) + sprig(338, 414, true, 1) + sprig(128, 416, false, .62) + sprig(272, 416, true, .62)
+    + '<g transform="translate(200 408) scale(1.45) translate(-200 -408)">' + groom + bride + '</g>'
+    + sprig(120, 420, true, .5) + sprig(284, 420, false, .5)
     + '</svg>';
   const d = document.createElement('div'); d.innerHTML = svg; return d.firstChild;
 }
