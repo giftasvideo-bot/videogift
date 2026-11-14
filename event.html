@@ -533,10 +533,10 @@ function weddingDate(ev, days, first) {
   if (ev.host_names) {
     const sides = ev.host_names.split('|').map(x => x.trim()).filter(Boolean);
     if (sides.length === 2) {
-      const g = el('div', 'wc-parents');
+      const g = el('div', 'wc-parents'); g.style.marginTop = '36px';
       sides.forEach(sd => { const col = el('div', 'wc-col'); sd.split('/').map(x => x.trim()).filter(Boolean).forEach(l => col.append(el('p', '', l))); g.append(col); });
       intro.append(g);
-    } else intro.append(el('p', 'wc-host', ev.host_names));
+    } else { const hp = el('p', 'wc-host', ev.host_names); hp.style.marginTop = '36px'; intro.append(hp); }
   }
   intro.style.paddingBottom = '28px';
   const flR = el('div', 'wd-fl wd-fl-r'); flR.setAttribute('aria-hidden', 'true'); flR.append(envBouquet()); intro.append(flR);
