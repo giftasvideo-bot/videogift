@@ -219,7 +219,7 @@
   .gift-modal.show { opacity:1; pointer-events:auto; }
   .gift-dlg { position:relative; width:min(560px,100%); max-height:calc(100vh - 32px); max-height:calc(100dvh - 32px); overflow:auto; border-radius:22px; background:#fffdf9; color:#4a3820; box-shadow:0 24px 60px rgba(0,0,0,.35); transform:translateY(18px) scale(.97); transition:transform .35s cubic-bezier(.3,1.3,.5,1); }
   .gift-modal.show .gift-dlg { transform:none; }
-  .gift-dlg-hd { background:var(--accent,#7a5a24); color:#fff8e4; padding:22px 52px; text-align:center; font:700 clamp(1.5rem,6vw,2rem)/1.15 'Cormorant Garamond','Noto Sans Ethiopic',serif; letter-spacing:.04em; }
+  .gift-dlg-hd { background:color-mix(in srgb, var(--accent,#7a5a24) 85%, #000); color:#fff8e4; padding:22px 52px; text-align:center; font:700 clamp(1.5rem,6vw,2rem)/1.15 'Cormorant Garamond','Noto Sans Ethiopic',serif; letter-spacing:.04em; }
   .gift-x { position:absolute; top:12px; right:12px; width:36px; height:36px; border:0; border-radius:50%; background:transparent; color:#fff8e4; font-size:28px; line-height:1; cursor:pointer; }
   .gift-x:hover, .gift-x:focus-visible { background:rgba(255,255,255,.18); outline:none; }
   .gift-accts { display:grid; grid-template-columns:repeat(auto-fit,minmax(210px,1fr)); gap:26px 18px; padding:24px 18px 26px; }
@@ -1098,10 +1098,10 @@ function renderWedding(ev) {
     const cur = tabs.findIndex(t => t.getAttribute('aria-selected') === 'true');
     add(T('Guestbook'), p => { p.classList.add('tl-panel'); p.append(guestbook(list)); }); show(cur < 0 ? 0 : cur);
   };
-  const addGift = () => { if (!meadow) return; const cur = tabs.findIndex(t => t.getAttribute('aria-selected') === 'true'); add(LANG === 'am' ? 'የስጦታ ሳጥን' : 'Gift box', p => { p.classList.add('tl-panel'); p.append(giftBox(ev)); }); show(cur < 0 ? 0 : cur); };
+  const addGift = () => { if (bday) return; const cur = tabs.findIndex(t => t.getAttribute('aria-selected') === 'true'); add(LANG === 'am' ? 'የስጦታ ሳጥን' : 'Gift box', p => { p.classList.add('tl-panel'); p.append(giftBox(ev)); }); show(cur < 0 ? 0 : cur); };
   if (!bday && slug) fetch(`${API}/api/e/${encodeURIComponent(slug)}/wishes`).then(r => r.ok ? r.json() : Promise.reject()).then(d => addGB(Array.isArray(d) ? d : (Array.isArray(d.wishes) ? d.wishes : []))).catch(() => {}).then(addGift);
-  else if (meadow && DEMO) { addGB([{ name: LANG === 'am' ? 'ሃና' : 'Hanna', message: LANG === 'am' ? 'እንኳን ደስ አላችሁ! የፍቅር ሕይወት እንመኝላችኋለን።' : 'Congratulations! Wishing you a lifetime of love.', created_at:new Date().toISOString() }]); addGift(); }
-  else if (meadow) addGift();
+  else if (!bday && DEMO) { addGB([{ name: LANG === 'am' ? 'ሃና' : 'Hanna', message: LANG === 'am' ? 'እንኳን ደስ አላችሁ! የፍቅር ሕይወት እንመኝላችኋለን።' : 'Congratulations! Wishing you a lifetime of love.', created_at:new Date().toISOString() }]); addGift(); }
+  else if (!bday) addGift();
   if (bday) app.append(el('div', 'bd-band'));
 }
 
@@ -1267,7 +1267,7 @@ function demoEvent(realOk) {
     event_date:ymd + 'T09:00:00',
     days: am ? [row('09:00','የቤተ ክርስቲያን ሥርዓት'), row('12:00','ፎቶና ቡራኬ'), row('16:00','የእንግዳ መቀበያና ምሳ'), row('19:00','ሙዚቃና ጭፈራ')] : [row('09:00','Church ceremony'), row('12:00','Photos & blessings'), row('16:00','Reception & lunch'), row('19:00','Music & dancing')],
     venue: am ? 'ሪሴፕሽን አዳራሽ፣ ቦሌ፣ አዲስ አበባ' : 'Reception Hall, Bole, Addis Ababa', map_url:'', rsvp_enabled:true, photo_urls:mine.length ? mine : DEMO === 'meadow' ? [] : real ? REAL : ph.slice(0, 3), gallery_urls:DEMO === 'meadow' ? [1, 2, 3, 4, 5, 6].map(n => 'meadow-gallery-' + n + '.jpg') : (mine.length || real) ? [] : ph.slice(3), video_url:'',
-    gift_accounts: DEMO === 'meadow' ? { groom:{ name: am ? 'ዳዊት ታደሰ' : 'Dawit Tadesse', bank: am ? 'የኢትዮጵያ ንግድ ባንክ' : 'Commercial Bank of Ethiopia', account:'1000 1234 5678' }, bride:{ name: am ? 'ሰላም በቀለ' : 'Selam Bekele', bank:'Telebirr', account:'0911 00 00 00' } } : undefined };
+    gift_accounts: (DEMO === 'meadow' || DEMO === 'classic') ? { groom:{ name: am ? 'ዳዊት ታደሰ' : 'Dawit Tadesse', bank: am ? 'የኢትዮጵያ ንግድ ባንክ' : 'Commercial Bank of Ethiopia', account:'1000 1234 5678' }, bride:{ name: am ? 'ሰላም በቀለ' : 'Selam Bekele', bank:'Telebirr', account:'0911 00 00 00' } } : undefined };
 }
 
 function render(ev) {
