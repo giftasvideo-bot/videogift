@@ -1323,13 +1323,13 @@ function demoEvent(realOk) {
   const mine = (qs.get('photo') || '').split('|').filter(u => u.startsWith('blob:'));
   const row = (time, title) => ({ date:ymd, time, title });
   const am = LANG === 'am';
-  return { type:'wedding', template:DEMO, theme:qs.get('theme') || 'cream', title:qs.get('title') || (am ? 'ሰላም & ዳዊት' : 'Selam & Dawit'),
-    host_names: am ? 'አቶ በቀለ / ወይዘሮ አልማዝ | አቶ ታደሰ / ወይዘሮ ሂሩት' : 'Ato Bekele / Wzt Almaz | Ato Tadesse / Wzt Hirut',
+  return { type:'wedding', template:DEMO, theme:qs.get('theme') || 'cream', title:qs.get('title') || (DEMO === 'qasr' ? (am ? 'አይሻ & አብዱላህ' : 'Aisha & Abdullah') : (am ? 'ሰላም & ዳዊት' : 'Selam & Dawit')),
+    host_names: DEMO === 'qasr' ? (am ? 'ሐጂ አህመድ / ሐጃ ፋጢማ | ሐጂ ዩሱፍ / ሐጃ ዘይነብ' : 'Haji Ahmed / Hajia Fatima | Haji Yusuf / Hajia Zeynab') : am ? 'አቶ በቀለ / ወይዘሮ አልማዝ | አቶ ታደሰ / ወይዘሮ ሂሩት' : 'Ato Bekele / Wzt Almaz | Ato Tadesse / Wzt Hirut',
     about: am ? 'ከቤተሰቦቻችን ጋር በመሆን ሠርጋችንን በቡና፣ በሙዚቃና በፍቅር በተሞላ ገበታ እንድታከብሩልን በደስታ እንጋብዛችኋለን።' : 'Together with our families, we joyfully invite you to celebrate our wedding with coffee, music, and a table full of love.',
     event_date:ymd + 'T09:00:00',
     days: am ? [row('09:00','የቤተ ክርስቲያን ሥርዓት'), row('12:00','ፎቶና ቡራኬ'), row('16:00','የእንግዳ መቀበያና ምሳ'), row('19:00','ሙዚቃና ጭፈራ')] : [row('09:00','Church ceremony'), row('12:00','Photos & blessings'), row('16:00','Reception & lunch'), row('19:00','Music & dancing')],
     venue: am ? 'ሪሴፕሽን አዳራሽ፣ ቦሌ፣ አዲስ አበባ' : 'Reception Hall, Bole, Addis Ababa', map_url:'', rsvp_enabled:true, photo_urls:mine.length ? mine : (DEMO === 'meadow' || DEMO === 'qasr') ? [] : real ? REAL : ph.slice(0, 3), gallery_urls:DEMO === 'meadow' ? [1, 2, 3, 4, 5, 6].map(n => 'meadow-gallery-' + n + '.jpg') : DEMO === 'qasr' ? ph : (mine.length || real) ? [] : ph.slice(3), video_url:'',
-    gift_accounts: (DEMO === 'meadow' || DEMO === 'classic' || DEMO === 'qasr') ? { groom:{ name: am ? 'ዳዊት ታደሰ' : 'Dawit Tadesse', bank: am ? 'የኢትዮጵያ ንግድ ባንክ' : 'Commercial Bank of Ethiopia', account:'1000 1234 5678' }, bride:{ name: am ? 'ሰላም በቀለ' : 'Selam Bekele', bank:'Telebirr', account:'0911 00 00 00' } } : undefined };
+    gift_accounts: (DEMO === 'meadow' || DEMO === 'classic' || DEMO === 'qasr') ? { groom:{ name: DEMO === 'qasr' ? (am ? 'አብዱላህ ዩሱፍ' : 'Abdullah Yusuf') : am ? 'ዳዊት ታደሰ' : 'Dawit Tadesse', bank: am ? 'የኢትዮጵያ ንግድ ባንክ' : 'Commercial Bank of Ethiopia', account:'1000 1234 5678' }, bride:{ name: DEMO === 'qasr' ? (am ? 'አይሻ አህመድ' : 'Aisha Ahmed') : am ? 'ሰላም በቀለ' : 'Selam Bekele', bank:'Telebirr', account:'0911 00 00 00' } } : undefined };
 }
 
 function render(ev) {
