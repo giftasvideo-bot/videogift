@@ -380,7 +380,6 @@
   .env-l { background:var(--e1); clip-path:polygon(0 0, 50% 56%, 0 100%); }
   .env-r { background:var(--e2); clip-path:polygon(100% 0, 50% 56%, 100% 100%); }
   .env-b { background:var(--e3); clip-path:polygon(0 100%, 50% 56%, 100% 100%); }
-
   .env-flap { left:0; right:0; top:0; height:60%; z-index:4; transform-origin:50% 0; clip-path:polygon(0 0, 100% 0, 50% 100%); background:linear-gradient(180deg, var(--e3), var(--e1)); }
   .env-seal { left:50%; top:56%; width:21%; aspect-ratio:1; z-index:6; transform:translate(-50%,-50%); display:grid; place-items:center;
     animation:envPulse 1.8s ease-in-out infinite; transition:opacity .3s, transform .3s; }
@@ -1267,7 +1266,7 @@ function demoEvent(realOk) {
     about: am ? 'ከቤተሰቦቻችን ጋር በመሆን ሠርጋችንን በቡና፣ በሙዚቃና በፍቅር በተሞላ ገበታ እንድታከብሩልን በደስታ እንጋብዛችኋለን።' : 'Together with our families, we joyfully invite you to celebrate our wedding with coffee, music, and a table full of love.',
     event_date:ymd + 'T09:00:00',
     days: am ? [row('09:00','የቤተ ክርስቲያን ሥርዓት'), row('12:00','ፎቶና ቡራኬ'), row('16:00','የእንግዳ መቀበያና ምሳ'), row('19:00','ሙዚቃና ጭፈራ')] : [row('09:00','Church ceremony'), row('12:00','Photos & blessings'), row('16:00','Reception & lunch'), row('19:00','Music & dancing')],
-    venue: am ? 'ሪሴፕሽን አዳራሽ፣ ቦሌ፣ አዲስ አበባ' : 'Reception Hall, Bole, Addis Ababa', map_url:'', rsvp_enabled:true, photo_urls:mine.length ? mine : DEMO === 'meadow' ? [] : real ? REAL : ph.slice(0, 3), gallery_urls:DEMO === 'meadow' ? ph : (mine.length || real) ? [] : ph.slice(3), video_url:'',
+    venue: am ? 'ሪሴፕሽን አዳራሽ፣ ቦሌ፣ አዲስ አበባ' : 'Reception Hall, Bole, Addis Ababa', map_url:'', rsvp_enabled:true, photo_urls:mine.length ? mine : DEMO === 'meadow' ? [] : real ? REAL : ph.slice(0, 3), gallery_urls:DEMO === 'meadow' ? [1, 2, 3, 4, 5, 6].map(n => 'meadow-gallery-' + n + '.jpg') : (mine.length || real) ? [] : ph.slice(3), video_url:'',
     gift_accounts: DEMO === 'meadow' ? { groom:{ name: am ? 'ዳዊት ታደሰ' : 'Dawit Tadesse', bank: am ? 'የኢትዮጵያ ንግድ ባንክ' : 'Commercial Bank of Ethiopia', account:'1000 1234 5678' }, bride:{ name: am ? 'ሰላም በቀለ' : 'Selam Bekele', bank:'Telebirr', account:'0911 00 00 00' } } : undefined };
 }
 
