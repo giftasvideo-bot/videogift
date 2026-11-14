@@ -194,6 +194,26 @@
   @keyframes giftWiggle { 0%,70%,100% { transform:rotate(0); } 76% { transform:rotate(-2.5deg); } 84% { transform:rotate(2.5deg); } 92% { transform:rotate(-1.5deg); } }
   @keyframes giftFloat { 0%,100% { transform:translateY(0) rotate(0); } 50% { transform:translateY(-8px) rotate(6deg); } }
   @keyframes giftConf { 0% { opacity:1; transform:translate(-50%,0) rotate(0) scale(.6); } 100% { opacity:0; transform:translate(calc(-50% + var(--dx)), var(--dy)) rotate(var(--rot)) scale(1); } }
+  /* meadow gift box: bride & groom account popup */
+  .gift-modal { position:fixed; inset:0; z-index:200; display:flex; align-items:center; justify-content:center; padding:16px; background:rgba(40,28,12,.55); opacity:0; pointer-events:none; transition:opacity .3s ease; }
+  .gift-modal.show { opacity:1; pointer-events:auto; }
+  .gift-dlg { position:relative; width:min(560px,100%); max-height:calc(100vh - 32px); max-height:calc(100dvh - 32px); overflow:auto; border-radius:22px; background:#fffdf9; color:#4a3820; box-shadow:0 24px 60px rgba(0,0,0,.35); transform:translateY(18px) scale(.97); transition:transform .35s cubic-bezier(.3,1.3,.5,1); }
+  .gift-modal.show .gift-dlg { transform:none; }
+  .gift-dlg-hd { background:var(--accent,#7a5a24); color:#fff8e4; padding:22px 52px; text-align:center; font:700 clamp(1.5rem,6vw,2rem)/1.15 'Cormorant Garamond','Noto Sans Ethiopic',serif; letter-spacing:.04em; }
+  .gift-x { position:absolute; top:12px; right:12px; width:36px; height:36px; border:0; border-radius:50%; background:transparent; color:#fff8e4; font-size:28px; line-height:1; cursor:pointer; }
+  .gift-x:hover, .gift-x:focus-visible { background:rgba(255,255,255,.18); outline:none; }
+  .gift-accts { display:grid; grid-template-columns:repeat(auto-fit,minmax(210px,1fr)); gap:26px 18px; padding:24px 18px 26px; }
+  .gift-acct { display:flex; flex-direction:column; align-items:center; gap:8px; min-width:0; text-align:center; }
+  .gift-who { font:700 1.3rem/1.2 'Cormorant Garamond','Noto Sans Ethiopic',serif; color:var(--accent,#7a5a24); letter-spacing:.03em; }
+  .gift-bank { font:600 1.05rem/1.3 'Cormorant Garamond','Noto Sans Ethiopic',serif; color:#4a3820; overflow-wrap:anywhere; }
+  .gift-qr { width:176px; max-width:100%; aspect-ratio:1; display:flex; align-items:center; justify-content:center; padding:10px; margin:4px 0; background:#fff; border-radius:14px; box-shadow:0 6px 18px rgba(60,35,20,.16); }
+  .gift-qr svg, .gift-qr img { display:block; width:100%; height:100%; object-fit:contain; }
+  .gift-num { font:600 1.05rem/1.3 ui-monospace,SFMono-Regular,Menlo,Consolas,monospace; letter-spacing:.06em; color:#4a3820; overflow-wrap:anywhere; }
+  .gift-sub { font:500 .9rem/1.3 'Cormorant Garamond','Noto Sans Ethiopic',serif; opacity:.8; overflow-wrap:anywhere; }
+  .gift-btns { display:flex; flex-wrap:wrap; justify-content:center; gap:8px; margin-top:2px; }
+  .gift-pill { border:1px solid color-mix(in srgb, var(--accent,#7a5a24) 35%, #fff); background:var(--soft,#eddfae); color:var(--ink,#4a3820); border-radius:999px; padding:7px 14px; font:600 .85rem 'Cormorant Garamond','Noto Sans Ethiopic',serif; cursor:pointer; text-decoration:none; }
+  .gift-pill:hover, .gift-pill:focus-visible { background:var(--accent,#7a5a24); color:#fff8e4; outline:none; }
+  .gift-show { display:inline-block; margin:12px auto 0; background:var(--accent,#7a5a24); color:#fff8e4; border-color:transparent; padding:9px 20px; font-size:1rem; }
 
   /* ---- Wedding: paper look, stacked names, ceremony card ---- */
   body.wed::before { content:''; position:fixed; inset:0; z-index:0; pointer-events:none; opacity:.55;
@@ -721,6 +741,72 @@ function guestbook(list) {
   return card;
 }
 
+function giftAccounts(ev) {
+  const src = (ev.gift_accounts && typeof ev.gift_accounts === 'object') ? ev.gift_accounts : {};
+  const get = (r, k) => String((src[r] && src[r][k]) || ev['gift_' + r + '_' + k] || '').trim();
+  return ['groom', 'bride'].map(r => ({ role:r, bank:get(r, 'bank'), name:get(r, 'name'), number:get(r, 'account'), link:get(r, 'link'), qr:get(r, 'qr') }))
+    .filter(a => a.bank || a.name || a.number || a.link || a.qr);
+}
+let _qrLib;
+function loadQR() {
+  if (window.qrcode) return Promise.resolve(window.qrcode);
+  return _qrLib || (_qrLib = new Promise((res, rej) => {
+    const s = document.createElement('script'); s.src = 'https://cdnjs.cloudflare.com/ajax/libs/qrcode-generator/1.4.4/qrcode.min.js';
+    s.onload = () => window.qrcode ? res(window.qrcode) : rej(); s.onerror = () => { _qrLib = null; rej(); }; document.head.append(s);
+  }));
+}
+function giftModal(accts, G) {
+  const wrap = el('div', 'gift-modal'), dlg = el('div', 'gift-dlg');
+  wrap.setAttribute('role', 'dialog'); wrap.setAttribute('aria-modal', 'true'); wrap.setAttribute('aria-label', G('Gift box', 'የስጦታ ሳጥን'));
+  const hd = el('div', 'gift-dlg-hd', G('Gift box', 'የስጦታ ሳጥን'));
+  const x = el('button', 'gift-x', '\u00d7'); x.type = 'button'; x.setAttribute('aria-label', G('Close', 'ዝጋ')); dlg.append(hd, x);
+  const grid = el('div', 'gift-accts'); dlg.append(grid); wrap.append(dlg);
+  accts.forEach(a => {
+    const col = el('div', 'gift-acct');
+    const who = a.role === 'groom' ? G('Groom', 'ሙሽራ') : G('Bride', 'ሙሽሪት');
+    col.append(el('div', 'gift-who', who + (a.name ? ' \u2013 ' + a.name : '')));
+    if (a.bank) col.append(el('div', 'gift-bank', a.bank));
+    const payload = a.link || [a.bank, a.name, a.number].filter(Boolean).join('\n');
+    let dl = null;
+    const qrBox = el('div', 'gift-qr');
+    if (a.qr) { const im = el('img'); im.src = a.qr; im.alt = G('QR code', 'የQR ኮድ'); im.onerror = () => qrBox.remove(); qrBox.append(im); dl = { href:a.qr }; col.append(qrBox); }
+    else if (payload) {
+      col.append(qrBox);
+      loadQR().then(qrcode => {
+        const q = qrcode(0, 'M'); q.addData(payload); q.make();
+        qrBox.innerHTML = q.createSvgTag({ cellSize:4, margin:0, scalable:true });
+        dl = { href:q.createDataURL(8, 16) };
+      }).catch(() => qrBox.remove());
+    }
+    if (a.number) col.append(el('div', 'gift-num', a.number));
+    if (a.link) col.append(el('div', 'gift-sub', a.link.replace(/^https?:\/\//, '')));
+    const btns = el('div', 'gift-btns');
+    const copyText = a.number || a.link;
+    if (copyText) {
+      const cp = el('button', 'gift-pill', G('Copy', 'ቅዳ')); cp.type = 'button';
+      cp.onclick = () => {
+        const done = () => { cp.textContent = G('Copied!', 'ተቀድቷል!'); setTimeout(() => cp.textContent = G('Copy', 'ቅዳ'), 1500); };
+        if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(copyText).then(done, done);
+        else { const t = el('textarea'); t.value = copyText; document.body.append(t); t.select(); try { document.execCommand('copy'); } catch (e) {} t.remove(); done(); }
+      };
+      btns.append(cp);
+    }
+    if (a.link && /^https?:\/\//i.test(a.link)) { const o = el('a', 'gift-pill', G('Open link', 'አገናኙን ክፈት')); o.href = a.link; o.target = '_blank'; o.rel = 'noopener'; btns.append(o); }
+    if (a.qr || payload) {
+      const sv = el('button', 'gift-pill', G('Save QR', 'QR አስቀምጥ')); sv.type = 'button';
+      sv.onclick = () => { if (!dl) return; const l = el('a'); l.href = dl.href; l.download = 'qr-' + a.role + (a.qr ? '' : '.gif'); document.body.append(l); l.click(); l.remove(); };
+      btns.append(sv);
+    }
+    col.append(btns); grid.append(col);
+  });
+  let last = null;
+  const close = () => { wrap.classList.remove('show'); document.removeEventListener('keydown', onKey); if (last && last.focus) last.focus(); setTimeout(() => { if (!wrap.classList.contains('show')) wrap.remove(); }, 350); };
+  const onKey = e => { if (e.key === 'Escape') close(); };
+  x.onclick = close; wrap.addEventListener('click', e => { if (e.target === wrap) close(); });
+  const open = () => { last = document.activeElement; document.body.append(wrap); requestAnimationFrame(() => { wrap.classList.add('show'); x.focus(); }); document.addEventListener('keydown', onKey); };
+  return { open, close };
+}
+
 function giftBox(ev) {
   const am = LANG === 'am', G = (en, a) => am ? a : en;
   const card = el('div', 'tl-card gift-card gift');
@@ -748,6 +834,8 @@ function giftBox(ev) {
   const rv = el('div', 'gift-reveal'), info = String(ev.gift_info || ev.gift_note || '').trim();
   rv.append(el('h4', '', G('Thank you for celebrating with us', 'ከእኛ ጋር ስላከበሩ እናመሰግናለን')));
   rv.append(el('p', '', info || G('Your love and blessings mean the world to us.', 'ፍቅራችሁና በረከታችሁ ለእኛ ሁሉም ነገር ነው።')));
+  const accts = giftAccounts(ev), modal = accts.length ? giftModal(accts, G) : null;
+  if (modal) { const sh = el('button', 'gift-pill gift-show', G('View gift details', 'የስጦታ መረጃ ይመልከቱ')); sh.type = 'button'; sh.onclick = modal.open; rv.append(sh); }
   card.append(btn, rv, el('p', 'gift-line', G('Your presence would be the greatest gift we could receive!', 'መገኘትዎ ልንቀበለው የምንችለው ታላቅ ስጦታ ነው!')));
   const cols = ['#3a7d44', '#e2b33b', '#b8372f', '#fffaf0', '#f0cf6a'];
   const burst = () => {
@@ -759,7 +847,7 @@ function giftBox(ev) {
       c.style.animationDelay = (Math.random() * .2) + 's'; stage.append(c); requestAnimationFrame(() => c.classList.add('go')); setTimeout(() => c.remove(), 2000);
     }
   };
-  btn.onclick = () => { const o = !card.classList.contains('open'); card.classList.toggle('open', o); btn.setAttribute('aria-expanded', String(o)); if (o) burst(); };
+  btn.onclick = () => { if (modal && card.classList.contains('open')) { modal.open(); return; } const o = !card.classList.contains('open'); card.classList.toggle('open', o); btn.setAttribute('aria-expanded', String(o)); if (o) { burst(); if (modal) setTimeout(modal.open, 900); } };
   return card;
 }
 
@@ -1131,7 +1219,8 @@ function demoEvent(realOk) {
     about: am ? 'ከቤተሰቦቻችን ጋር በመሆን ሠርጋችንን በቡና፣ በሙዚቃና በፍቅር በተሞላ ገበታ እንድታከብሩልን በደስታ እንጋብዛችኋለን።' : 'Together with our families, we joyfully invite you to celebrate our wedding with coffee, music, and a table full of love.',
     event_date:ymd + 'T09:00:00',
     days: am ? [row('09:00','የቤተ ክርስቲያን ሥርዓት'), row('12:00','ፎቶና ቡራኬ'), row('16:00','የእንግዳ መቀበያና ምሳ'), row('19:00','ሙዚቃና ጭፈራ')] : [row('09:00','Church ceremony'), row('12:00','Photos & blessings'), row('16:00','Reception & lunch'), row('19:00','Music & dancing')],
-    venue: am ? 'ሪሴፕሽን አዳራሽ፣ ቦሌ፣ አዲስ አበባ' : 'Reception Hall, Bole, Addis Ababa', map_url:'', rsvp_enabled:true, photo_urls:mine.length ? mine : DEMO === 'meadow' ? [] : real ? REAL : ph.slice(0, 3), gallery_urls:(mine.length || real || DEMO === 'meadow') ? [] : ph.slice(3), video_url:'' };
+    venue: am ? 'ሪሴፕሽን አዳራሽ፣ ቦሌ፣ አዲስ አበባ' : 'Reception Hall, Bole, Addis Ababa', map_url:'', rsvp_enabled:true, photo_urls:mine.length ? mine : DEMO === 'meadow' ? [] : real ? REAL : ph.slice(0, 3), gallery_urls:(mine.length || real || DEMO === 'meadow') ? [] : ph.slice(3), video_url:'',
+    gift_accounts: DEMO === 'meadow' ? { groom:{ name: am ? 'ዳዊት ታደሰ' : 'Dawit Tadesse', bank: am ? 'የኢትዮጵያ ንግድ ባንክ' : 'Commercial Bank of Ethiopia', account:'1000 1234 5678' }, bride:{ name: am ? 'ሰላም በቀለ' : 'Selam Bekele', bank:'Telebirr', account:'0911 00 00 00' } } : undefined };
 }
 
 function render(ev) {
