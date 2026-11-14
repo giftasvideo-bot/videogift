@@ -211,7 +211,6 @@
         <label lang="am">የስጦታ ማስታወሻ <small>(በአማርኛ፣ አማራጭ)</small><textarea name="gift_note_am" maxlength="500" lang="am"></textarea></label>
       </div>
 
-
     </fieldset>
     <fieldset class="grp" id="grpGuestMsg">
       <legend>Message from guests · የእንግዶች መልእክት</legend>
@@ -574,13 +573,14 @@ let tplFor = '';
 const TEMPLATES = [
   ['classic', 'Classic envelope', 'Opens with a wax-sealed envelope, then a paper-style page. You choose the background colour.'],
   ['basket', 'Basket & flowers', 'Warm maroon and gold with a hand-drawn basket border, countdown and a 3D photo gallery.'],
+  ['meadow', 'Ethiopian meadow', 'A hand-painted Ethiopian highlands scene with the couple in traditional dress, names above the painting.'],
   ['scroll', 'Royal scroll', 'A wax-sealed parchment scroll. Guests tap it and it unrolls to reveal the invitation.']
 ];
 const TPL_MARK = /\s*\[\[tpl:(\w+)\]\]\s*$/;
 const splitTpl = t => { const m = TPL_MARK.exec(t || ''); return { text:String(t || '').replace(TPL_MARK, ''), tpl:m ? m[1] : '' }; };
 const TPL_FILE = { scroll:'event-scroll.html', birthday:'event-birthday.html', balloons:'event-birthday-balloons.html', space:'event-birthday-space.html', cake:'event-birthday-cake.html' };
 const BDAY_PAGES = ['birthday', 'balloons', 'space', 'cake'];
-const joinTpl = (t, tpl) => String(t || '').replace(TPL_MARK, '') + (['basket', 'scroll', ...BDAY_PAGES].includes(tpl) ? '\n[[tpl:' + tpl + ']]' : '');
+const joinTpl = (t, tpl) => String(t || '').replace(TPL_MARK, '') + (['basket', 'meadow', 'scroll', ...BDAY_PAGES].includes(tpl) ? '\n[[tpl:' + tpl + ']]' : '');
 const tplVal = () => { const r = document.querySelector('#f [name=template]:checked'); return r ? r.value : 'classic'; };
 let pvPhotoURLs = [];
 function previewURL(id, thumb) {
