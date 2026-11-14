@@ -55,10 +55,42 @@
   .prog li:nth-child(3n+2)::before { background:var(--b); } .prog li:nth-child(3n)::before { background:var(--c); }
   .prog b { margin-right:auto; }
   .msg { font-size:1.1rem; margin:22px 4px; white-space:pre-line; text-wrap:pretty; }
-  .gal { display:flex; gap:16px; overflow-x:auto; scroll-snap-type:x mandatory; padding:14px 20px 26px; margin:0 -20px; }
-  .gal img { flex:0 0 auto; width:min(210px,62vw); aspect-ratio:3/4; object-fit:cover; scroll-snap-align:center; background:#fff; padding:8px 8px 30px; border-radius:6px; box-shadow:0 8px 18px rgba(75,42,30,.22); }
-  .gal img:nth-child(odd) { transform:rotate(-2.5deg); } .gal img:nth-child(even) { transform:rotate(2deg); }
   .cups { display:flex; justify-content:center; align-items:flex-end; gap:10px; margin-top:26px; }
+  .galwrap, .gbwrap { margin:26px 0 8px; }
+  .pwish { position:relative; background:var(--card); border:3px solid var(--a); border-radius:22px; padding:24px 20px 22px; margin:22px 0 16px; box-shadow:0 6px 0 var(--b); }
+  .pwish h2, .galwrap h2, .gbwrap h2 { font-family:'Pacifico','Noto Sans Ethiopic',cursive; font-weight:400; font-size:1.5rem; line-height:1.4; color:var(--choc); margin:0; }
+  body.am .pwish h2, body.am .galwrap h2, body.am .gbwrap h2 { font-family:'Noto Sans Ethiopic',sans-serif; font-weight:800; }
+  .galwrap h2::after, .gbwrap h2::after { content:""; display:block; width:68px; height:8px; margin:6px auto 0; border-radius:99px; background:linear-gradient(90deg,var(--a) 0 33%,var(--b) 33% 66%,var(--c) 66%); }
+  .pwish .q { display:block; height:30px; margin:6px 0 0; font:400 4rem/1 'Pacifico',Georgia,serif; color:var(--a); }
+  .pwish .t { margin:0; font-size:1.08rem; white-space:pre-line; text-wrap:pretty; }
+  .pwish .by { margin:14px 0 0; font-weight:700; color:var(--choc); }
+  .gal { display:flex; gap:18px; overflow-x:auto; scroll-snap-type:x mandatory; -webkit-overflow-scrolling:touch; padding:20px 20px 28px; margin:0 -20px; }
+  .gal .ph { flex:0 0 auto; position:relative; width:min(210px,62vw); padding:8px 8px 30px; border:0; border-radius:6px; background:#fff; box-shadow:0 8px 18px rgba(75,42,30,.22); cursor:zoom-in; scroll-snap-align:center; font:inherit; }
+  .gal .ph img { display:block; width:100%; aspect-ratio:3/4; object-fit:cover; border-radius:2px; background:var(--bg); }
+  .gal .ph::before { content:""; position:absolute; top:-9px; left:50%; width:54px; height:18px; margin-left:-27px; background:var(--b); opacity:.85; border-radius:2px; transform:rotate(-4deg); }
+  .gal .ph:nth-child(3n+2)::before { background:var(--a); } .gal .ph:nth-child(3n)::before { background:var(--c); }
+  .gal .ph:nth-child(odd) { transform:rotate(-2.5deg); } .gal .ph:nth-child(even) { transform:rotate(2deg); }
+  .gal .ph:focus-visible { outline:3px solid var(--choc); outline-offset:3px; }
+  .galhint { margin:0; font-size:.9rem; opacity:.75; }
+  .gbform { display:grid; gap:10px; background:var(--card); border:3px solid var(--c); border-radius:22px; padding:20px 18px; text-align:left; margin-top:16px; box-shadow:0 6px 0 var(--b); }
+  .gbit { background:var(--card); border:2px solid var(--a); border-radius:18px; padding:12px 16px; box-shadow:0 4px 0 var(--b); }
+  .gbit b { color:var(--choc); }
+  .gbform input, .gbform textarea { width:100%; font:inherit; color:#2b2140; background:#fff; border:2px solid color-mix(in srgb, var(--c) 55%, #fff); border-radius:14px; padding:10px 14px; }
+  .gbform textarea { min-height:96px; resize:vertical; }
+  .gbform input:focus-visible, .gbform textarea:focus-visible { outline:3px solid var(--b); outline-offset:1px; }
+  .gbform .btn { justify-self:center; cursor:pointer; border:0; }
+  .gbform .btn:disabled { opacity:.6; cursor:default; }
+  .gbform .note { margin:0; text-align:center; font-weight:700; min-height:1.3em; }
+  .gblist { display:grid; gap:12px; margin-top:16px; text-align:left; }
+  .gbit .h { display:flex; justify-content:space-between; align-items:baseline; gap:10px; }
+  .gbit small { opacity:.7; flex:0 0 auto; }
+  .gbit p { margin:4px 0 0; white-space:pre-line; overflow-wrap:anywhere; }
+  .gbempty { margin:16px 0 0; opacity:.8; }
+  .lb { position:fixed; inset:0; z-index:50; background:rgba(15,8,30,.9); display:flex; align-items:center; justify-content:center; padding:16px; }
+  .lb img { max-width:100%; max-height:86svh; border-radius:10px; border:6px solid #fff; box-shadow:0 14px 40px rgba(0,0,0,.5); }
+  .lb button { position:absolute; border:0; border-radius:50%; width:46px; height:46px; font:inherit; font-size:1.5rem; line-height:1; background:#fff; color:#333; cursor:pointer; box-shadow:0 4px 12px rgba(0,0,0,.3); }
+  .lb .x { top:max(14px,env(safe-area-inset-top)); right:14px; } .lb .pv { left:10px; top:50%; margin-top:-23px; } .lb .nx { right:10px; top:50%; margin-top:-23px; }
+  .lb button:focus-visible { outline:3px solid #ffd23f; outline-offset:2px; }
   .err { padding:40px 0; font-weight:700; }
   @media (prefers-reduced-motion:reduce) { .flame, .out .smoke, .spark { animation:none; } }
 </style>
@@ -80,8 +112,8 @@ const g2j = (y, m, d) => { const a = Math.floor((14 - m) / 12), yy = y + 4800 - 
 const j2e = j => { const k = j - 1723856, r = ((k % 1461) + 1461) % 1461, n = (r % 365) + 365 * Math.floor(r / 1460); return { y:4 * Math.floor(k / 1461) + Math.floor(r / 365) - Math.floor(r / 1460), m:Math.floor(n / 30) + 1, d:(n % 30) + 1 }; };
 
 const T = {
-  en: { say:'Come celebrate with us!', wish:'Tap the candles and make a wish', wish2:'Your wish is on its way! Tap to relight', host:'Hosted by', map:'Open map', prog:'Party plan', err:'We could not load this invitation.' },
-  am: { say:'መጥታችሁ አብራችሁን አክብሩ!', wish:'ሻማዎቹን ነክተው ምኞት ይመኙ', wish2:'ምኞትዎ ተሰምቷል! እንደገና ለማብራት ይንኩ', host:'ጋባዦች', map:'ካርታ ክፈት', prog:'የበዓሉ ፕሮግራም', err:'ይህን ግብዣ መጫን አልተቻለም።' }
+  en: { say:'Come celebrate with us!', wish:'Tap the candles and make a wish', wish2:'Your wish is on its way! Tap to relight', host:'Hosted by', map:'Open map', prog:'Party plan', pw:'A wish from the parents', gb:'Guestbook', gbName:'Your name*', gbMsg:'Write your wishes*', gbSend:'Send wishes', gbThanks:'Thank you for your wishes!', gbEmpty:'Be the first to leave a wish.', gbFail:'Could not send, please try again.', gbDemo:'This is a preview, so wishes are not saved.', gal:'Photo gallery', ghint:'Swipe to see more, tap a photo to enlarge', close:'Close', prev:'Previous photo', next:'Next photo', err:'We could not load this invitation.' },
+  am: { say:'መጥታችሁ አብራችሁን አክብሩ!', wish:'ሻማዎቹን ነክተው ምኞት ይመኙ', wish2:'ምኞትዎ ተሰምቷል! እንደገና ለማብራት ይንኩ', host:'ጋባዦች', map:'ካርታ ክፈት', prog:'የበዓሉ ፕሮግራም', pw:'የወላጆች መልካም ምኞት', gb:'የእንግዳ መጽሐፍ', gbName:'ስምዎ*', gbMsg:'መልካም ምኞትዎን ይጻፉ*', gbSend:'ምኞት ላክ', gbThanks:'ስለ መልካም ምኞትዎ እናመሰግናለን!', gbEmpty:'የመጀመሪያው መልካም ምኞት ላኪ ይሁኑ።', gbFail:'መላክ አልተቻለም፣ እባክዎ እንደገና ይሞክሩ።', gbDemo:'ይህ ቅድመ እይታ ነው፤ ምኞቶች አይቀመጡም።', gal:'የፎቶ ጋለሪ', ghint:'ለማየት ወደ ጎን ይጎትቱ፣ ለማጉላት ፎቶ ይንኩ', close:'ዝጋ', prev:'ቀዳሚ ፎቶ', next:'ቀጣይ ፎቶ', err:'ይህን ግብዣ መጫን አልተቻለም።' }
 };
 const WD_AM = ['እሑድ','ሰኞ','ማክሰኞ','ረቡዕ','ሐሙስ','ዓርብ','ቅዳሜ'];
 const WD_EN = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
@@ -89,12 +121,33 @@ const MO_EN = ['January','February','March','April','May','June','July','August'
 let lang = qs.get('lang') || localStorage.getItem('f27_lang') || 'en'; if (lang !== 'am') lang = 'en';
 let ev = null, out = false;
 
+const BGS = [['#ffe3ee','#ffc2d9'], ['#e0f1ff','#b5dcff'], ['#fff1d6','#ffd9a0'], ['#dcf6ee','#a9e6d2'], ['#efe4ff','#d3bdf7']];
+const ART = [
+  '<path d="M80 250h140l-14 60H94z" fill="#f6c56f"/><path d="M70 252c-8-26 10-44 30-38 4-28 44-40 62-18 28-10 56 14 48 40 10 4 12 16 4 24z" fill="#ff8fb1"/><circle cx="150" cy="170" r="11" fill="#e63946"/>',
+  '<rect x="70" y="230" width="160" height="80" rx="14" fill="#f6c56f"/><rect x="70" y="230" width="160" height="22" rx="11" fill="#ff8fb1"/><rect x="96" y="190" width="108" height="46" rx="12" fill="#ff8fb1"/><rect x="96" y="190" width="108" height="14" rx="7" fill="#fff"/><rect x="146" y="150" width="8" height="40" fill="#7fd8c3"/><path d="M150 124c8 10 6 20 0 24-6-4-8-14 0-24z" fill="#ffb703"/>',
+  '<rect x="100" y="150" width="14" height="150" rx="6" fill="#ff8fb1"/><rect x="150" y="130" width="14" height="170" rx="6" fill="#7fd8c3"/><rect x="200" y="160" width="14" height="140" rx="6" fill="#f6c56f"/><path d="M107 118c9 12 7 24 0 28-7-4-9-16 0-28zM157 98c9 12 7 24 0 28-7-4-9-16 0-28zM207 128c9 12 7 24 0 28-7-4-9-16 0-28z" fill="#ffb703"/><rect x="80" y="296" width="150" height="14" rx="7" fill="#6b3a28"/>',
+  '<rect x="92" y="200" width="116" height="100" rx="10" fill="#ff8fb1"/><rect x="142" y="200" width="16" height="100" fill="#fff"/><rect x="92" y="236" width="116" height="16" fill="#fff"/><path d="M150 200c-26-36-52-10-26 0zM150 200c26-36 52-10 26 0z" fill="#f6c56f"/>',
+  '<path d="M110 200h80l-40 120z" fill="#f6c56f"/><path d="M110 200c-12-34 8-62 40-62s52 28 40 62z" fill="#ff8fb1"/><circle cx="150" cy="116" r="12" fill="#e63946"/><circle cx="128" cy="172" r="4" fill="#fff"/><circle cx="168" cy="164" r="4" fill="#7fd8c3"/><circle cx="150" cy="184" r="4" fill="#fff"/>'
+];
+const demoPic = k => {
+  const bg = BGS[k % 5];
+  const svg = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 300 400"><defs><linearGradient id="g" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="' + bg[0] + '"/><stop offset="1" stop-color="' + bg[1] + '"/></linearGradient></defs><rect width="300" height="400" fill="url(#g)"/>' + ART[k % 5] + '</svg>';
+  return 'data:image/svg+xml,' + encodeURIComponent(svg);
+};
 const DEMO = {
   title:'Liya turns 7!', title_am:'ሊያ 7 ዓመት ሞላት!', host_names:'Mum, Dad & Nahom', host_names_am:'እማማ፣ አባባ እና ናሆም',
   event_date:'2026-12-12T15:00', venue:'Our home, Bole, Addis Ababa', venue_am:'ቤታችን፣ ቦሌ፣ አዲስ አበባ', map_url:'https://maps.google.com/?q=Bole+Addis+Ababa',
   message:'Cake, games and a piñata! Bring your biggest smile.', message_am:'ኬክ፣ ጨዋታ እና ብዙ ደስታ! ፈገግታችሁን ይዛችሁ ኑ።',
-  days:[{ title:'Games', title_am:'ጨዋታ', date:'2026-12-12', start:'15:00' }, { title:'Cake time', title_am:'የኬክ ሰዓት', date:'2026-12-12', start:'17:00' }]
+  days:[{ title:'Games', title_am:'ጨዋታ', date:'2026-12-12', start:'15:00' }, { title:'Cake time', title_am:'የኬክ ሰዓት', date:'2026-12-12', start:'17:00' }],
+  about:'Liya, from the day you were born our home has been full of laughter. We are so proud of the kind, curious and brave girl you are becoming. May this year bring you many friends, big adventures and every dream you wish for. We love you to the moon and back!',
+  about_am:'ሊያ፣ ከተወለድሽበት ቀን ጀምሮ ቤታችን በሳቅ ተሞልቷል። እየሆንሽ ባለው ደግ፣ ጠያቂና ደፋር ልጅ በጣም እንኮራለን። ይህ ዓመት ብዙ ጓደኞችን፣ ትልልቅ ጀብዶችንና የምትመኚውን ሁሉ ያምጣልሽ። እጅግ እንወድሻለን!',
+  photo_urls:[demoPic(0)], gallery_urls:[1, 2, 3, 4, 0].map(demoPic)
 };
+const SLUG = qs.get('e');
+let wishes = SLUG ? [] : [
+  { name:'Hanna', name_am:'ሃና', message:'Happy birthday Liya! Can\'t wait for the cake and games!', message_am:'መልካም ልደት ሊያ! ኬኩንና ጨዋታውን በጉጉት እጠብቃለሁ!', created_at:'2026-11-20T10:00:00' },
+  { name:'Aunt Selam', name_am:'አክስት ሰላም', message:'Love you, sweet girl. See you at the party!', message_am:'እወድሻለሁ ውድ ልጄ። በበዓሉ እንገናኛለን!', created_at:'2026-11-21T18:30:00' }
+];
 const pick = (o, k) => (lang === 'am' && o[k + '_am']) ? o[k + '_am'] : (o[k] || '');
 const pad = n => String(n).padStart(2, '0');
 function parseDate(s) { const m = /^(\d{4})-(\d\d)-(\d\d)(?:[T ](\d\d):(\d\d))?/.exec(s || ''); return m ? { y:+m[1], m:+m[2], d:+m[3], hh:m[4] != null ? +m[4] : null, mm:m[5] != null ? +m[5] : null } : null; }
@@ -153,11 +206,51 @@ function render() {
   const days = Array.isArray(ev.days) ? ev.days : [];
   if (days.length > 1 || (days.length === 1 && days[0].title)) p.push('<ul class="prog" aria-label="' + esc(t.prog) + '">' + days.map(x => {
     const tm = x.start ? timeText(parseDate('2000-01-01T' + x.start)) : ''; return '<li><b>' + esc(pick(x, 'title')) + '</b>' + (tm ? '<span>' + esc(tm) + '</span>' : '') + '</li>'; }).join('') + '</ul>');
-  const msg = pick(ev, 'message') || pick(ev, 'about').replace(/\s*\[\[tpl:\w+\]\]\s*$/, ''); if (msg) p.push('<p class="msg">' + esc(msg) + '</p>');
+  const msg = pick(ev, 'message'), wish = pick(ev, 'about').replace(/\s*\[\[tpl:\w+\]\]\s*$/, '').trim(); if (msg) p.push('<p class="msg">' + esc(msg) + '</p>');
+  if (wish) p.push('<section class="pwish"><h2>' + esc(t.pw) + '</h2><span class="q" aria-hidden="true">\u201C</span><p class="t">' + esc(wish) + '</p>' + (host ? '<p class="by">\u2014 ' + esc(host) + '</p>' : '') + '</section>');
   const gal = [...photos.slice(1), ...(Array.isArray(ev.gallery_urls) ? ev.gallery_urls : [])];
-  if (gal.length) p.push('<div class="gal">' + gal.map(u => '<img alt="" loading="lazy" src="' + esc(src(u)) + '">').join('') + '</div>');
+  if (gal.length) p.push('<section class="galwrap"><h2>' + esc(t.gal) + '</h2><div class="gal">' + gal.map((u, n) => '<button type="button" class="ph" data-i="' + n + '" aria-label="' + esc(t.gal) + ' ' + (n + 1) + '"><img alt="" loading="lazy" src="' + esc(src(u)) + '"></button>').join('') + '</div>' + (gal.length > 1 ? '<p class="galhint">' + esc(t.ghint) + '</p>' : '') + '</section>');
+  p.push('<section class="gbwrap"><h2>' + esc(t.gb) + '</h2><form class="gbform" id="gbForm"><input name="n" required maxlength="60" autocomplete="name" placeholder="' + esc(t.gbName) + '" aria-label="' + esc(t.gbName) + '"><textarea name="m" required maxlength="500" placeholder="' + esc(t.gbMsg) + '" aria-label="' + esc(t.gbMsg) + '"></textarea><button class="btn" type="submit">' + esc(t.gbSend) + '</button><p class="note" id="gbNote" role="status"></p></form><div class="gblist" id="gbList"></div></section>');
   p.push('<div class="cups">' + cupcake(C, C[0], 62) + cupcake(C, C[2], 74) + cupcake(C, C[1], 62) + '</div>');
   c.innerHTML = p.join(''); $('cakebtn').onclick = blow;
+  drawWishes(); $('gbForm').onsubmit = sendWish;
+  c.querySelectorAll('.gal .ph').forEach(b => { b.onclick = () => openLb(gal.map(u => src(u)), +b.dataset.i, t); });
+}
+function drawWishes() {
+  const t = T[lang], box = $('gbList'); if (!box) return;
+  const dt = x => { const d = x ? new Date(x) : null; return d && !isNaN(d) ? d.toLocaleDateString(lang === 'am' ? 'am-ET' : 'en-GB', { dateStyle:'medium' }) : ''; };
+  box.innerHTML = wishes.length ? wishes.map(w => '<div class="gbit"><div class="h"><b>' + esc(pick(w, 'name')) + '</b><small>' + esc(dt(w.created_at)) + '</small></div><p>' + esc(pick(w, 'message')) + '</p></div>').join('') : '<p class="gbempty">' + esc(t.gbEmpty) + '</p>';
+}
+async function sendWish(e) {
+  e.preventDefault();
+  const f = e.target, t = T[lang], note = $('gbNote'), btn = f.querySelector('button'), name = f.n.value.trim(), message = f.m.value.trim();
+  if (!name || !message) return;
+  btn.disabled = true; note.textContent = '';
+  try {
+    if (SLUG) {
+      const r = await fetch(API + '/api/e/' + encodeURIComponent(SLUG) + '/wishes', { method:'POST', headers:{ 'Content-Type':'application/json' }, body:JSON.stringify({ name, message }) });
+      if (!r.ok) throw new Error(r.status);
+      const w = await r.json().catch(() => ({}));
+      wishes.unshift({ name:w.name || name, message:w.message || message, created_at:w.created_at || new Date().toISOString() });
+    } else wishes.unshift({ name, message, created_at:new Date().toISOString() });
+    f.reset(); drawWishes(); note.textContent = SLUG ? t.gbThanks : t.gbThanks + ' ' + t.gbDemo;
+  } catch (x) { note.textContent = t.gbFail; }
+  btn.disabled = false;
+}
+function openLb(list, i, t) {
+  const o = document.createElement('div'); o.className = 'lb'; o.setAttribute('role', 'dialog'); o.setAttribute('aria-modal', 'true');
+  const im = document.createElement('img'); im.alt = '';
+  const mk = (cls, txt, lab) => { const b = document.createElement('button'); b.type = 'button'; b.className = cls; b.textContent = txt; b.setAttribute('aria-label', lab); return b; };
+  const x = mk('x', '\u00D7', t.close), pv = mk('pv', '\u2039', t.prev), nx = mk('nx', '\u203A', t.next);
+  const show = n => { i = (n + list.length) % list.length; im.src = list[i]; };
+  const close = () => { o.remove(); document.removeEventListener('keydown', key); document.documentElement.style.overflow = ''; };
+  const key = e => { if (e.key === 'Escape') close(); else if (e.key === 'ArrowLeft') show(i - 1); else if (e.key === 'ArrowRight') show(i + 1); };
+  x.onclick = close; pv.onclick = e => { e.stopPropagation(); show(i - 1); }; nx.onclick = e => { e.stopPropagation(); show(i + 1); };
+  o.onclick = e => { if (e.target === o) close(); };
+  let sx = null; o.addEventListener('touchstart', e => { sx = e.touches[0].clientX; }, { passive:true });
+  o.addEventListener('touchend', e => { if (sx == null) return; const dx = e.changedTouches[0].clientX - sx; sx = null; if (Math.abs(dx) > 50) show(i + (dx < 0 ? 1 : -1)); });
+  o.append(im, x); if (list.length > 1) o.append(pv, nx);
+  document.addEventListener('keydown', key); document.documentElement.style.overflow = 'hidden'; document.body.append(o); show(i); x.focus();
 }
 $('bEn').onclick = () => { lang = 'en'; localStorage.setItem('f27_lang', lang); render(); };
 $('bAm').onclick = () => { lang = 'am'; localStorage.setItem('f27_lang', lang); render(); };
@@ -167,6 +260,7 @@ $('bAm').onclick = () => { lang = 'am'; localStorage.setItem('f27_lang', lang); 
   if (!slug) { ev = Object.assign({}, DEMO); if (qs.get('title')) ev.title = qs.get('title'); }
   else { try { const r = await fetch(API + '/api/events/' + encodeURIComponent(slug)); if (!r.ok) throw new Error(r.status); ev = await r.json(); } catch (e) { ev = null; } }
   render();
+  if (SLUG && ev) { try { const r = await fetch(API + '/api/e/' + encodeURIComponent(SLUG) + '/wishes'); if (r.ok) { const d = await r.json(); wishes = Array.isArray(d) ? d : (Array.isArray(d.wishes) ? d.wishes : []); drawWishes(); } } catch (x) {} }
 })();
 </script>
 </body>
