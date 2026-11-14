@@ -920,7 +920,7 @@ function renderBasket(ev) {
   nav.setAttribute('aria-label', T('Invitation sections'));
   const a1 = el('div', 'bk-art a'), a2 = el('div', 'bk-art b'); a1.style.backgroundImage = a2.style.backgroundImage = 'url(' + BK_ART + ')';
   const foot = el('footer', 'bk-foot', T('Thank you for being part of our story'));
-  root.append(a1, a2, el('div', 'bk-wash'), nav, holder, foot);
+  root.append(a1, a2, el('div', 'bk-wash'), holder, foot);
   const mount = () => {
     holder.replaceChildren(...secs.map(s => s.el)); nav.textContent = '';
     secs.forEach(s => { const b = el('button', '', s.nav); b.type = 'button'; b.onclick = () => s.el.scrollIntoView({ behavior:'smooth', block:'start' }); nav.append(b); });
