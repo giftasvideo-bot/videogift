@@ -47,9 +47,44 @@
   .prog li:nth-child(3n+2)::before { background:var(--c); } .prog li:nth-child(3n)::before { background:var(--d); }
   .prog b { margin-right:auto; }
   .msg { font-size:1.1rem; margin:22px 4px; white-space:pre-line; text-wrap:pretty; }
-  .gal { display:flex; gap:16px; overflow-x:auto; scroll-snap-type:x mandatory; padding:14px 20px 26px; margin:0 -20px; }
-  .gal img { flex:0 0 auto; width:min(210px,62vw); aspect-ratio:3/4; object-fit:cover; scroll-snap-align:center; background:var(--card); padding:8px 8px 30px; border-radius:6px; box-shadow:0 8px 18px rgba(0,0,0,.2); }
-  .gal img:nth-child(odd) { transform:rotate(-2.5deg); } .gal img:nth-child(even) { transform:rotate(2deg); }
+  .galwrap { margin:26px 0 8px; }
+  .galwrap h2 { font-family:'Baloo 2','Noto Sans Ethiopic',sans-serif; font-weight:800; font-size:1.7rem; line-height:1.2; color:var(--a); margin:0; }
+  body.am .galwrap h2 { font-family:'Noto Sans Ethiopic',sans-serif; }
+  .galwrap h2::after { content:""; display:block; width:68px; height:8px; margin:8px auto 0; border-radius:99px; background:linear-gradient(90deg,var(--a) 0 25%,var(--b) 25% 50%,var(--c) 50% 75%,var(--d) 75%); }
+  .gal { display:flex; gap:18px; overflow-x:auto; scroll-snap-type:x mandatory; -webkit-overflow-scrolling:touch; padding:20px 20px 28px; margin:0 -20px; }
+  .gal .ph { flex:0 0 auto; position:relative; width:min(210px,62vw); padding:8px 8px 30px; border:0; border-radius:6px; background:var(--card); box-shadow:0 8px 18px rgba(0,0,0,.2); cursor:zoom-in; scroll-snap-align:center; font:inherit; }
+  .gal .ph img { display:block; width:100%; aspect-ratio:3/4; object-fit:cover; border-radius:2px; background:var(--bg); }
+  .gal .ph::before { content:""; position:absolute; top:-9px; left:50%; width:54px; height:18px; margin-left:-27px; background:var(--b); opacity:.8; border-radius:2px; transform:rotate(-4deg); }
+  .gal .ph:nth-child(3n+2)::before { background:var(--c); } .gal .ph:nth-child(3n)::before { background:var(--d); }
+  .gal .ph:nth-child(odd) { transform:rotate(-2.5deg); } .gal .ph:nth-child(even) { transform:rotate(2deg); }
+  .gal .ph:focus-visible { outline:3px solid var(--ink); outline-offset:3px; }
+  .galhint { margin:0; font-size:.9rem; opacity:.7; }
+  .wish { position:relative; background:var(--card); border-radius:26px; padding:24px 20px 22px; margin:22px 0 16px; box-shadow:0 6px 0 var(--d); }
+  .wish h2, .gbwrap h2 { font-family:'Baloo 2','Noto Sans Ethiopic',sans-serif; font-weight:800; font-size:1.6rem; line-height:1.2; color:var(--a); margin:0; }
+  body.am .wish h2, body.am .gbwrap h2 { font-family:'Noto Sans Ethiopic',sans-serif; }
+  .wish .q { display:block; height:30px; margin:6px 0 0; font:800 4rem/1 'Baloo 2',Georgia,serif; color:var(--b); }
+  .wish .t { margin:0; font-size:1.08rem; white-space:pre-line; text-wrap:pretty; }
+  .wish .by { margin:14px 0 0; font-weight:700; color:var(--a); }
+  .gbwrap { margin:26px 0 8px; }
+  .gbwrap h2::after { content:""; display:block; width:68px; height:8px; margin:8px auto 0; border-radius:99px; background:linear-gradient(90deg,var(--a) 0 25%,var(--b) 25% 50%,var(--c) 50% 75%,var(--d) 75%); }
+  .gbform { display:grid; gap:10px; background:var(--card); border-radius:26px; padding:20px 18px; box-shadow:0 6px 0 var(--c); text-align:left; margin-top:16px; }
+  .gbform input, .gbform textarea { width:100%; font:inherit; color:var(--ink); background:#fff; border:2px solid color-mix(in srgb, var(--c) 55%, #fff); border-radius:14px; padding:10px 14px; }
+  .gbform textarea { min-height:96px; resize:vertical; }
+  .gbform input:focus-visible, .gbform textarea:focus-visible { outline:3px solid var(--a); outline-offset:1px; }
+  .gbform .btn { justify-self:center; cursor:pointer; }
+  .gbform .btn:disabled { opacity:.6; cursor:default; }
+  .gbform .note { margin:0; text-align:center; font-weight:700; min-height:1.3em; }
+  .gblist { display:grid; gap:12px; margin-top:16px; text-align:left; }
+  .gbit { background:var(--card); border-radius:18px; padding:12px 16px; box-shadow:0 4px 0 var(--b); }
+  .gbit .h { display:flex; justify-content:space-between; align-items:baseline; gap:10px; }
+  .gbit b { color:var(--a); overflow-wrap:anywhere; } .gbit small { opacity:.65; flex:0 0 auto; }
+  .gbit p { margin:4px 0 0; white-space:pre-line; overflow-wrap:anywhere; }
+  .gbempty { margin:16px 0 0; opacity:.8; }
+  .lb { position:fixed; inset:0; z-index:50; background:rgba(25,10,30,.88); display:flex; align-items:center; justify-content:center; padding:16px; }
+  .lb img { max-width:100%; max-height:86svh; border-radius:10px; border:6px solid var(--card); box-shadow:0 14px 40px rgba(0,0,0,.5); }
+  .lb button { position:absolute; border:0; border-radius:50%; width:46px; height:46px; font:inherit; font-size:1.5rem; line-height:1; background:#fff; color:#333; cursor:pointer; box-shadow:0 4px 12px rgba(0,0,0,.3); }
+  .lb .x { top:max(14px,env(safe-area-inset-top)); right:14px; } .lb .pv { left:10px; top:50%; margin-top:-23px; } .lb .nx { right:10px; top:50%; margin-top:-23px; }
+  .lb button:focus-visible { outline:3px solid var(--b); outline-offset:2px; }
   .dolls { display:flex; justify-content:center; align-items:flex-end; gap:6px; margin:30px 0 0; }
   .dolls svg { animation:wob 2.8s ease-in-out infinite alternate; transform-origin:50% 100%; }
   .dolls svg:nth-child(2) { animation-delay:-.9s; } .dolls svg:nth-child(3) { animation-delay:-1.8s; }
@@ -75,8 +110,8 @@ const g2j = (y, m, d) => { const a = Math.floor((14 - m) / 12), yy = y + 4800 - 
 const j2e = j => { const k = j - 1723856, r = ((k % 1461) + 1461) % 1461, n = (r % 365) + 365 * Math.floor(r / 1460); return { y:4 * Math.floor(k / 1461) + Math.floor(r / 365) - Math.floor(r / 1460), m:Math.floor(n / 30) + 1, d:(n % 30) + 1 }; };
 
 const T = {
-  en: { say:'Come celebrate with us!', host:'Hosted by', map:'Open map', prog:'Party plan', err:'We could not load this invitation.' },
-  am: { say:'መጥታችሁ አብራችሁን አክብሩ!', host:'ጋባዦች', map:'ካርታ ክፈት', prog:'የበዓሉ ፕሮግራም', err:'ይህን ግብዣ መጫን አልተቻለም።' }
+  en: { say:'Come celebrate with us!', host:'Hosted by', map:'Open map', prog:'Party plan', wish:'A wish from the parents', gb:'Guestbook', gbName:'Your name*', gbMsg:'Write your wishes*', gbSend:'Send wishes', gbThanks:'Thank you for your wishes!', gbEmpty:'Be the first to leave a wish.', gbFail:'Could not send, please try again.', gbDemo:'This is a preview, so wishes are not saved.', gal:'Photo gallery', ghint:'Swipe to see more, tap a photo to enlarge', close:'Close', prev:'Previous photo', next:'Next photo', err:'We could not load this invitation.' },
+  am: { say:'መጥታችሁ አብራችሁን አክብሩ!', host:'ጋባዦች', map:'ካርታ ክፈት', prog:'የበዓሉ ፕሮግራም', wish:'የወላጆች መልካም ምኞት', gb:'የእንግዳ መጽሐፍ', gbName:'ስምዎ*', gbMsg:'መልካም ምኞትዎን ይጻፉ*', gbSend:'ምኞት ላክ', gbThanks:'ስለ መልካም ምኞትዎ እናመሰግናለን!', gbEmpty:'የመጀመሪያው መልካም ምኞት ላኪ ይሁኑ።', gbFail:'መላክ አልተቻለም፣ እባክዎ እንደገና ይሞክሩ።', gbDemo:'ይህ ቅድመ እይታ ነው፤ ምኞቶች አይቀመጡም።', gal:'የፎቶ ጋለሪ', ghint:'ለማየት ወደ ጎን ይጎትቱ፣ ለማጉላት ፎቶ ይንኩ', close:'ዝጋ', prev:'ቀዳሚ ፎቶ', next:'ቀጣይ ፎቶ', err:'ይህን ግብዣ መጫን አልተቻለም።' }
 };
 const WD_AM = ['እሑድ','ሰኞ','ማክሰኞ','ረቡዕ','ሐሙስ','ዓርብ','ቅዳሜ'];
 const WD_EN = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
@@ -84,12 +119,32 @@ const MO_EN = ['January','February','March','April','May','June','July','August'
 let lang = qs.get('lang') || localStorage.getItem('f27_lang') || 'en'; if (lang !== 'am') lang = 'en';
 let ev = null;
 
+const demoPic = k => {
+  const bg = [['#ffd6e5','#ffb3cf'], ['#d8ecff','#a9d3ff'], ['#e6dcff','#c9b6ff'], ['#d6f5ee','#9fe3d3'], ['#fff0c4','#ffd98a']][k % 5];
+  const art = [
+    '<rect x="80" y="230" width="140" height="70" rx="10" fill="#fff"/><rect x="80" y="230" width="140" height="22" rx="10" fill="#e0457b"/><rect x="100" y="190" width="100" height="45" rx="8" fill="#ffb703"/><rect x="146" y="150" width="8" height="40" fill="#5cc8c0"/><ellipse cx="150" cy="142" rx="8" ry="12" fill="#ff7a8a"/>',
+    '<rect x="90" y="190" width="120" height="110" rx="8" fill="#e0457b"/><rect x="140" y="190" width="20" height="110" fill="#ffb703"/><rect x="90" y="228" width="120" height="20" fill="#ffb703"/><path d="M150 190c-30-40-60-10-30 0zM150 190c30-40 60-10 30 0z" fill="#ffb703"/>',
+    '<ellipse cx="105" cy="150" rx="38" ry="48" fill="#e0457b"/><ellipse cx="160" cy="120" rx="42" ry="52" fill="#ffb703"/><ellipse cx="210" cy="160" rx="36" ry="46" fill="#5cc8c0"/><path d="M105 198Q130 280 160 300M160 172Q160 250 160 300M210 206Q190 260 160 300" stroke="#4a1230" stroke-opacity=".4" fill="none"/>',
+    '<path d="M150 90L90 280H210Z" fill="#8e6bd8"/><path d="M118 200h64M104 240h92" stroke="#fff" stroke-width="8"/><circle cx="150" cy="86" r="14" fill="#ffb703"/><ellipse cx="150" cy="282" rx="66" ry="12" fill="#ffb703"/>',
+    '<path d="M150 90l18 46 50 4-38 32 12 48-42-26-42 26 12-48-38-32 50-4z" fill="#ffb703"/><circle cx="70" cy="90" r="9" fill="#e0457b"/><circle cx="238" cy="120" r="8" fill="#5cc8c0"/><circle cx="90" cy="260" r="8" fill="#8e6bd8"/><circle cx="226" cy="270" r="10" fill="#e0457b"/>'
+  ][k % 5];
+  const svg = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 300 400"><defs><linearGradient id="g" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="' + bg[0] + '"/><stop offset="1" stop-color="' + bg[1] + '"/></linearGradient></defs><rect width="300" height="400" fill="url(#g)"/>' + art + '</svg>';
+  return 'data:image/svg+xml,' + encodeURIComponent(svg);
+};
 const DEMO = {
   title:'Liya turns 7!', title_am:'ሊያ 7 ዓመት ሞላት!', host_names:'Mum, Dad & Nahom', host_names_am:'እማማ፣ አባባ እና ናሆም',
   event_date:'2026-12-12T15:00', venue:'Our home, Bole, Addis Ababa', venue_am:'ቤታችን፣ ቦሌ፣ አዲስ አበባ', map_url:'https://maps.google.com/?q=Bole+Addis+Ababa',
   message:'Cake, games and a piñata! Bring your biggest smile.', message_am:'ኬክ፣ ጨዋታ እና ብዙ ደስታ! ፈገግታችሁን ይዛችሁ ኑ።',
-  days:[{ title:'Games', title_am:'ጨዋታ', date:'2026-12-12', start:'15:00' }, { title:'Cake time', title_am:'የኬክ ሰዓት', date:'2026-12-12', start:'17:00' }]
+  days:[{ title:'Games', title_am:'ጨዋታ', date:'2026-12-12', start:'15:00' }, { title:'Cake time', title_am:'የኬክ ሰዓት', date:'2026-12-12', start:'17:00' }],
+  about:'Liya, from the day you were born our home has been full of laughter. We are so proud of the kind, curious and brave girl you are becoming. May this year bring you many friends, big adventures and every dream you wish for. We love you to the moon and back!',
+  about_am:'ሊያ፣ ከተወለድሽበት ቀን ጀምሮ ቤታችን በሳቅ ተሞልቷል። እየሆንሽ ባለው ደግ፣ ጠያቂና ደፋር ልጅ በጣም እንኮራለን። ይህ ዓመት ብዙ ጓደኞችን፣ ትልልቅ ጀብዶችንና የምትመኚውን ሁሉ ያምጣልሽ። እጅግ እንወድሻለን!',
+  photo_urls:[demoPic(0)], gallery_urls:[1, 2, 3, 4, 0].map(demoPic)
 };
+const SLUG = qs.get('e');
+let wishes = SLUG ? [] : [
+  { name:'Hanna', name_am:'ሃና', message:'Happy birthday Liya! Can\'t wait for the cake and games!', message_am:'መልካም ልደት ሊያ! ኬኩንና ጨዋታውን በጉጉት እጠብቃለሁ!', created_at:'2026-11-20T10:00:00' },
+  { name:'Aunt Selam', name_am:'አክስት ሰላም', message:'Love you, sweet girl. See you at the party!', message_am:'እወድሻለሁ ውድ ልጄ። በበዓሉ እንገናኛለን!', created_at:'2026-11-21T18:30:00' }
+];
 const pick = (o, k) => (lang === 'am' && o[k + '_am']) ? o[k + '_am'] : (o[k] || '');
 const pad = n => String(n).padStart(2, '0');
 function parseDate(s) { const m = /^(\d{4})-(\d\d)-(\d\d)(?:[T ](\d\d):(\d\d))?/.exec(s || ''); return m ? { y:+m[1], m:+m[2], d:+m[3], hh:m[4] != null ? +m[4] : null, mm:m[5] != null ? +m[5] : null } : null; }
@@ -145,11 +200,51 @@ function render() {
   const days = Array.isArray(ev.days) ? ev.days : [];
   if (days.length > 1 || (days.length === 1 && days[0].title)) p.push('<ul class="prog" aria-label="' + esc(t.prog) + '">' + days.map(x => {
     const tm = x.start ? timeText(parseDate('2000-01-01T' + x.start)) : ''; return '<li><b>' + esc(pick(x, 'title')) + '</b>' + (tm ? '<span>' + esc(tm) + '</span>' : '') + '</li>'; }).join('') + '</ul>');
-  const msg = pick(ev, 'message') || pick(ev, 'about').replace(/\s*\[\[tpl:\w+\]\]\s*$/, ''); if (msg) p.push('<p class="msg">' + esc(msg) + '</p>');
+  const msg = pick(ev, 'message'), wish = pick(ev, 'about').replace(/\s*\[\[tpl:\w+\]\]\s*$/, '').trim(); if (msg) p.push('<p class="msg">' + esc(msg) + '</p>');
+  if (wish) p.push('<section class="wish"><h2>' + esc(t.wish) + '</h2><span class="q" aria-hidden="true">\u201C</span><p class="t">' + esc(wish) + '</p>' + (host ? '<p class="by">\u2014 ' + esc(host) + '</p>' : '') + '</section>');
   const gal = [...photos.slice(1), ...(Array.isArray(ev.gallery_urls) ? ev.gallery_urls : [])];
-  if (gal.length) p.push('<div class="gal">' + gal.map(u => '<img alt="" loading="lazy" src="' + esc(src(u)) + '">').join('') + '</div>');
+  if (gal.length) p.push('<section class="galwrap"><h2>' + esc(t.gal) + '</h2><div class="gal">' + gal.map((u, n) => '<button type="button" class="ph" data-i="' + n + '" aria-label="' + esc(t.gal) + ' ' + (n + 1) + '"><img alt="" loading="lazy" src="' + esc(src(u)) + '"></button>').join('') + '</div>' + (gal.length > 1 ? '<p class="galhint">' + esc(t.ghint) + '</p>' : '') + '</section>');
+  p.push('<section class="gbwrap"><h2>' + esc(t.gb) + '</h2><form class="gbform" id="gbForm"><input name="n" required maxlength="60" autocomplete="name" placeholder="' + esc(t.gbName) + '" aria-label="' + esc(t.gbName) + '"><textarea name="m" required maxlength="500" placeholder="' + esc(t.gbMsg) + '" aria-label="' + esc(t.gbMsg) + '"></textarea><button class="btn" type="submit">' + esc(t.gbSend) + '</button><p class="note" id="gbNote" role="status"></p></form><div class="gblist" id="gbList"></div></section>');
   p.push('<div class="dolls">' + doll(C[1], C[0], 84) + doll(C[2], C[3], 108) + doll(C[0], C[1], 84) + '</div>');
   c.innerHTML = p.join('');
+  drawWishes(); $('gbForm').onsubmit = sendWish;
+  c.querySelectorAll('.gal .ph').forEach(b => { b.onclick = () => openLb(gal.map(u => src(u)), +b.dataset.i, t); });
+}
+function drawWishes() {
+  const t = T[lang], box = $('gbList'); if (!box) return;
+  const dt = x => { const d = x ? new Date(x) : null; return d && !isNaN(d) ? d.toLocaleDateString(lang === 'am' ? 'am-ET' : 'en-GB', { dateStyle:'medium' }) : ''; };
+  box.innerHTML = wishes.length ? wishes.map(w => '<div class="gbit"><div class="h"><b>' + esc(pick(w, 'name')) + '</b><small>' + esc(dt(w.created_at)) + '</small></div><p>' + esc(pick(w, 'message')) + '</p></div>').join('') : '<p class="gbempty">' + esc(t.gbEmpty) + '</p>';
+}
+async function sendWish(e) {
+  e.preventDefault();
+  const f = e.target, t = T[lang], note = $('gbNote'), btn = f.querySelector('button'), name = f.n.value.trim(), message = f.m.value.trim();
+  if (!name || !message) return;
+  btn.disabled = true; note.textContent = '';
+  try {
+    if (SLUG) {
+      const r = await fetch(API + '/api/e/' + encodeURIComponent(SLUG) + '/wishes', { method:'POST', headers:{ 'Content-Type':'application/json' }, body:JSON.stringify({ name, message }) });
+      if (!r.ok) throw new Error(r.status);
+      const w = await r.json().catch(() => ({}));
+      wishes.unshift({ name:w.name || name, message:w.message || message, created_at:w.created_at || new Date().toISOString() });
+    } else wishes.unshift({ name, message, created_at:new Date().toISOString() });
+    f.reset(); drawWishes(); note.textContent = SLUG ? t.gbThanks : t.gbThanks + ' ' + t.gbDemo;
+  } catch (x) { note.textContent = t.gbFail; }
+  btn.disabled = false;
+}
+function openLb(list, i, t) {
+  const o = document.createElement('div'); o.className = 'lb'; o.setAttribute('role', 'dialog'); o.setAttribute('aria-modal', 'true');
+  const im = document.createElement('img'); im.alt = '';
+  const mk = (cls, txt, lab) => { const b = document.createElement('button'); b.type = 'button'; b.className = cls; b.textContent = txt; b.setAttribute('aria-label', lab); return b; };
+  const x = mk('x', '\u00D7', t.close), pv = mk('pv', '\u2039', t.prev), nx = mk('nx', '\u203A', t.next);
+  const show = n => { i = (n + list.length) % list.length; im.src = list[i]; };
+  const close = () => { o.remove(); document.removeEventListener('keydown', key); document.documentElement.style.overflow = ''; };
+  const key = e => { if (e.key === 'Escape') close(); else if (e.key === 'ArrowLeft') show(i - 1); else if (e.key === 'ArrowRight') show(i + 1); };
+  x.onclick = close; pv.onclick = e => { e.stopPropagation(); show(i - 1); }; nx.onclick = e => { e.stopPropagation(); show(i + 1); };
+  o.onclick = e => { if (e.target === o) close(); };
+  let sx = null; o.addEventListener('touchstart', e => { sx = e.touches[0].clientX; }, { passive:true });
+  o.addEventListener('touchend', e => { if (sx == null) return; const dx = e.changedTouches[0].clientX - sx; sx = null; if (Math.abs(dx) > 50) show(i + (dx < 0 ? 1 : -1)); });
+  o.append(im, x); if (list.length > 1) o.append(pv, nx);
+  document.addEventListener('keydown', key); document.documentElement.style.overflow = 'hidden'; document.body.append(o); show(i); x.focus();
 }
 $('bEn').onclick = () => { lang = 'en'; localStorage.setItem('f27_lang', lang); render(); };
 $('bAm').onclick = () => { lang = 'am'; localStorage.setItem('f27_lang', lang); render(); };
@@ -159,6 +254,7 @@ $('bAm').onclick = () => { lang = 'am'; localStorage.setItem('f27_lang', lang); 
   if (!slug) { ev = Object.assign({}, DEMO); if (qs.get('title')) ev.title = qs.get('title'); }
   else { try { const r = await fetch(API + '/api/events/' + encodeURIComponent(slug)); if (!r.ok) throw new Error(r.status); ev = await r.json(); } catch (e) { ev = null; } }
   render();
+  if (SLUG && ev) { try { const r = await fetch(API + '/api/e/' + encodeURIComponent(SLUG) + '/wishes'); if (r.ok) { const d = await r.json(); wishes = Array.isArray(d) ? d : (Array.isArray(d.wishes) ? d.wishes : []); drawWishes(); } } catch (x) {} }
 })();
 </script>
 </body>
